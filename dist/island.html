@@ -4114,7 +4114,7 @@ function buildCrops(scene) {
   inst(solid(new THREE.IcosahedronGeometry(0.15, 1), 0x7fa85c), vcMat, lists.cabbage, p => ({ y: g_(p[0], p[1]) + 0.13, rot: p[2] * 7, sx: 1 + p[2] * 0.2, sy: 0.85 }), true);
   inst(frondGeo(7, 0.3, 7, 0.35, 0.05), leafM, lists.cabbage, p => ({ y: g_(p[0], p[1]), rot: p[2] * 9, sx: 1, sy: 0.8, c: [0.75, 0.95, 0.85] }));
   // 番茄：竹竿 + 藤叶 + 红果
-  const tomatoFruit = solid(THREE.BufferGeometryUtils.mergeGeometries([0, 1, 2, 3].map(k => { const g = new THREE.IcosahedronGeometry(0.045, 0); g.translate(Math.cos(k * 1.7) * 0.18, 0.45 + k * 0.22, Math.sin(k * 1.7) * 0.18); return g.toNonIndexed(); })), 0xd02a1e);
+  const tomatoFruit = solid(THREE.BufferGeometryUtils.mergeGeometries([0, 1, 2, 3].map(k => { const g = new THREE.IcosahedronGeometry(0.045, 0); g.translate(Math.cos(k * 1.7) * 0.18, 0.45 + k * 0.22, Math.sin(k * 1.7) * 0.18); return g; })), 0xd02a1e);   // Icosahedron 本身非索引，无需 toNonIndexed
   const stake = solid(new THREE.CylinderGeometry(0.012, 0.015, 1.5, 5).translate(0, 0.75, 0), 0xa08a5c);
   const tomatoLeaves = crownCardsGeo(41.1, { lobes: 1, detail: 0, flat: 2.2, cards: 14, cell: 2, cardSize: 1.0, shell: 0.55 });
   for (const [arr, H] of [[lists.tomato, 1.0], [ghT, 1.5]]) {
