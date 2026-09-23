@@ -69,7 +69,10 @@ JS = r'''
   // ---- 水闸：码头台阶上墩顶，走上闸顶步道；闸控室开关开闸 ----
   setp(42.4, 116.8); run([], 0.1); out.g_stair = walkTo(42.4, 124.5); walkTo(40.5, 128); walkTo(37.5, 128); out.g_walk = walkTo(30, 128);
   setp(46.5, 116.0); run([], 0.1); out.g_room = walkTo(46.5, 119.8); out.g_panel = walkTo(45.6, 119.5); out.g_prompt = lab(); E(); out.g_target = GATE.target;
-  GATE.open = 1; out.g_openWalk = (setp(20, 128), run([], 1.5));
+  // 开闸全流程（走主循环同款逻辑 __sim.step）：门叶开始下沉、门顶可行走面尚未消失时走上闸门，应被移到就近桥墩而不是随门落水
+  { const S = __sim; let g = 0; while (GATE.open < 0.01 && g++ < 600) S.step(1 / 60, []);
+    setp(20, 128); st.feet = 4.53; st.grounded = true; for (let i = 0; i < 60 * 16; i++) S.step(1 / 60, []);
+    out.g_openWalk = { x: +st.pos.x.toFixed(2), z: +st.pos.z.toFixed(2), feet: +st.feet.toFixed(2), mode: st.mode, gate: +GATE.open.toFixed(2) }; }
   setp(15, 110); run(['KeyS'], 1, 0); out.g_swimThrough = run(['KeyS', 'ShiftLeft'], 12, 0); GATE.open = 0; GATE.target = 0;
   // ---- 栈道北段：浮台垂直向北接到道路 ----
   setp(61.2, 79.8); run([], 0.1); out.bwNorth = walkTo(61.2, 18.5, 30, true); out.bwNorthGround = +gh(61.2, 18.5).toFixed(2);
@@ -100,6 +103,7 @@ with sync_playwright() as p:
     pg.goto(PAGE + '#fp,still,q=high')
     pg.wait_for_function("document.title.startsWith('done')", timeout=600000)
     try:
+        pg.evaluate(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'sim.js'), encoding='utf8').read())   # 主循环单步推进（开闸全流程用）
         r = pg.evaluate(JS)
         for k,v in r.items(): print(k, v)
     except Exception as e: print('EVAL ERR', e)

@@ -12,9 +12,11 @@
   // ---------- 静态碰撞体空间索引 ----------
   const CELL = 8, grid = new Map(), key = (i, j) => i * 100003 + j;
   const put = (o, x0, z0, x1, z1) => { for (let i = Math.floor(x0 / CELL); i <= Math.floor(x1 / CELL); i++) for (let j = Math.floor(z0 / CELL); j <= Math.floor(z1 / CELL); j++) { const k = key(i, j); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(o); } };
-  COLL.segs.forEach(g => put({ t: 's', o: g }, Math.min(g.ax, g.bx), Math.min(g.az, g.bz), Math.max(g.ax, g.bx), Math.max(g.az, g.bz)));
-  COLL.rects.forEach(r => { const e = Math.hypot(r.hw, r.hd); put({ t: 'r', o: r }, r.x - e, r.z - e, r.x + e, r.z + e); });
-  COLL.circles.forEach(c => put({ t: 'c', o: c }, c.x - c.r, c.z - c.r, c.x + c.r, c.z + c.r));
+  // 用漫游物理实际使用的完整碰撞列表（setupFP 在 COLL 之外还追加了住宅楼、牛棚、圈舍、大棚、光伏排等整体实心体）
+  const SOL = { segs: T.segs || COLL.segs, rects: T.rects || COLL.rects, circles: T.circles || COLL.circles };
+  SOL.segs.forEach(g => put({ t: 's', o: g }, Math.min(g.ax, g.bx), Math.min(g.az, g.bz), Math.max(g.ax, g.bx), Math.max(g.az, g.bz)));
+  SOL.rects.forEach(r => { const e = Math.hypot(r.hw, r.hd); put({ t: 'r', o: r }, r.x - e, r.z - e, r.x + e, r.z + e); });
+  SOL.circles.forEach(c => put({ t: 'c', o: c }, c.x - c.r, c.z - c.r, c.x + c.r, c.z + c.r));
   const near = (x0, z0, x1 = x0, z1 = z0) => { const out = new Set(); for (let i = Math.floor((Math.min(x0, x1) - 1) / CELL); i <= Math.floor((Math.max(x0, x1) + 1) / CELL); i++) for (let j = Math.floor((Math.min(z0, z1) - 1) / CELL); j <= Math.floor((Math.max(z0, z1) + 1) / CELL); j++) { const l = grid.get(key(i, j)); if (l) l.forEach(o => out.add(o)); } return out; };
   const inBand = (o, y) => (!o.cond || o.cond()) && y <= (o.top === undefined ? 1e9 : o.top) && y >= (o.bottom === undefined ? -1e9 : o.bottom);
   const cross = (ax, az, bx, bz, cx, cz, dx, dz) => { const d = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx); if (Math.abs(d) < 1e-9) return false; const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / d, u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / d; return t > 1e-6 && t < 1 - 1e-6 && u >= 0 && u <= 1; };
@@ -41,8 +43,7 @@
     else if (DRIVE.active === BOAT) {}
     else if (DRIVE.active) { D.updateDrive(dt, st.keys, cam, fp); st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); }
     else fp.update(dt);
-    if (GATE.target > 0.5 && GATE.open < 0.001) { const p = st.pos, ft = st.feet; if (Math.abs(p.z - D.L.gateZ) < 1.4 && Math.abs(p.x) < 37 && ft > 4 && ft < 5.2) fp.teleport(Math.sign(p.x || 1) * 40.2, D.L.gateZ, p.x > 0 ? -Math.PI / 2 : Math.PI / 2, 5.0); }
-    if (GATE.open !== GATE.target) { GATE.open = GATE.target > GATE.open ? Math.min(GATE.target, GATE.open + dt / 14) : Math.max(GATE.target, GATE.open - dt / 14); const e = GATE.open * GATE.open * (3 - 2 * GATE.open); for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6; }
+    D.updateGate(dt, fp);                                        // 与主循环同一个函数（水闸转移与门叶动画）
     simT += dt;
   }
   const press = (code) => window.dispatchEvent(new KeyboardEvent('keydown', { code }));
@@ -139,5 +140,5 @@
     return null;
   }
 
-  window.__sim = { rng, step, press, snap, makeMonitor, wallCrossed, insideSolid, meshBoxes, bboxHit, get t() { return simT; }, st, D, T, fp };
+  window.__sim = { SOL, rng, step, press, snap, makeMonitor, wallCrossed, insideSolid, meshBoxes, bboxHit, get t() { return simT; }, st, D, T, fp };
 })();

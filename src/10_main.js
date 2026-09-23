@@ -40,6 +40,7 @@ try {
   const ct = buildCybertruck(); scene.add(ct); makeCar(ct, L.parking.x - 2.15, L.parking.z - 5.2, Math.PI / 2);   // 车头朝北停入车位
   const tr = buildTractor(); scene.add(tr); makeCar(tr, L.parking.x + 2.15, L.parking.z - 5.8, Math.PI / 2);
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
+  setHeliObstacles(statics);   // 直升机与建筑构件的碰撞（须在烘焙前，构件仍在分组中）
   statics.forEach(bake);
   if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
@@ -92,7 +93,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -156,17 +157,7 @@ try {
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
     updateAnimals(dt, fp.on ? fp.pos : null);
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
-    if (GATE.target > 0.5 && GATE.open < 0.001 && fp.on) {   // 开闸前：站在闸门顶面的人移到就近桥墩
-      const p = fp.pos, ft = fp._st.feet; if (Math.abs(p.z - L.gateZ) < 1.4 && Math.abs(p.x) < 37 && ft > 4 && ft < 5.2) fp.teleport(Math.sign(p.x || 1) * 40.2, L.gateZ, p.x > 0 ? -Math.PI / 2 : Math.PI / 2, 5.0);
-    }
-    if (GATE.open !== GATE.target) {                // 水闸动画：约 14 秒完成
-      GATE.open = GATE.target > GATE.open ? Math.min(GATE.target, GATE.open + dt / 14) : Math.max(GATE.target, GATE.open - dt / 14);
-      const e = GATE.open * GATE.open * (3 - 2 * GATE.open);
-      for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6;             // 下沉至海底（顶面低于游艇吃水）
-      if (GATE.lamp) GATE.lamp.material = GATE.open > 0.98 ? M.green : GATE.open < 0.02 ? M.red : M.yellow;
-      if (GATE.lever) GATE.lever.rotation.z = (GATE.target - 0.5) * 1.2;
-      renderer.shadowMap.needsUpdate = true;
-    }
+    if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
     for (const l of LIVE) if (l.type === 'rotor') l.obj.rotation.z -= dt * l.speed;
     const az = fp.on ? fp.yaw : Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
     needle.setAttribute('transform', `rotate(${(az * 180 / Math.PI).toFixed(1)} 27 27)`);

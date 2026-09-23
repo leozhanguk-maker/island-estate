@@ -9,6 +9,25 @@ function setupHeli(scene, H, floorAt) {
   INTERACT.push({ get x() { return HELI.ground && !DRIVE.active ? HELI.x : 1e9; }, get z() { return HELI.z; }, r: 4.5, get y() { return HELI.y; }, label: '登上 H125 直升机', fn: () => { DRIVE.active = HELI; DRIVE.cam = 'chase'; document.body.classList.add('driving'); } });
   placeHeli(0);
 }
+// 建筑构件包围盒（世界坐标），任何高度都参与直升机水平碰撞；由主流程在建筑构建后调用 setHeliObstacles 填入
+const HELI_OBS = new Map(), HELI_OBS_CELL = 8;
+function setHeliObstacles(groups) {
+  const bb = new THREE.Box3(), sz = new THREE.Vector3();
+  for (const g of groups) { g.updateMatrixWorld(true); g.traverse(o => {
+    if (!o.isMesh || !o.geometry || (o.material && o.material.transparent)) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.getSize(sz);
+    if (sz.y < 1.0 || sz.x * sz.z < 0.5 || sz.x * sz.y * sz.z < 1.0) return;          // 只要墙体、楼身、柱等有体量的构件
+    const b = { x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z };
+    for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
+  }); }
+}
+// 机舱（离地 1.2 m、半径 1 m 的球）是否碰到建筑构件
+function heliHitsBuilding(x, y, z) {
+  const cy = y + 1.2, R = 1.0, l = HELI_OBS.get(Math.floor(x / HELI_OBS_CELL) * 100003 + Math.floor(z / HELI_OBS_CELL)); if (!l) return false;
+  for (const b of l) { const dx = Math.max(b.x0 - x, 0, x - b.x1), dy = Math.max(b.y0 - cy, 0, cy - b.y1), dz = Math.max(b.z0 - z, 0, z - b.z1); if (dx * dx + dy * dy + dz * dz < R * R) return true; }
+  return false;
+}
 function heliFloor(x, z) { return Math.max(gh(x, z), HELI.floorAt ? HELI.floorAt(x, z) : -99, 0.3); }
 function placeHeli(dt) {
   const g = HELI.g; g.position.set(HELI.x, HELI.y, HELI.z); g.rotation.order = 'YZX'; g.rotation.set(HELI.roll, HELI.yaw, HELI.pitch);
@@ -68,7 +87,9 @@ function updateHeli(dt, keys, camera) {
   HELI.vy += (lift ? ay : -9.8) * dt; if (lift && !A && DRIVE.active !== HELI) HELI.vy *= 0.9;
   HELI.yaw += yawRate * dt;
   const nx = HELI.x + HELI.vx * dt, nz = HELI.z + HELI.vz * dt;
-  if (!HELI.ground && HELI.y - heliFloor(nx, nz) < 4 && FP_API && FP_API.hitsSolid(nx, nz, HELI.y + 0.5)) { HELI.vx *= -0.3; HELI.vz *= -0.3; } else { HELI.x = nx; HELI.z = nz; }
+  // 贴地（< 4 m）沿用碰撞登记（含树木、礁石）；任何高度都检查建筑构件，避免穿过住宅楼等高楼
+  const blocked = !HELI.ground && ((HELI.y - heliFloor(nx, nz) < 4 && FP_API && FP_API.hitsSolid(nx, nz, HELI.y + 0.5)) || (heliHitsBuilding(nx, HELI.y, nz) && !heliHitsBuilding(HELI.x, HELI.y, HELI.z)));
+  if (blocked) { HELI.vx *= -0.3; HELI.vz *= -0.3; } else { HELI.x = nx; HELI.z = nz; }
   HELI.y += HELI.vy * dt;
   const fl = heliFloor(HELI.x, HELI.z) + 0.02;
   if (HELI.y <= fl) { HELI.y = fl; if (HELI.vy < 0) HELI.vy = 0; HELI.vx *= 0.8; HELI.vz *= 0.8; HELI.ground = true; } else HELI.ground = HELI.y < fl + 0.05;

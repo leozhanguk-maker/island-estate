@@ -207,6 +207,8 @@ function framedGlass(p, w, h, x, y, z, ry = 0, nx = 3, ny = 1, fr = 0.07, mat = 
 }
 function planter(p, w, d, x, y, z, ry = 0, kind = 'shrub', off = null) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; p.add(g);
+  if (off) { const X = off[0] + x, Z = off[2] + z, Y = off[1] + y;   // 花池实心，人不能穿过（已有碰撞体的不重复登记）
+    if (!COLL.rects.some(r => Math.abs(r.x - X) < 0.3 && Math.abs(r.z - Z) < 0.3 && r.top > Y && r.bottom < Y + 0.5)) collR(X, Z, w / 2, d / 2, ry, Y + 1.2, Y - 0.3); }
   box(g, w, 0.5, d, M.concreteWarm, 0, 0.25, 0); box(g, w - 0.08, 0.04, d - 0.08, M.soil, 0, 0.49, 0);
   const n = Math.max(1, Math.round(w / (kind === 'shrub' ? 0.7 : 0.32)));
   for (let i = 0; i < n; i++) {
@@ -223,7 +225,8 @@ function buildVilla() {
   // 木平台（泳池处开洞）+ 石材压顶环
   for (const [x0, x1, z0, z1] of [[-13, 13, -17.45, -15.35], [-13, 13, -9.85, -6.95], [-13, -7.8, -15.35, -9.85], [7.8, 13, -15.35, -9.85]]) { box(V, x1 - x0, 0.25, z1 - z0, M.teak, (x0 + x1) / 2, -0.08, (z0 + z1) / 2); }
   for (let i = 0; i < 12; i++) { const x = -12.5 + i * 2.2; if (Math.abs(x) > 7.9) box(V, 0.02, 0.01, 10.4, M.woodDark, x, 0.06, -12.2); else { box(V, 0.02, 0.01, 2.1, M.woodDark, x, 0.06, -16.4); box(V, 0.02, 0.01, 2.9, M.woodDark, x, 0.06, -8.4); } }
-  for (const [x0, x1, z0, z1] of [[-7.8, 7.8, -15.35, -14.85], [-7.8, 7.8, -10.35, -9.85], [-7.8, -7.3, -14.85, -10.35], [7.3, 7.8, -14.85, -10.35]]) box(V, x1 - x0, 0.14, z1 - z0, M.stone, (x0 + x1) / 2, 0.16, (z0 + z1) / 2);
+  for (const [x0, x1, z0, z1] of [[-7.8, 7.8, -15.35, -14.85], [-7.8, 7.8, -10.35, -9.85], [-7.8, -7.3, -14.85, -10.35], [7.3, 7.8, -14.85, -10.35]]) { box(V, x1 - x0, 0.14, z1 - z0, M.stone, (x0 + x1) / 2, 0.16, (z0 + z1) / 2);
+    COLL.walks.push({ kind: 'rect', x: 180 + (x0 + x1) / 2, z: -46 + (z0 + z1) / 2, hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, rot: 0, y: y0 + 0.23 }); }   // 压顶可站立
   // 下沉池体：瓷砖池壁与池底（带焦散），入水台阶
   const tile = poolTileMaterial();
   box(V, 14.6, 0.05, 4.5, tile, 0, -1.4, -12.6);
@@ -372,7 +375,7 @@ function buildVilla() {
   for (const [a, b] of [[-6.5, -6.2], [-4.5, -6.2]]) box(V, 0.06, 0.72, 0.8, M.metalDark, a, 7.86, b);
   planter(V, 5, 0.6, 5, 7.5, -7.1, 0, 'rose', [180, y0, -46]);
   collR(wx(-5.5), wz(-6.2), 1.6, 1.2, 0, y0 + 9.5, y0 + 7);
-  for (const x of [-6.5, -5.5, -4.5]) { addSeat(wx(x), y0 + 7.5 + 0.48, wz(-7.0), Math.PI); addSeat(wx(x), y0 + 7.5 + 0.48, wz(-5.4), 0); } collR(wx(5), wz(-7.1), 2.5, 0.35, 0, y0 + 9.5, y0 + 7);
+  for (const x of [-6.5, -5.5, -4.5]) { addSeat(wx(x), y0 + 7.5 + 0.48, wz(-7.0), Math.PI); addSeat(wx(x), y0 + 7.5 + 0.48, wz(-5.4), 0); } /* 三层玫瑰花池的碰撞由 planter() 登记 */
   // ---- 三层（退台）：外壳 + 书房；北门通露台 ----
   const F2 = 7.45, F2h = 3.25;
   slab(-6.4, 9.2, -5.0, 5.6, F2, 0.12, M.floorWood, [S2[0], S2[1], S2[2], S2[3]], F2);
@@ -413,7 +416,7 @@ function buildVilla() {
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
     for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
     parasol(V, 4.5, 0.05, -7.6, 1.35); collC(184.5, -53.6, 0.25); tableF(V, 4.5, 0.05, -8.9, 0, 0.35, 0.35, 0.45, M.teak, M.alu); }
-  collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2); collR(190.2, -62.6, 1.75, 0.45);
+  collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2);   // 泳池北侧水仙花池的碰撞由 planter() 登记
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
@@ -477,7 +480,8 @@ function buildDorm() {
   box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
   box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
   // 前庭：绿篱、长椅、铺装步道
-  for (const sx of [-1, 1]) { planter(D, 7, 1.0, sx * 10, 0, Dp / 2 + 5); box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, 0.3, Dp / 2 + 5.5); }
+  for (const sx of [-1, 1]) { planter(D, 7, 1.0, sx * 10, 0, Dp / 2 + 5); box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, 0.3, Dp / 2 + 5.5);
+    collR(L.dorm.x + sx * 10, L.dorm.z + Dp / 2 + 5, 3.5, 0.5, 0, 16.7, 14.2); collR(L.dorm.x + sx * 5.5, L.dorm.z + Dp / 2 + 5.5, 0.9, 0.25, 0, 16.7, 14.2); }   // 绿篱、长椅实心
   D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
 }
 // ---------------- 双人网球场 ----------------

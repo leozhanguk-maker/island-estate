@@ -48,11 +48,11 @@
   // ---------- 2. 碰撞体重叠 / 重复 ----------
   {
     const inBandOverlap = (a, b) => { const a0 = a.bottom ?? -1e9, a1 = a.top ?? 1e9, b0 = b.bottom ?? -1e9, b1 = b.top ?? 1e9; return Math.min(a1, b1) - Math.max(a0, b0) > 0.1; };
-    const segs = D.COLL.segs, seen = new Map();
+    const segs = S.SOL.segs, seen = new Map();
     segs.forEach((g, i) => { const k = [g.ax, g.az, g.bx, g.bz].map(v => Math.round(v * 20)).sort((a, b) => a - b).join(',') + '|' + Math.round((g.bottom ?? -1e9) * 10) + '|' + Math.round((g.top ?? 1e9) * 10);
       if (seen.has(k)) add('碰撞体重叠', { x: r2((g.ax + g.bx) / 2), z: r2((g.az + g.bz) / 2), y: r2(g.bottom ?? 0), msg: `重复登记的墙线段 (${r2(g.ax)},${r2(g.az)})→(${r2(g.bx)},${r2(g.bz)}) 高度带 ${r2(g.bottom)}~${r2(g.top)}` }); else seen.set(k, i); });
     // 矩形/圆柱：小的一方有 90% 以上落在另一方内部
-    const solids = D.COLL.rects.map(r => ({ t: 'r', o: r, R: Math.hypot(r.hw, r.hd) })).concat(D.COLL.circles.map(c => ({ t: 'c', o: c, R: c.r })));
+    const solids = S.SOL.rects.map(r => ({ t: 'r', o: r, R: Math.hypot(r.hw, r.hd) })).concat(S.SOL.circles.map(c => ({ t: 'c', o: c, R: c.r })));
     const inside = (s, x, z) => s.t === 'c' ? Math.hypot(x - s.o.x, z - s.o.z) < s.o.r : (() => { const c = Math.cos(s.o.rot || 0), n = Math.sin(s.o.rot || 0), dx = x - s.o.x, dz = z - s.o.z; return Math.abs(c * dx - n * dz) < s.o.hw && Math.abs(n * dx + c * dz) < s.o.hd; })();
     const samples = (s) => { const p = []; for (let i = 0; i < 25; i++) { const u = (i % 5) / 4 - 0.5, v = Math.floor(i / 5) / 4 - 0.5; if (s.t === 'c') { if (u * u + v * v <= 0.25) p.push([s.o.x + u * 2 * s.o.r * 0.95, s.o.z + v * 2 * s.o.r * 0.95]); } else { const c = Math.cos(s.o.rot || 0), n = Math.sin(s.o.rot || 0), lx = u * 2 * s.o.hw * 0.95, lz = v * 2 * s.o.hd * 0.95; p.push([s.o.x + c * lx + n * lz, s.o.z - n * lx + c * lz]); } } return p; };
     const grid = new Map(); solids.forEach((s, i) => { const k = key(Math.floor(s.o.x / 4), Math.floor(s.o.z / 4)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); });
@@ -92,6 +92,9 @@
         const ox = c.x + (ax[0] * u * (w / 2 + 0.45)) + (az[0] * v * (d / 2 + 0.45)), oz = c.z + (ax[1] * u * (w / 2 + 0.45)) + (az[1] * v * (d / 2 + 0.45));
         const of = T.floorAt(ox, oz, top + 0.05);
         if (Math.abs(of - base) > 0.3 && Math.abs(of - fl) > 0.3) continue;   // 外侧不在同一楼层
+        // 外侧点本身落在另一个实体构件里（如成排藤架的相邻段），不算“能走过来”
+        let blocked = false; for (const k of nearMeshes({ min: { x: ox, z: oz }, max: { x: ox, z: oz } })) { const o = meshes[k]; if (o !== m && !o.tr && o.o.geometry.type === 'BoxGeometry' && ox > o.bb.min.x && ox < o.bb.max.x && oz > o.bb.min.z && oz < o.bb.max.z && o.bb.max.y > of + 0.3 && o.bb.min.y < of + 1.5) { blocked = true; break; } }
+        if (blocked) continue;
         const ix = c.x + (ax[0] * u * (w / 2 - 0.2)) + (az[0] * v * (d / 2 - 0.2)), iz = c.z + (ax[1] * u * (w / 2 - 0.2)) + (az[1] * v * (d / 2 - 0.2));
         if (T.canStep(ox, oz, ix, iz, of, false) && !S.insideSolid(ix, iz, of + 0.3)) { reach = [r2(ox), r2(oz), r2(of)]; break; }
       }

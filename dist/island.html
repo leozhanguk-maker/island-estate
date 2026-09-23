@@ -2530,6 +2530,8 @@ function framedGlass(p, w, h, x, y, z, ry = 0, nx = 3, ny = 1, fr = 0.07, mat = 
 }
 function planter(p, w, d, x, y, z, ry = 0, kind = 'shrub', off = null) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; p.add(g);
+  if (off) { const X = off[0] + x, Z = off[2] + z, Y = off[1] + y;   // 花池实心，人不能穿过（已有碰撞体的不重复登记）
+    if (!COLL.rects.some(r => Math.abs(r.x - X) < 0.3 && Math.abs(r.z - Z) < 0.3 && r.top > Y && r.bottom < Y + 0.5)) collR(X, Z, w / 2, d / 2, ry, Y + 1.2, Y - 0.3); }
   box(g, w, 0.5, d, M.concreteWarm, 0, 0.25, 0); box(g, w - 0.08, 0.04, d - 0.08, M.soil, 0, 0.49, 0);
   const n = Math.max(1, Math.round(w / (kind === 'shrub' ? 0.7 : 0.32)));
   for (let i = 0; i < n; i++) {
@@ -2546,7 +2548,8 @@ function buildVilla() {
   // 木平台（泳池处开洞）+ 石材压顶环
   for (const [x0, x1, z0, z1] of [[-13, 13, -17.45, -15.35], [-13, 13, -9.85, -6.95], [-13, -7.8, -15.35, -9.85], [7.8, 13, -15.35, -9.85]]) { box(V, x1 - x0, 0.25, z1 - z0, M.teak, (x0 + x1) / 2, -0.08, (z0 + z1) / 2); }
   for (let i = 0; i < 12; i++) { const x = -12.5 + i * 2.2; if (Math.abs(x) > 7.9) box(V, 0.02, 0.01, 10.4, M.woodDark, x, 0.06, -12.2); else { box(V, 0.02, 0.01, 2.1, M.woodDark, x, 0.06, -16.4); box(V, 0.02, 0.01, 2.9, M.woodDark, x, 0.06, -8.4); } }
-  for (const [x0, x1, z0, z1] of [[-7.8, 7.8, -15.35, -14.85], [-7.8, 7.8, -10.35, -9.85], [-7.8, -7.3, -14.85, -10.35], [7.3, 7.8, -14.85, -10.35]]) box(V, x1 - x0, 0.14, z1 - z0, M.stone, (x0 + x1) / 2, 0.16, (z0 + z1) / 2);
+  for (const [x0, x1, z0, z1] of [[-7.8, 7.8, -15.35, -14.85], [-7.8, 7.8, -10.35, -9.85], [-7.8, -7.3, -14.85, -10.35], [7.3, 7.8, -14.85, -10.35]]) { box(V, x1 - x0, 0.14, z1 - z0, M.stone, (x0 + x1) / 2, 0.16, (z0 + z1) / 2);
+    COLL.walks.push({ kind: 'rect', x: 180 + (x0 + x1) / 2, z: -46 + (z0 + z1) / 2, hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, rot: 0, y: y0 + 0.23 }); }   // 压顶可站立
   // 下沉池体：瓷砖池壁与池底（带焦散），入水台阶
   const tile = poolTileMaterial();
   box(V, 14.6, 0.05, 4.5, tile, 0, -1.4, -12.6);
@@ -2695,7 +2698,7 @@ function buildVilla() {
   for (const [a, b] of [[-6.5, -6.2], [-4.5, -6.2]]) box(V, 0.06, 0.72, 0.8, M.metalDark, a, 7.86, b);
   planter(V, 5, 0.6, 5, 7.5, -7.1, 0, 'rose', [180, y0, -46]);
   collR(wx(-5.5), wz(-6.2), 1.6, 1.2, 0, y0 + 9.5, y0 + 7);
-  for (const x of [-6.5, -5.5, -4.5]) { addSeat(wx(x), y0 + 7.5 + 0.48, wz(-7.0), Math.PI); addSeat(wx(x), y0 + 7.5 + 0.48, wz(-5.4), 0); } collR(wx(5), wz(-7.1), 2.5, 0.35, 0, y0 + 9.5, y0 + 7);
+  for (const x of [-6.5, -5.5, -4.5]) { addSeat(wx(x), y0 + 7.5 + 0.48, wz(-7.0), Math.PI); addSeat(wx(x), y0 + 7.5 + 0.48, wz(-5.4), 0); } /* 三层玫瑰花池的碰撞由 planter() 登记 */
   // ---- 三层（退台）：外壳 + 书房；北门通露台 ----
   const F2 = 7.45, F2h = 3.25;
   slab(-6.4, 9.2, -5.0, 5.6, F2, 0.12, M.floorWood, [S2[0], S2[1], S2[2], S2[3]], F2);
@@ -2736,7 +2739,7 @@ function buildVilla() {
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
     for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
     parasol(V, 4.5, 0.05, -7.6, 1.35); collC(184.5, -53.6, 0.25); tableF(V, 4.5, 0.05, -8.9, 0, 0.35, 0.35, 0.45, M.teak, M.alu); }
-  collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2); collR(190.2, -62.6, 1.75, 0.45);
+  collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2);   // 泳池北侧水仙花池的碰撞由 planter() 登记
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
@@ -2800,7 +2803,8 @@ function buildDorm() {
   box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
   box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
   // 前庭：绿篱、长椅、铺装步道
-  for (const sx of [-1, 1]) { planter(D, 7, 1.0, sx * 10, 0, Dp / 2 + 5); box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, 0.3, Dp / 2 + 5.5); }
+  for (const sx of [-1, 1]) { planter(D, 7, 1.0, sx * 10, 0, Dp / 2 + 5); box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, 0.3, Dp / 2 + 5.5);
+    collR(L.dorm.x + sx * 10, L.dorm.z + Dp / 2 + 5, 3.5, 0.5, 0, 16.7, 14.2); collR(L.dorm.x + sx * 5.5, L.dorm.z + Dp / 2 + 5.5, 0.9, 0.25, 0, 16.7, 14.2); }   // 绿篱、长椅实心
   D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
 }
 // ---------------- 双人网球场 ----------------
@@ -2954,7 +2958,7 @@ function towerStairs(p, toW, baseY, H, depth, name) {
   for (let k = 0; k < n; k++) {
     const lane = k % 2 === 0 ? 0.65 : -0.65, up = k % 2 === 0, yb = k * r, yt = (k + 1) * r;
     stairs(p, toW, baseY, lane, up ? zB : zA, up ? zA : zB, yb, yt, 1.2, { mat: M.galv, frame: M.galv, railSides: [lane > 0 ? 1 : -1], railMat: M.galv });
-    const c = toW(0, zA), d = toW(0, zB); collS(c[0], c[1], d[0], d[1], baseY + yb - 0.3, baseY + yt - 0.1);     // 两梯段之间的隔离
+    // 两梯段之间的隔离：stairs() 已在梯段内侧边（x=0）登记同一线段与高度带，这里不再重复登记
     if (k < n - 1) {                                                                                           // 中间休息平台
       const zz = up ? zA - 0.3 : zB + 0.3, yl = yt; box(p, 2.6, 0.12, 0.6, M.galv, 0, yl - 0.06, zz);
       const q = toW(0, zz); COLL.walks.push({ kind: 'rect', x: q[0], z: q[1], hw: 1.3, hd: 0.3, rot: TOWER_ROT, y: baseY + yl });
@@ -3025,6 +3029,19 @@ function buildWestTower() {
 }
 // 水闸：两扇底轴翻板闸门。开启时门叶向海侧放倒至水下（低于游艇吃水），闸顶步道随门叶转动
 const GATE = { open: 0, target: 0, leaves: [], lamp: null, lever: null, get closed() { return this.open < 0.02; } };
+// 每帧更新水闸（主循环与测试共用）：开闸期间门顶可行走面消失前（open < 0.02），把站在门顶的人移到就近桥墩；再推进门叶动画。返回门叶是否移动
+function updateGate(dt, fp) {
+  if (GATE.target > 0.5 && GATE.closed && fp.on) {
+    const p = fp.pos, ft = fp._st.feet; if (Math.abs(p.z - L.gateZ) < 1.4 && Math.abs(p.x) < 37 && ft > 4 && ft < 5.2) fp.teleport(Math.sign(p.x || 1) * 40.2, L.gateZ, p.x > 0 ? -Math.PI / 2 : Math.PI / 2, 5.0);
+  }
+  if (GATE.open === GATE.target) return false;
+  GATE.open = GATE.target > GATE.open ? Math.min(GATE.target, GATE.open + dt / 14) : Math.max(GATE.target, GATE.open - dt / 14);   // 约 14 秒完成
+  const e = GATE.open * GATE.open * (3 - 2 * GATE.open);
+  for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6;             // 下沉至海底（顶面低于游艇吃水）
+  if (GATE.lamp) GATE.lamp.material = GATE.open > 0.98 ? M.green : GATE.open < 0.02 ? M.red : M.yellow;
+  if (GATE.lever) GATE.lever.rotation.z = (GATE.target - 0.5) * 1.2;
+  return true;
+}
 function buildGate() {
   const G1 = new THREE.Group(), zc = L.gateZ, span = L.notch.x1 - L.notch.x0;
   for (const sx of [-1, 1]) {
@@ -3189,6 +3206,7 @@ function buildSolar() {
   }
   // 设备带：汇流/逆变柜
   const ex = so.x0 + 3.5; box(S, 1.8, 1.9, 0.9, M.pw, ex, gh(ex, -42) + 0.95, -42); box(S, 1.8, 1.9, 0.9, M.pw, ex, gh(ex, -44) + 0.95, -44);
+  collR(ex, -42, 0.9, 0.45); collR(ex, -44, 0.9, 0.45);   // 设备柜实心
   return S;
 }
 // ---------------- Tesla Powerwall 3 组（低矮安装墙） ----------------
@@ -3196,6 +3214,7 @@ function buildPowerwalls(x, z, ry, n = 6) {
   const P = new THREE.Group(), y = gh(x, z);
   const len = n * 0.95 + 0.6;
   box(P, len + 0.8, 0.2, 2.4, M.concrete, 0, 0.1, 0.5);
+  COLL.walks.push({ kind: 'rect', x: x + 0.5 * Math.sin(ry), z: z + 0.5 * Math.cos(ry), hw: (len + 0.8) / 2, hd: 1.2, rot: ry, y: y + 0.2 });   // 底座可站立
   box(P, len, 1.5, 0.28, M.concreteWarm, 0, 0.95, -0.2);
   box(P, len + 0.2, 0.08, 0.5, M.metalDark, 0, 1.74, -0.1);
   for (let i = 0; i < n; i++) {
@@ -4679,6 +4698,7 @@ function setupFP(ctx) {
         else if (canStep(x0, z0, x0, z0 + sz, st.feet, swimming)) st.pos.z += sz;
         tmp.x = st.pos.x; tmp.z = st.pos.z; pushOut(tmp, st.feet);
         if (canStep(st.pos.x, st.pos.z, tmp.x, tmp.z, st.feet, swimming) || Math.hypot(tmp.x - st.pos.x, tmp.z - st.pos.z) < 0.05) { st.pos.x = tmp.x; st.pos.z = tmp.z; }
+        else { st.pos.x = x0; st.pos.z = z0; }   // 推出点不可达（如陡坡上的礁石）：退回本步起点，避免嵌进实心体
       }
       st.phase += dt * (swimming ? 4 : fast ? 11 : 7.5);
     } else { tmp.x = st.pos.x; tmp.z = st.pos.z; pushOut(tmp, st.feet); st.pos.x = tmp.x; st.pos.z = tmp.z; }
@@ -4693,6 +4713,7 @@ function setupFP(ctx) {
       st.diving = diving;
       if (st.feet > target + 0.05) { st.vy -= GRAV * 0.35 * dt; st.feet += st.vy * dt; if (st.feet < target) { st.feet = target; st.vy = 0; } }
       else { st.feet += clamp(target - st.feet, -2.2 * dt, 1.6 * dt); st.vy = 0; }
+      if (st.feet < floor) { st.feet = floor; st.vy = 0; }             // 潜游横移到抬升的海底斜坡时不嵌入水底
     } else {
       if (st.mode === 'swim') { st.feet = Math.max(st.feet, floor); st.vy = 0; }
       st.mode = 'walk';
@@ -4751,7 +4772,7 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }
 
 // ======================= 12 近景草叶（仅漫游模式） =======================
@@ -5187,6 +5208,25 @@ function setupHeli(scene, H, floorAt) {
   INTERACT.push({ get x() { return HELI.ground && !DRIVE.active ? HELI.x : 1e9; }, get z() { return HELI.z; }, r: 4.5, get y() { return HELI.y; }, label: '登上 H125 直升机', fn: () => { DRIVE.active = HELI; DRIVE.cam = 'chase'; document.body.classList.add('driving'); } });
   placeHeli(0);
 }
+// 建筑构件包围盒（世界坐标），任何高度都参与直升机水平碰撞；由主流程在建筑构建后调用 setHeliObstacles 填入
+const HELI_OBS = new Map(), HELI_OBS_CELL = 8;
+function setHeliObstacles(groups) {
+  const bb = new THREE.Box3(), sz = new THREE.Vector3();
+  for (const g of groups) { g.updateMatrixWorld(true); g.traverse(o => {
+    if (!o.isMesh || !o.geometry || (o.material && o.material.transparent)) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.getSize(sz);
+    if (sz.y < 1.0 || sz.x * sz.z < 0.5 || sz.x * sz.y * sz.z < 1.0) return;          // 只要墙体、楼身、柱等有体量的构件
+    const b = { x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z };
+    for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
+  }); }
+}
+// 机舱（离地 1.2 m、半径 1 m 的球）是否碰到建筑构件
+function heliHitsBuilding(x, y, z) {
+  const cy = y + 1.2, R = 1.0, l = HELI_OBS.get(Math.floor(x / HELI_OBS_CELL) * 100003 + Math.floor(z / HELI_OBS_CELL)); if (!l) return false;
+  for (const b of l) { const dx = Math.max(b.x0 - x, 0, x - b.x1), dy = Math.max(b.y0 - cy, 0, cy - b.y1), dz = Math.max(b.z0 - z, 0, z - b.z1); if (dx * dx + dy * dy + dz * dz < R * R) return true; }
+  return false;
+}
 function heliFloor(x, z) { return Math.max(gh(x, z), HELI.floorAt ? HELI.floorAt(x, z) : -99, 0.3); }
 function placeHeli(dt) {
   const g = HELI.g; g.position.set(HELI.x, HELI.y, HELI.z); g.rotation.order = 'YZX'; g.rotation.set(HELI.roll, HELI.yaw, HELI.pitch);
@@ -5246,7 +5286,9 @@ function updateHeli(dt, keys, camera) {
   HELI.vy += (lift ? ay : -9.8) * dt; if (lift && !A && DRIVE.active !== HELI) HELI.vy *= 0.9;
   HELI.yaw += yawRate * dt;
   const nx = HELI.x + HELI.vx * dt, nz = HELI.z + HELI.vz * dt;
-  if (!HELI.ground && HELI.y - heliFloor(nx, nz) < 4 && FP_API && FP_API.hitsSolid(nx, nz, HELI.y + 0.5)) { HELI.vx *= -0.3; HELI.vz *= -0.3; } else { HELI.x = nx; HELI.z = nz; }
+  // 贴地（< 4 m）沿用碰撞登记（含树木、礁石）；任何高度都检查建筑构件，避免穿过住宅楼等高楼
+  const blocked = !HELI.ground && ((HELI.y - heliFloor(nx, nz) < 4 && FP_API && FP_API.hitsSolid(nx, nz, HELI.y + 0.5)) || (heliHitsBuilding(nx, HELI.y, nz) && !heliHitsBuilding(HELI.x, HELI.y, HELI.z)));
+  if (blocked) { HELI.vx *= -0.3; HELI.vz *= -0.3; } else { HELI.x = nx; HELI.z = nz; }
   HELI.y += HELI.vy * dt;
   const fl = heliFloor(HELI.x, HELI.z) + 0.02;
   if (HELI.y <= fl) { HELI.y = fl; if (HELI.vy < 0) HELI.vy = 0; HELI.vx *= 0.8; HELI.vz *= 0.8; HELI.ground = true; } else HELI.ground = HELI.y < fl + 0.05;
@@ -5308,6 +5350,7 @@ try {
   const ct = buildCybertruck(); scene.add(ct); makeCar(ct, L.parking.x - 2.15, L.parking.z - 5.2, Math.PI / 2);   // 车头朝北停入车位
   const tr = buildTractor(); scene.add(tr); makeCar(tr, L.parking.x + 2.15, L.parking.z - 5.8, Math.PI / 2);
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
+  setHeliObstacles(statics);   // 直升机与建筑构件的碰撞（须在烘焙前，构件仍在分组中）
   statics.forEach(bake);
   if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
@@ -5360,7 +5403,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -5424,17 +5467,7 @@ try {
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
     updateAnimals(dt, fp.on ? fp.pos : null);
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
-    if (GATE.target > 0.5 && GATE.open < 0.001 && fp.on) {   // 开闸前：站在闸门顶面的人移到就近桥墩
-      const p = fp.pos, ft = fp._st.feet; if (Math.abs(p.z - L.gateZ) < 1.4 && Math.abs(p.x) < 37 && ft > 4 && ft < 5.2) fp.teleport(Math.sign(p.x || 1) * 40.2, L.gateZ, p.x > 0 ? -Math.PI / 2 : Math.PI / 2, 5.0);
-    }
-    if (GATE.open !== GATE.target) {                // 水闸动画：约 14 秒完成
-      GATE.open = GATE.target > GATE.open ? Math.min(GATE.target, GATE.open + dt / 14) : Math.max(GATE.target, GATE.open - dt / 14);
-      const e = GATE.open * GATE.open * (3 - 2 * GATE.open);
-      for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6;             // 下沉至海底（顶面低于游艇吃水）
-      if (GATE.lamp) GATE.lamp.material = GATE.open > 0.98 ? M.green : GATE.open < 0.02 ? M.red : M.yellow;
-      if (GATE.lever) GATE.lever.rotation.z = (GATE.target - 0.5) * 1.2;
-      renderer.shadowMap.needsUpdate = true;
-    }
+    if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
     for (const l of LIVE) if (l.type === 'rotor') l.obj.rotation.z -= dt * l.speed;
     const az = fp.on ? fp.yaw : Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
     needle.setAttribute('transform', `rotate(${(az * 180 / Math.PI).toFixed(1)} 27 27)`);
