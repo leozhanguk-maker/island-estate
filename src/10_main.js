@@ -41,6 +41,7 @@ try {
   const tr = buildTractor(); scene.add(tr); makeCar(tr, L.parking.x + 2.15, L.parking.z - 5.8, Math.PI / 2);
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
   statics.forEach(bake);
+  if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   await stage(0.8, '雨林与作物');
