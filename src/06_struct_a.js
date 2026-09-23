@@ -4,7 +4,8 @@ const M = {
   concrete: std(0xd2cfc7, 0.88), concreteDark: std(0xa7a49c, 0.9), concreteWarm: std(0xcfc6b8, 0.85),
   wallWarm: std(0xeee9e0, 0.72), wallGray: std(0xcdcdc8, 0.78), wallLight: std(0xe4e3de, 0.75),
   metalDark: std(0x3a3f45, 0.45, 0.6), metalMid: std(0x6c737a, 0.42, 0.65), galv: std(0xb3babf, 0.36, 0.85),
-  alu: std(0xd3d7da, 0.3, 0.8), glass: std(0x1c2a33, 0.05, 0.25, { envMapIntensity: 1.5 }),
+  // aluWhite：白色烤漆铝合金（游艇舷梯等）
+  alu: std(0xd3d7da, 0.3, 0.8), aluWhite: std(0xf1f3f4, 0.32, 0.35), glass: std(0x1c2a33, 0.05, 0.25, { envMapIntensity: 1.5 }),
   glassLight: std(0x6f8f9c, 0.06, 0.2, { transparent: true, opacity: 0.45, envMapIntensity: 1.4 }),
   film: std(0xeef4f5, 0.3, 0.0, { transparent: true, opacity: 0.34, side: THREE.DoubleSide, depthWrite: false }),
   wood: std(0x9b7453, 0.82), woodDark: std(0x6f5139, 0.85), white: std(0xf4f5f5, 0.4),
