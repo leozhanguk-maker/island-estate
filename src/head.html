@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>私人海岛庄园 三维鸟瞰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e2230;--panel:rgba(12,28,36,.62);--line:rgba(226,238,232,.16);--text:#e8efec;--muted:#9fb3ae;--accent:#c4df94;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e2230;--panel:rgba(12,28,36,.66)}}
+:root[data-theme="dark"]{--bg:#0e2230;--panel:rgba(12,28,36,.66)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif}
+#app{position:fixed;inset:0}#app canvas{display:block;width:100%;height:100%;touch-action:none}
+.ui{position:fixed;z-index:5;transition:opacity .35s}
+body.clean .ui{opacity:0;pointer-events:none}
+#brand{top:calc(18px + env(safe-area-inset-top,0px));left:20px;pointer-events:none}
+#brand h1{margin:0;font-size:17px;font-weight:500;letter-spacing:.08em;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+#brand p{margin:4px 0 0;font-size:12px;color:var(--muted);text-shadow:0 1px 6px rgba(0,0,0,.5)}
+#views{left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;max-width:calc(100vw - 32px)}
+#views button{all:unset;cursor:pointer;font-size:13px;padding:7px 12px 7px 14px;border-radius:6px;color:var(--muted);position:relative}
+#views button:hover{color:var(--text);background:rgba(255,255,255,.05)}
+#views button.on{color:var(--text)}
+#views button.on::before{content:"";position:absolute;left:4px;top:9px;bottom:9px;width:2px;border-radius:2px;background:var(--accent)}
+#views button:focus-visible,#tools > button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#compass{top:calc(16px + env(safe-area-inset-top,0px));right:18px;width:54px;height:54px;pointer-events:none}
+#tools{right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+#qsel{display:flex;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 4px;backdrop-filter:blur(8px)}
+#qsel .ql{padding:0 6px 0 4px;color:var(--muted)}
+#qsel button{all:unset;cursor:pointer;padding:4px 8px;border-radius:5px;color:var(--muted)}
+#qsel button.on{background:rgba(196,223,148,.18);color:var(--text)}
+#qsel button:focus-visible{outline:2px solid var(--accent)}
+#tools > button{all:unset;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--text);backdrop-filter:blur(8px)}
+#showui{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;all:unset;cursor:pointer;opacity:0;pointer-events:none;background:rgba(12,28,36,.4);border-radius:8px;padding:6px 10px;font-size:12px;color:#dfe8e5;transition:opacity .3s}
+body.clean #showui{opacity:.55;pointer-events:auto;position:fixed;right:16px;bottom:18px}
+body.fp #views,body.fp #brand,body.fp #hint{display:none}
+#fpui{position:fixed;inset:0;pointer-events:none;z-index:4;display:none}
+body.fp #fpui{display:block}
+#fpui .cross{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px}
+#fpui .cross::before,#fpui .cross::after{content:"";position:absolute;background:rgba(255,255,255,.8);box-shadow:0 0 2px rgba(0,0,0,.6)}
+#fpui .cross::before{left:6px;top:0;width:2px;height:14px}#fpui .cross::after{top:6px;left:0;height:2px;width:14px}
+#fphud{position:absolute;left:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:12px;color:#e8efec;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+#fpgate{position:fixed;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(8,20,28,.45);backdrop-filter:blur(2px)}
+#fpgate.show{display:flex}
+#fpgate .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;min-width:260px;color:var(--text)}
+#fpgate h2{margin:0 0 12px;font-size:16px;font-weight:500}
+#fpgate dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 16px;font-size:13px}
+#fpgate dt{color:var(--accent)}#fpgate dd{margin:0;color:var(--muted)}
+#fpgate .row{display:flex;gap:10px}
+#fpgate button{all:unset;cursor:pointer;padding:8px 14px;border-radius:8px;font-size:13px;border:1px solid var(--line)}
+#fpgate #fpgo{background:var(--accent);color:#15251c;border-color:transparent}
+#fpgate button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#fpprompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);padding:6px 12px;border-radius:8px;background:rgba(12,28,36,.6);color:#e8efec;font-size:13px;opacity:0;transition:opacity .2s}
+#minimap{position:absolute;right:16px;top:calc(80px + env(safe-area-inset-top,0px));width:180px;height:180px}
+#uw{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at 50% 20%,rgba(120,200,210,.12),rgba(6,34,40,.55));mix-blend-mode:normal}
+@keyframes caus{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-4%,3%) rotate(8deg)}}
+body.under #uw{opacity:1}
+#fpgate .tpl{font-size:12px;color:var(--muted);margin:0 0 6px}
+#fptp{display:grid;grid-template-columns:repeat(4,auto);gap:6px;margin-bottom:16px}
+#fptp button{padding:6px 8px !important;font-size:12px !important}
+#loading{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:radial-gradient(ellipse at 50% 40%,#1b3a48,#0b1a24);transition:opacity .6s}
+#loading.done{opacity:0;pointer-events:none}
+#loading .t{font-size:14px;letter-spacing:.12em;color:#dce8e4}
+#loading .bar{width:220px;height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+#loading .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+#loading .s{font-size:12px;color:var(--muted);min-height:1em}
+@media (max-width:640px){#views{flex-direction:row;flex-wrap:wrap;bottom:calc(64px + env(safe-area-inset-bottom,0px))}#hint{display:none}#brand h1{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="loading"><div class="t">正在生成岛屿</div><div class="bar"><i id="lbar"></i></div><div class="s" id="lstep"></div></div>
+<div id="brand" class="ui"><h1>私人海岛庄园</h1><p>东西约 700 米，南北约 400 米</p></div>
+<svg id="compass" class="ui" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25" fill="rgba(12,28,36,.55)" stroke="rgba(226,238,232,.25)"/><g id="needle"><path d="M27 8 L32 27 L27 24 L22 27 Z" fill="#c4df94"/><path d="M27 46 L32 27 L27 30 L22 27 Z" fill="rgba(226,238,232,.45)"/><text x="27" y="7" font-size="7" text-anchor="middle" fill="#e8efec" dy="-0.5">北</text></g></svg>
+<nav id="views" class="ui" aria-label="视角"></nav>
+<div id="tools" class="ui"><span id="qsel" aria-label="画质"><span class="ql">画质</span></span><span id="hint">拖动旋转，右键平移，滚轮缩放</span><button id="hideui" type="button">隐藏界面</button></div>
+<button id="showui" type="button">显示界面</button>
+<div id="uw"></div>
+<div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas></div>
+<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅北门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<!--GENSRC-->
+<script type="module">
+import * as THREE_ from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+const THREE = Object.assign({}, THREE_, { OrbitControls, BufferGeometryUtils: { mergeGeometries, mergeVertices } });
+(async function () {
+'use strict';
