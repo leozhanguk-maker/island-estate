@@ -4885,7 +4885,8 @@ function placeCar(car) {
 function enterCar(car) { DRIVE.active = car; car.v = 0; document.body.classList.add('driving'); }
 function exitCar(fp) {
   const car = DRIVE.active; if (!car) return;
-  if (car === BOAT) { DRIVE.active = null; document.body.classList.remove('driving'); return; }
+  // 离开舵位时油门、舵角归零，船靠水阻自然减速停下，不会无人驾驶继续航行或原地打转
+  if (car === BOAT) { DRIVE.active = null; BOAT.thr = 0; BOAT.rud = 0; document.body.classList.remove('driving'); return; }
   for (const side of [1, -1]) { const p = carToW(car, 0.2, side * (car.sp.W / 2 + 0.9)); if (gh(p[0], p[1]) > 0.3) { fp.teleport(p[0], p[1], car.yaw - Math.PI / 2); break; } }
   DRIVE.active = null; car.v = 0; document.body.classList.remove('driving');
   if (car.group.userData.cab) { car.group.userData.cab.visible = false; car.group.userData.body.visible = true; }
