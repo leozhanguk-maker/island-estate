@@ -1,0 +1,2 @@
+# 浏览器测试依赖；版本须与预装 chromium-1194 匹配，见 CLAUDE.md
+playwright==1.56.0
