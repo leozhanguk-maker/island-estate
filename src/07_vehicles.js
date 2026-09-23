@@ -209,7 +209,8 @@ function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含
   cyl(rotor, 0.28, 0.28, 0.12, dark, 0, 0, 0, 3); cyl(rotor, 0.08, 0.1, 0.25, dark, 0, 0.15, 0, 8);
   for (let k = 0; k < 3; k++) { const bl = new THREE.Group(); bl.rotation.y = k / 3 * TAU; rotor.add(bl); const b1 = box(bl, 5.1, 0.04, 0.35, dark, 2.85, -0.03, 0); b1.rotation.z = -0.012; box(bl, 0.3, 0.05, 0.36, std(0xd8b43a, 0.5), 5.25, -0.09, 0); }
   const trotor = new THREE.Group(); trotor.position.set(-7.25, 2.2, -0.2); H.add(trotor);
-  for (let k = 0; k < 2; k++) { const bl = box(trotor, 0.12, 0.93, 0.02, dark, 0, 0, 0); bl.rotation.z = k * Math.PI; bl.geometry.translate(0, 0.465, 0); }
+  // 尾桨叶片：用枢轴组偏移，不能对 box() 的几何体 translate——BOXG 为全体 box 共享，改动会让所有建筑构件整体上移
+  for (let k = 0; k < 2; k++) { const bp = new THREE.Group(); bp.rotation.z = k * Math.PI; trotor.add(bp); box(bp, 0.12, 0.93, 0.02, dark, 0, 0.465, 0); }
   cyl(trotor, 0.07, 0.07, 0.1, dark, 0, 0, 0, 8).rotation.x = Math.PI / 2;
   // 灯：左红右绿航行灯、红色防撞灯（机腹与尾部）
   cyl(H, 0.04, 0.04, 0.03, std(0xff2020, 0.3, 0, { emissive: 0xff2020, emissiveIntensity: 2 }), -6.25, 2.4, -1.12, 8); cyl(H, 0.04, 0.04, 0.03, std(0x20ff40, 0.3, 0, { emissive: 0x20ff40, emissiveIntensity: 2 }), -6.25, 2.4, 1.12, 8);
