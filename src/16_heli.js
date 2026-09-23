@@ -99,7 +99,7 @@ function updateHeli(dt, keys, camera) {
   placeHeli(dt);
   if (DRIVE.active === HELI && camera) {
     if (DRIVE.cam === 'chase') { const want = new THREE.Vector3(HELI.x, HELI.y + 5, HELI.z).addScaledVector(f, -17); want.y = Math.max(want.y, gh(want.x, want.z) + 2); camera.position.lerp(want, Math.min(1, dt * 4)); camera.lookAt(HELI.x + f.x * 6, HELI.y + 1.5, HELI.z + f.z * 6); }
-    else { const p = new THREE.Vector3(1.05, 1.95, 0.4).applyEuler(HELI.g.rotation).add(HELI.g.position); camera.position.copy(p); camera.lookAt(p.x + f.x * 20, p.y - 3, p.z + f.z * 20); }
+    else { const p = new THREE.Vector3(1.3, 1.95, 0.4).applyEuler(HELI.g.rotation).add(HELI.g.position); camera.position.copy(p); camera.lookAt(p.x + f.x * 20, p.y - 3, p.z + f.z * 20); }   // 驾驶座视点：右座（机长位），随前舱按真实比例拉伸后前移
   }
   return { kmh: Math.round(Math.hypot(HELI.vx, HELI.vz) * 3.6), agl: Math.round(HELI.y - heliFloor(HELI.x, HELI.z)) };
 }

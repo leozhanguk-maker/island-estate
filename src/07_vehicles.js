@@ -30,6 +30,7 @@ function buildYacht() {
   for (let s = 0; s < NS; s++) for (let k = 0; k < ring - 1; k++) { const a = s * ring + k, b = a + 1, c = a + ring, d = c + 1; idx.push(a, b, c, b, d, c); }
   const tb = pos.length / 3; pos.push(-LOA / 2, 1.2, 0);
   for (let k = 0; k < ring - 1; k++) idx.push(tb, k + 1, k);
+  idx.push(tb, 0, ring - 1);                                                  // 封住尾封板顶部：两舷甲板边线之间原先留有 V 形缺口，能透过船尾看到船体内部
   const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); hg.setIndex(idx); hg.computeVertexNormals();
   const hull = new THREE.Mesh(hg, M.yachtWhite); Y.add(hull);
   // 甲板面
@@ -170,20 +171,22 @@ function buildYacht() {
   YL.rects.push({ x: 0, z: 0, hw: 26, hd: 4.8, rot: 0, bottom: -9, top: -0.4 });  // 水下船体（只挡游泳者，不影响下甲板行走）
   // 舷窗、舷梯
   for (const sgn of [-1, 1]) for (let i = 0; i < 8; i++) box(Y, 1.2, 0.35, 0.05, M.yachtGlass, -14 + i * 3.4, 1.35, sgn * (hb(0.2 + i * 0.07) + 0.02));
-  box(Y, 1.8, 0.08, 0.9, M.alu, -LOA / 2 - 2.6, 0.9, 0);
+  box(Y, 1.8, 0.08, 0.9, M.aluWhite, -LOA / 2 - 2.6, 0.9, 0);                 // 舷梯：白色铝合金
   Y.userData.YL = YL;
   Y.position.set(L.yacht.x, 0.0, L.yacht.z); Y.rotation.y = Math.PI;  // 船首朝西，船尾靠东侧登岸浮台
   return Y;
 }
 // ---------------- Airbus H125（主旋翼直径 10.69m，全长 12.94m） ----------------
-function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含旋翼 12.94 m，高 3.34 m，主旋翼直径 10.69 m（3 桨），尾桨 1.86 m（2 桨，尾梁左侧）
+function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含旋翼 12.94 m，高 3.34 m，座舱宽 1.87 m，主旋翼直径 10.69 m（3 桨），尾桨 1.86 m（2 桨，尾梁右侧）
   const H = new THREE.Group();
+  // 真实比例：旋翼轴（x=-0.25）到机头 3.33 m、到尾鳍后缘 7.60 m；前舱按 FX 沿 x 拉伸，截面宽按 FW 放大到座舱宽 1.87 m
+  const HUB = -0.25, FX = (x) => x > HUB ? HUB + (x - HUB) * (3.33 / 2.8) : x, FW = 1.87 / 1.72;
   const white = std(0xf4f5f5, 0.3, 0.1), blue = std(0x163a66, 0.35, 0.2), gold = std(0xc8a24a, 0.35, 0.5), dark = std(0x1b1d20, 0.5, 0.3), glass = std(0x1a2733, 0.05, 0.4, { envMapIntensity: 1.8 });
   // 机身：沿 x 的一系列椭圆截面放样（机头 +x）；上前方为玻璃，下部与腰线涂装
   const secs = [[2.55, 1.18, 0.06, 0.06], [2.42, 1.2, 0.46, 0.44], [2.15, 1.34, 0.74, 0.68], [1.65, 1.5, 0.9, 0.8], [0.9, 1.6, 0.97, 0.86], [0.1, 1.66, 0.98, 0.86], [-0.7, 1.7, 0.92, 0.8], [-1.45, 1.76, 0.74, 0.6], [-2.05, 1.86, 0.44, 0.32], [-2.55, 1.92, 0.22, 0.17]];
   const RING = 24, pos = [], col = [], idx = [];
   const cW = new THREE.Color(0xf4f5f5), cB = new THREE.Color(0x163a66), cG = new THREE.Color(0xc8a24a), cGl = new THREE.Color(0x1a2733);
-  secs.forEach(([x, cy, hy, hw], i) => { for (let k = 0; k < RING; k++) { const a = k / RING * TAU, y = cy + Math.sin(a) * hy, z = Math.cos(a) * hw; pos.push(x, y, z);
+  secs.forEach(([x, cy, hy, hw], i) => { for (let k = 0; k < RING; k++) { const a = k / RING * TAU, y = cy + Math.sin(a) * hy, z = Math.cos(a) * hw * FW; pos.push(FX(x), y, z);
     let c = cW; const up = Math.sin(a);
     if (x > 0.55 && up > -0.15 && (x > 1.5 || up > 0.25)) c = cGl;                     // 大弧面风挡与顶窗
     else if (x > -1.3 && x < 0.55 && up > 0.05 && up < 0.7 && Math.abs(Math.cos(a)) > 0.4) c = cGl;   // 侧窗
@@ -192,23 +195,23 @@ function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含
     if (i < secs.length - 1) for (let k = 0; k < RING; k++) { const a = i * RING + k, b = a + RING, a1 = i * RING + (k + 1) % RING, b1 = a1 + RING; idx.push(a, a1, b, a1, b1, b); } });
   const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); fg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); fg.setIndex(idx); fg.computeVertexNormals();
   H.add(new THREE.Mesh(fg, std(0xffffff, 0.25, 0.15, { vertexColors: true, envMapIntensity: 1.4 })));
-  for (const sz of [-1, 1]) { box(H, 0.01, 1.05, 0.01, dark, 0.55, 1.75, sz * 0.84); box(H, 0.01, 1.05, 0.01, dark, -0.55, 1.78, sz * 0.84); box(H, 0.01, 1.0, 0.01, dark, -1.25, 1.8, sz * 0.72); box(H, 0.05, 0.02, 0.18, M.alu, -0.1, 1.45, sz * 0.86); }
+  for (const sz of [-1, 1]) { box(H, 0.01, 1.05, 0.01, dark, FX(0.55), 1.75, sz * 0.84 * FW); box(H, 0.01, 1.05, 0.01, dark, -0.55, 1.78, sz * 0.84 * FW); box(H, 0.01, 1.0, 0.01, dark, -1.25, 1.8, sz * 0.72 * FW); box(H, 0.05, 0.02, 0.18, M.alu, FX(-0.1), 1.45, sz * 0.86 * FW); }
   // 发动机整流罩与排气管
-  { const cw = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.6, 6, 12), white); cw.rotation.z = Math.PI / 2; cw.scale.set(0.9, 1, 1); cw.position.set(-1.1, 2.62, 0); H.add(cw); box(H, 1.2, 0.08, 0.6, dark, -1.2, 2.3, 0); for (let i = 0; i < 5; i++) box(H, 0.02, 0.18, 0.3, dark, -1.7 + i * 0.08, 2.72, 0.42); const ex = cyl(H, 0.12, 0.15, 0.5, dark, -2.05, 2.55, 0.35, 12); ex.rotation.z = Math.PI / 2; ex.rotation.y = -0.4; }
+  { const cw = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.6, 6, 12), white); cw.rotation.z = Math.PI / 2; cw.scale.set(0.9, 1, 1); cw.position.set(-1.1, 2.52, 0); H.add(cw); box(H, 1.2, 0.08, 0.6, dark, -1.2, 2.2, 0); for (let i = 0; i < 5; i++) box(H, 0.02, 0.18, 0.3, dark, -1.7 + i * 0.08, 2.62, 0.42); const ex = cyl(H, 0.12, 0.15, 0.5, dark, -2.05, 2.45, 0.35, 12); ex.rotation.z = Math.PI / 2; ex.rotation.y = -0.4; }
   // 尾梁、平尾（端板）、上下垂尾、尾撬
   { const tb = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 4.9, 12), white); tb.rotation.z = Math.PI / 2; tb.position.set(-4.95, 2.0, 0); tb.rotation.x = 0; H.add(tb); box(H, 4.9, 0.04, 0.04, blue, -4.95, 2.1, 0.17); }
   box(H, 0.55, 0.05, 2.2, white, -6.2, 2.05, 0); for (const sz of [-1, 1]) { const ep = box(H, 0.5, 0.55, 0.04, blue, -6.25, 2.1, sz * 1.1); ep.rotation.z = 0.1; }
   { const vf = new THREE.Shape(); vf.moveTo(0, 0); vf.lineTo(-0.75, 0); vf.lineTo(-0.95, 1.1); vf.lineTo(-0.6, 1.1); vf.closePath(); const g = new THREE.ExtrudeGeometry(vf, { depth: 0.05, bevelEnabled: false }); g.translate(0, 0, -0.025); const m = new THREE.Mesh(g, white); m.position.set(-6.9, 2.05, 0); H.add(m);
     const lf = new THREE.Shape(); lf.moveTo(0, 0); lf.lineTo(-0.6, 0); lf.lineTo(-0.8, -0.65); lf.lineTo(-0.5, -0.65); lf.closePath(); const g2 = new THREE.ExtrudeGeometry(lf, { depth: 0.05, bevelEnabled: false }); g2.translate(0, 0, -0.025); const m2 = new THREE.Mesh(g2, white); m2.position.set(-6.9, 2.0, 0); H.add(m2); rod(H, new THREE.Vector3(-7.4, 1.37, 0), new THREE.Vector3(-7.0, 1.5, 0), 0.015, dark, 4); }
   // 滑橇起落架：两根滑管（前端上翘）+ 两根弧形横管
-  for (const sz of [-1, 1]) { const sk = cyl(H, 0.045, 0.045, 3.3, M.alu, -0.1, 0.06, sz * 1.14, 10); sk.rotation.z = Math.PI / 2; rod(H, new THREE.Vector3(1.55, 0.06, sz * 1.14), new THREE.Vector3(1.9, 0.3, sz * 1.14), 0.045, M.alu, 10);
-    for (const x of [0.75, -0.95]) { rod(H, new THREE.Vector3(x, 0.08, sz * 1.14), new THREE.Vector3(x, 0.55, sz * 0.95), 0.05, M.alu, 8); rod(H, new THREE.Vector3(x, 0.55, sz * 0.95), new THREE.Vector3(x, 0.78, sz * 0.45), 0.05, M.alu, 8); } box(H, 0.7, 0.05, 0.18, M.alu, 0.2, 0.62, sz * 0.9); }
+  for (const sz of [-1, 1]) { const sk0 = -1.75, sk1 = FX(1.55), sk = cyl(H, 0.045, 0.045, sk1 - sk0, M.alu, (sk0 + sk1) / 2, 0.06, sz * 1.14, 10); sk.rotation.z = Math.PI / 2; rod(H, new THREE.Vector3(sk1, 0.06, sz * 1.14), new THREE.Vector3(FX(1.9), 0.3, sz * 1.14), 0.045, M.alu, 10);
+    for (const x of [FX(0.75), -0.95]) { rod(H, new THREE.Vector3(x, 0.08, sz * 1.14), new THREE.Vector3(x, 0.55, sz * 0.95), 0.05, M.alu, 8); rod(H, new THREE.Vector3(x, 0.55, sz * 0.95), new THREE.Vector3(x, 0.78, sz * 0.45), 0.05, M.alu, 8); } box(H, 0.7, 0.05, 0.18, M.alu, FX(0.2), 0.62, sz * 0.9); }
   // 主旋翼（可转动）：桨毂 + 3 片桨叶；尾桨 2 片（尾梁左侧）
-  cyl(H, 0.09, 0.12, 0.45, dark, -0.25, 3.05, 0, 10);
-  const rotor = new THREE.Group(); rotor.position.set(-0.25, 3.32, 0); H.add(rotor);
+  cyl(H, 0.09, 0.12, 0.45, dark, HUB, 2.8, 0, 10);
+  const rotor = new THREE.Group(); rotor.position.set(HUB, 3.07, 0); H.add(rotor);
   cyl(rotor, 0.28, 0.28, 0.12, dark, 0, 0, 0, 3); cyl(rotor, 0.08, 0.1, 0.25, dark, 0, 0.15, 0, 8);
-  for (let k = 0; k < 3; k++) { const bl = new THREE.Group(); bl.rotation.y = k / 3 * TAU; rotor.add(bl); const b1 = box(bl, 5.1, 0.04, 0.35, dark, 2.85, -0.03, 0); b1.rotation.z = -0.012; box(bl, 0.3, 0.05, 0.36, std(0xd8b43a, 0.5), 5.25, -0.09, 0); }
-  const trotor = new THREE.Group(); trotor.position.set(-7.25, 2.2, -0.2); H.add(trotor);
+  for (let k = 0; k < 3; k++) { const bl = new THREE.Group(); bl.rotation.y = k / 3 * TAU; rotor.add(bl); const b1 = box(bl, 5.045, 0.04, 0.35, dark, 2.8225, -0.03, 0); b1.rotation.z = -0.012; box(bl, 0.3, 0.05, 0.36, std(0xd8b43a, 0.5), 5.195, -0.09, 0); }
+  const trotor = new THREE.Group(); trotor.position.set(-7.25, 2.2, 0.2); H.add(trotor);
   // 尾桨叶片：用枢轴组偏移，不能对 box() 的几何体 translate——BOXG 为全体 box 共享，改动会让所有建筑构件整体上移
   for (let k = 0; k < 2; k++) { const bp = new THREE.Group(); bp.rotation.z = k * Math.PI; trotor.add(bp); box(bp, 0.12, 0.93, 0.02, dark, 0, 0.465, 0); }
   cyl(trotor, 0.07, 0.07, 0.1, dark, 0, 0, 0, 8).rotation.x = Math.PI / 2;
@@ -216,9 +219,9 @@ function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含
   cyl(H, 0.04, 0.04, 0.03, std(0xff2020, 0.3, 0, { emissive: 0xff2020, emissiveIntensity: 2 }), -6.25, 2.4, -1.12, 8); cyl(H, 0.04, 0.04, 0.03, std(0x20ff40, 0.3, 0, { emissive: 0x20ff40, emissiveIntensity: 2 }), -6.25, 2.4, 1.12, 8);
   cyl(H, 0.06, 0.06, 0.08, std(0xff2020, 0.3, 0, { emissive: 0xff1010, emissiveIntensity: 1.5 }), -0.4, 0.68, 0, 10);
   // 驾驶舱内饰（第一人称）：仪表板、座椅、周期杆
-  box(H, 0.3, 0.3, 1.3, dark, 1.8, 1.25, 0); box(H, 0.02, 0.2, 0.9, std(0x0e1216, 0.2, 0, { emissive: 0x2f6a8a, emissiveIntensity: 0.5 }), 1.64, 1.33, 0).rotation.z = 0.3;
-  for (const sz of [-1, 1]) { box(H, 0.5, 0.12, 0.5, std(0x3a3c40, 0.8), 0.9, 0.95, sz * 0.4); box(H, 0.1, 0.65, 0.5, std(0x3a3c40, 0.8), 0.62, 1.3, sz * 0.4); }
-  rod(H, new THREE.Vector3(1.3, 0.85, 0.4), new THREE.Vector3(1.35, 1.35, 0.4), 0.02, dark, 5);
+  box(H, 0.3, 0.3, 1.3, dark, FX(1.8), 1.25, 0); box(H, 0.02, 0.2, 0.9, std(0x0e1216, 0.2, 0, { emissive: 0x2f6a8a, emissiveIntensity: 0.5 }), FX(1.64), 1.33, 0).rotation.z = 0.3;
+  for (const sz of [-1, 1]) { box(H, 0.5, 0.12, 0.5, std(0x3a3c40, 0.8), FX(0.9), 0.95, sz * 0.4); box(H, 0.1, 0.65, 0.5, std(0x3a3c40, 0.8), FX(0.62), 1.3, sz * 0.4); }
+  rod(H, new THREE.Vector3(FX(1.3), 0.85, 0.4), new THREE.Vector3(FX(1.35), 1.35, 0.4), 0.02, dark, 5);
   H.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   H.userData = { rotor, trotor };
   return H;
