@@ -124,8 +124,9 @@ function buildYacht() {
   tableF(Y, -14.5, 2.45, 0, 0, 1.8, 0.9, 0.42, M.woodDark, M.alu); cyl(Y, 0.1, 0.07, 0.25, std(0xdfe8ee, 0.1, 0.1, { transparent: true, opacity: 0.6 }), -14.2, 3.0, 0.1, 12);
   box(Y, 0.6, 1.1, 2.6, M.woodDark, -9.6, 3.0, 2.2); box(Y, 0.7, 0.05, 2.7, M.stone, -9.6, 3.57, 2.2);
   for (const z of [1.4, 2.2, 3.0]) { cyl(Y, 0.18, 0.18, 0.06, M.cushionDark, -10.35, 3.2, z, 12); cyl(Y, 0.02, 0.02, 0.72, M.alu, -10.35, 2.83, z, 6); }
-  box(Y, 0.4, 0.5, 2.2, M.woodDark, -18.5, 2.7, 0); box(Y, 0.05, 0.9, 1.6, std(0x0b0d10, 0.2, 0.2), -18.6, 3.55, 0);
-  YL.rects.push({ x: -14.5, z: 2.95, hw: 2.0, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -14.5, z: -2.95, hw: 2.0, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -14.5, z: 0, hw: 0.9, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -9.6, z: 2.2, hw: 0.35, hd: 1.3, rot: 0, bottom: 2, top: 4 }, { x: -18.5, z: 0, hw: 0.2, hd: 1.1, rot: 0, bottom: 2, top: 4 });
+  // 电视柜放在沙龙前端（后门正对着的一端会堵住唯一入口），屏幕朝船尾，对着沙发与后甲板
+  box(Y, 0.4, 0.5, 2.2, M.woodDark, -11.3, 2.7, 0); box(Y, 0.05, 0.9, 1.6, std(0x0b0d10, 0.2, 0.2), -11.52, 3.55, 0);
+  YL.rects.push({ x: -14.5, z: 2.95, hw: 2.0, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -14.5, z: -2.95, hw: 2.0, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -14.5, z: 0, hw: 0.9, hd: 0.45, rot: 0, bottom: 2, top: 4 }, { x: -9.6, z: 2.2, hw: 0.35, hd: 1.3, rot: 0, bottom: 2, top: 4 }, { x: -11.3, z: 0, hw: 0.2, hd: 1.1, rot: 0, bottom: 2, top: 4 });
   for (const x of [-15.9, -14.5, -13.1]) { ySeat(x, 2.45 + 0.42, 2.8, 0); ySeat(x, 2.45 + 0.42, -2.8, Math.PI); }
   for (const z of [1.4, 2.2, 3.0]) ySeat(-10.35, 3.23, z, -Math.PI / 2);
   tableF(Y, -2.5, 2.45, 0, 0, 3.6, 1.2, 0.76, M.woodDark, M.woodDark); for (let i = 0; i < 4; i++) for (const sz of [-1, 1]) { chair(Y, -3.9 + i * 0.95, 2.45, sz * 0.95, sz > 0 ? Math.PI : 0); ySeat(-3.9 + i * 0.95, 2.45 + 0.48, sz * 0.95, sz > 0 ? 0 : Math.PI); }
@@ -152,7 +153,8 @@ function buildYacht() {
   for (const sz of [-1, 1]) { ySeg(-12.5, sz * 3.6, 9.5, sz * 3.6, 7.3, 9.5); ySeg(-23, sz * 4.3, -12.5, sz * 4.3, 7.5, 9.5); }
   ySeg(-23, -4.3, -23, 4.3, 7.5, 9.5); ySeg(9.5, -3.6, 9.5, 3.6, 7.3, 9.5);
   // 主甲板：后甲板、两舷通道、前甲板；外侧舷墙
-  YL.walks.push({ kind: 'poly', pts: rectPts(-24.7, -19, -4.2, 4.2), y: 2.26 });
+  // 后甲板可行走面伸进门槛 0.2 米，与主甲板室地板（内缩 0.05）重叠，避免门槛处出现无可行走面的缝导致掉船
+  YL.walks.push({ kind: 'poly', pts: rectPts(-24.7, -18.8, -4.2, 4.2), y: 2.26 });
   for (const sz of [-1, 1]) YL.walks.push({ kind: 'ramp', x0: -19.2, z0: sz * 4.2, x1: 13.8, z1: sz * 4.15, hw: 0.33, y0: 2.26, y1: 3.05 });
   YL.walks.push({ kind: 'ramp', x0: 13.4, z0: 0, x1: 21, z1: 0, hw: 3.2, y0: 3.05, y1: 3.55 });
   YL.walks.push({ kind: 'poly', pts: rectPts(-27.4, -24.9, -4.1, 4.1), y: 0.9 });

@@ -115,7 +115,8 @@ function setupFP(ctx) {
   const cross = (ax, az, bx, bz, cx, cz, dx, dz) => { const d = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx); if (Math.abs(d) < 1e-9) return false; const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / d, u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / d; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
   // 单步移动：地形/水体可达性 + 线段不可穿越
   function canStep(x0, z0, x1, z1, feet, swimming) {
-    if (x1 < -372 || x1 > 372 || z1 < -222 || z1 > 222) return false;
+    // 陆地漫游边界；在船上时不限制（游艇巡航会驶出该范围，否则人在船上寸步难行）
+    if (!st.onBoat && (x1 < -372 || x1 > 372 || z1 < -222 || z1 > 222)) return false;
     if (st.onBoat) for (const o of DYN.segs) if (inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     for (const o of near(x1, z1)) if (o.t === 's' && inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     const f = floorAt(x1, z1, feet), d = Math.hypot(x1 - x0, z1 - z0) + 1e-6;

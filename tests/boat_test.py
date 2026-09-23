@@ -14,9 +14,17 @@ JS = r'''() => {
   const frame = (keys) => { st.keys = new Set(keys || []); const prev = D.updateBoat(1/60, T, st.keys); if (B.moved) { D.carryOnBoat(st, prev); D.syncBoat(T); } if (D.DRIVE.active !== B) fp.update(1/60); T += 1/60; };
   const walkTo = (x, z, maxT = 10) => { let t = 0; while (t < maxT) { const dx = x - st.pos.x, dz = z - st.pos.z; if (Math.hypot(dx, dz) < 0.25) break; st.yaw = Math.atan2(-dx, -dz); frame(['KeyW']); t += 1/60; } for (let i = 0; i < 10; i++) frame([]); return { x: +st.pos.x.toFixed(2), z: +st.pos.z.toFixed(2), feet: +st.feet.toFixed(2), onBoat: !!st.onBoat, mode: st.mode }; };
   fp.teleport(58.6, 84.0, Math.PI / 2); for (let i = 0; i < 10; i++) frame([]);
-  out.landing = walkTo(58.6, 83.9); out.swimPlat = walkTo(56.2, 83.8); out.aftDeck = walkTo(52.6, 83.8);
-  out.aftMid = walkTo(51.5, 87); out.salon = walkTo(45, 87); out.dining = walkTo(33, 87);
-  out.stairUpFoot = walkTo(29.2, 85.4); out.bridge = walkTo(24.1, 85.4); out.helmSpot = walkTo(23.6, 86.1);
+  // 在登岸浮台按 E 登船（必须按 E 才启用船上可行走面），直接落在后甲板
+  out.landing = walkTo(58.6, 83.9); out.boardPrompt = document.getElementById('fpprompt').textContent;
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); for (let i = 0; i < 10; i++) frame([]);
+  out.boarded = { x: +st.pos.x.toFixed(2), z: +st.pos.z.toFixed(2), feet: +st.feet.toFixed(2), onBoat: !!st.onBoat, mode: st.mode };
+  // 船上路线用船体局部坐标（x 向船首，z 向右舷），绕开后甲板沙发/茶几、沙龙茶几、电视柜、餐桌
+  const toW = (lx, lz) => [B.x + lx * Math.cos(B.yaw) + lz * Math.sin(B.yaw), B.z - lx * Math.sin(B.yaw) + lz * Math.cos(B.yaw)];
+  const walkL = (lx, lz) => walkTo(...toW(lx, lz));
+  out.aftDeck = walkL(-22.6, 1.6); walkL(-19.8, 1.6); out.door = walkL(-19.4, 0);
+  walkL(-17.2, 0); walkL(-16.8, -1.6); out.salon = walkL(-12.8, -1.6); walkL(-10.4, -1.8);
+  walkL(-6, -2.1); out.dining = walkL(-6, 2.1);
+  out.stairUpFoot = walkL(0.8, 1.6); out.bridge = walkL(5.9, 1.6); out.helmSpot = walkL(6.4, 0.9);
   out.prompt = document.getElementById('fpprompt').textContent;
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); out.driving = D.DRIVE.active === B;
   D.GATE.open = 1; D.GATE.target = 1;
@@ -26,8 +34,7 @@ JS = r'''() => {
   out.carried = { px: +st.pos.x.toFixed(1), pz: +st.pos.z.toFixed(1), pfeet: +st.feet.toFixed(2), onBoat: !!st.onBoat };
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); out.exited = D.DRIVE.active === null;
   // 停船后下到下甲板
-  B.v = 0; B.thr = 0; const [sx, sz] = [B.x, B.z];
-  const toW = (lx, lz) => [B.x + lx * Math.cos(B.yaw) + lz * Math.sin(B.yaw), B.z - lx * Math.sin(B.yaw) + lz * Math.cos(B.yaw)];
+  B.v = 0; B.thr = 0; B.rud = 0;
   walkTo(...toW(5.9, 1.6)); out.downMain = walkTo(...toW(0.9, 1.6)); walkTo(...toW(0.5, -1.7)); walkTo(...toW(6.25, -1.8)); out.toStairDn = walkTo(...toW(6.25, -2.9)); out.lower = walkTo(...toW(1.6, -2.9)); out.corridor = walkTo(...toW(-9, 0)); out.cabin = walkTo(...toW(-8.5, 1.8));
   return out;
 }'''
