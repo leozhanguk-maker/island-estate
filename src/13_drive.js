@@ -13,7 +13,8 @@ function placeCar(car) {
   const hFL = gh(...carToW(car, hb, hw)), hFR = gh(...carToW(car, hb, -hw)), hRL = gh(...carToW(car, -hb, hw)), hRR = gh(...carToW(car, -hb, -hw));
   const tp = Math.atan2((hFL + hFR) / 2 - (hRL + hRR) / 2, sp.wb), tr = Math.atan2((hFR + hRR) / 2 - (hFL + hRL) / 2, sp.track);
   car.pitch = lerp(car.pitch, tp, 0.35); car.roll = lerp(car.roll, tr, 0.35);
-  car.y = lerp(car.y, (hFL + hFR + hRL + hRR) / 4, 0.5);
+  const hC = Math.max(gh(car.x, car.z), gh(...carToW(car, hb * 0.5, 0)), gh(...carToW(car, -hb * 0.5, 0)));   // 车身中线地面最高点
+  car.y = lerp(car.y, Math.max((hFL + hFR + hRL + hRR) / 4, hC - sp.r * 0.75), 0.5);                        // 越过坡顶、田埂时车底不入地
   const g = car.group; g.position.set(car.x, car.y, car.z); g.rotation.order = 'YZX'; g.rotation.set(car.roll, car.yaw, car.pitch);
   for (const w of g.userData.wheels) { w.spin.rotation.z = -car.spin; if (w.front) w.piv.rotation.y = car.steer; }
 }

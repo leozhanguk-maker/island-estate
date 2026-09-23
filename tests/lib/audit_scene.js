@@ -161,6 +161,7 @@
       for (let dd = -1; dd <= 1; dd++) { const l2 = buck.get([nx, ny, nz, d + dd].join(',')); if (l2) cand.push(...l2); }
       for (const i of l) for (const j of cand) { if (j <= i) continue; const a = faces[i], b = faces[j];
         if (a.m === b.m || Math.abs(a.d - b.d) > 0.004 || a.n.dot(b.n) < 0.9999) continue;
+        if (a.n.y < -0.5 && a.fc.y <= gh(a.fc.x, a.fc.z) + 0.05) continue;   // 朝下且贴地/埋地的面看不见，不会闪烁
         const sameLook = hex(a.m.mat) === hex(b.m.mat) && (a.m.mat.map || null) === (b.m.mat.map || null); if (sameLook) continue;
         const area = ov(a, b); if (area < 0.05) continue;   // 小于 0.05 m² 的重合肉眼难以察觉
         const pk = [a.m.o.id, b.m.o.id].sort().join('-'); if (done.has(pk)) continue; done.add(pk); zf++;
@@ -183,7 +184,10 @@
       const step = Math.max(1, Math.floor(o.count / 3000));
       if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
       const gy0 = o.geometry.boundingBox.min.y, gy1 = o.geometry.boundingBox.max.y, sc = new TH.Vector3(), qq = new TH.Quaternion();
-      for (let i = 0; i < o.count; i += step) { o.getMatrixAt(i, mtx); mtx.decompose(p, qq, sc); const top = p.y + gy1 * sc.y; p.y += gy0 * sc.y; p.applyMatrix4(o.matrixWorld); n++;   // p 取模型实际底面；树木根部常故意伸入地下，埋地只看整株是否没入
+      // 整批实例都高出地面（作物种在垄上、果实挂在植株上）属刻意设计：八成以上实例离地的整批跳过，只报告少数离群的
+      { const offs = []; for (let i = 0; i < o.count; i += Math.max(1, Math.floor(o.count / 200))) { o.getMatrixAt(i, mtx); mtx.decompose(p, qq, sc); p.y += gy0 * sc.y; p.applyMatrix4(o.matrixWorld); offs.push(p.y - gh(p.x, p.z)); }
+        if (offs.filter(v => v > 0.35).length / offs.length > 0.8) return; }
+      for (let i = 0; i < o.count; i += step) { o.getMatrixAt(i, mtx); mtx.decompose(p, qq, sc); const tp = p.clone(); tp.y += gy1 * sc.y; tp.applyMatrix4(o.matrixWorld); const top = tp.y; p.y += gy0 * sc.y; p.applyMatrix4(o.matrixWorld); n++;   // p 取模型实际底面；树木根部常故意伸入地下，埋地只看整株是否没入
         if (!Number.isFinite(p.x + p.y + p.z)) { add('悬空', { x: 0, z: 0, y: 0, msg: `实例化物体 ${o.name || o.geometry.type} 第 ${i} 个位置为 NaN` }); continue; }
         const g = gh(p.x, p.z); if (p.y < -50 || p.y > 300) continue;       // 隐藏的实例（放到极远处）
         const fl = T.floorAt(p.x, p.z, p.y + 0.3);
@@ -191,7 +195,8 @@
         if (!sup && mb) { const l = mb.get(Math.floor(p.x / 8) * 100003 + Math.floor(p.z / 8)) || []; sup = l.some(b => p.x >= b.min.x - 0.1 && p.x <= b.max.x + 0.1 && p.z >= b.min.z - 0.1 && p.z <= b.max.z + 0.1 && Math.abs(b.max.y - p.y) < 0.35); }
         if (!sup && T.waterAt(p.x, p.z)) sup = true;                         // 水生/水面物体另行检查
         if (!sup && p.y > g + 0.35) { bad++; if (bad <= 200) add('植被悬空', { x: r2(p.x), z: r2(p.z), y: r2(p.y), msg: `实例化物体（${o.name || o.geometry.type}，${o.count} 个中的第 ${i} 个）底部离地 ${r2(p.y - g)} m` }); }
-        else if (top + (o.matrixWorld.elements[13] || 0) < g + 0.05 && top < fl) { bad++; if (bad <= 200) add('植被埋地', { x: r2(p.x), z: r2(p.z), y: r2(p.y), msg: `实例化物体（${o.name || o.geometry.type}）整株没入地面（顶部 ${r2(top)}，地面 ${r2(g)}）` }); }
+        // 埋地取周边最低地面：梯田墙脚等陡变处单点插值会偏高
+        else if (top < Math.min(g, gh(p.x + 0.7, p.z), gh(p.x - 0.7, p.z), gh(p.x, p.z + 0.7), gh(p.x, p.z - 0.7)) + 0.05 && top < fl) { bad++; if (bad <= 200) add('植被埋地', { x: r2(p.x), z: r2(p.z), y: r2(p.y), msg: `实例化物体（${o.name || o.geometry.type}）整株没入地面（顶部 ${r2(top)}，地面 ${r2(g)}）` }); }
       } });
     stats.instancesChecked = n;
   }

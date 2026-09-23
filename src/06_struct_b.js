@@ -75,7 +75,8 @@ function buildEastTower() {
   TOWER_ROT = rot; towerStairs(I, toW, base, H, 3.6, '东峰');
   const top = cabin(I, 4.4, 3.1, H, 0.5, [0, 1.3, -1.2, 1.2]);
   towerTop(L.eastTower.x, L.eastTower.z, rot, base + H + 0.125, 4.4, 3.6);
-  box(I, 1.6, 0.8, 0.6, M.metalDark, 1.2, H + 0.5, -1.7); box(I, 1.2, 0.5, 0.05, M.yachtGlass, 1.2, H + 1.15, -1.95);
+  box(I, 0.6, 0.8, 1.6, M.metalDark, -1.8, H + 0.5, 0); box(I, 0.05, 0.5, 1.2, M.yachtGlass, -2.08, H + 1.15, 0);   // 控制台靠西墙（原位置压在楼梯出口）
+  { const q = toW(-1.8, 0); collR(q[0], q[1], 0.3, 0.8, rot, base + H + 1.6, base + H - 0.3); }
   box(I, 5.2, 0.18, 5.2, M.metalDark, 0, top + 0.1, 0);
   railing(I, [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([a, b]) => new THREE.Vector3(a * 2.55, top + 0.18, b * 2.55)), 1.0, M.galv, 1.2, 0.025);
   dish(I, 1.25, -1.1, top + 0.2, 0.9, 0.75, Math.PI * 0.85);   // 卫星接收天线
@@ -124,7 +125,8 @@ function buildGate() {
     collR(sx * (span / 2 + 2.2), zc, 3.5, 5, 0, 4.3);
     COLL.walks.push({ kind: 'rect', x: sx * (span / 2 + 2.2), z: zc, hw: 3.5, hd: 5, rot: 0, y: 5.0 });
   }
-  box(G1, 4, 7.5, 9, M.concreteDark, 0, 1.2, zc); collR(0, zc, 2, 4.5, 0, 4.3);
+  { const sb = Math.min(gh(0, zc - 4.5), gh(0, zc + 4.5), gh(0, zc)) - 0.3, top = 4.95; box(G1, 4, top - sb, 9, M.concreteDark, 0, (top + sb) / 2, zc); }   // 中央墩落到海底
+  collR(0, zc, 2, 4.5, 0, 4.3);
   box(G1, 3.8, 2.6, 4.2, M.metalDark, 0, 6.2, zc);
   box(G1, span + 2, 0.8, 3, M.concreteDark, 0, -3.4, zc + 0.4);        // 底槛
   // 东侧桥墩：从闸塔码头上墩顶的台阶
@@ -332,7 +334,7 @@ function buildBoardwalk() {
   path(BOARDWALK.south, 0.5);
   path(BOARDWALK.east, 0.5);
   // 泊位系缆桩（船首两根钢桩）与缆绳
-  for (const dz of [-6.5, 6.5]) { cyl(B, 0.35, 0.35, 5.5, M.metalDark, 3.5, 0.5, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }
+  for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
   return B;
 }

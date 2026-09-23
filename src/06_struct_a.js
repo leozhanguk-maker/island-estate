@@ -56,7 +56,7 @@ function sofaF(p, x, y, z, ry, w = 2.4, color = 0x8f949a, pillows = [0xc9b89a, 0
   box(g, w, 0.16, 0.9, dark, 0, 0.12, 0);
   const n = Math.max(2, Math.round(w / 0.8)), cw = (w - 0.3) / n;
   for (let i = 0; i < n; i++) { box(g, cw - 0.03, 0.18, 0.78, fab, -w / 2 + 0.15 + cw * (i + 0.5), 0.3, 0.03); box(g, cw - 0.05, 0.42, 0.2, fab, -w / 2 + 0.15 + cw * (i + 0.5), 0.6, -0.3).rotation.x = -0.12; }
-  for (const sx of [-1, 1]) box(g, 0.15, 0.5, 0.9, fab, sx * (w / 2 - 0.075), 0.35, 0);
+  for (const sx of [-1, 1]) box(g, 0.16, 0.5, 0.91, fab, sx * (w / 2 - 0.075), 0.35, 0);   // 扶手比底座外扩 5 mm，侧面不与底座共面
   box(g, w, 0.42, 0.16, fab, 0, 0.5, -0.38);
   pillows.forEach((c, i) => { const pl = box(g, 0.42, 0.4, 0.12, std(c, 0.95), (i ? 1 : -1) * (w / 2 - 0.45), 0.6, -0.18); pl.rotation.x = -0.25; pl.rotation.z = (i ? -1 : 1) * 0.12; });
   for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(g, 0.05, 0.05, 0.05, dark, a * (w / 2 - 0.08), 0.025, b * 0.38);
@@ -201,8 +201,9 @@ function framedGlass(p, w, h, x, y, z, ry = 0, nx = 3, ny = 1, fr = 0.07, mat = 
   box(g, w, h, 0.06, M.glass, 0, 0, 0);
   box(g, w + fr, fr, 0.14, mat, 0, h / 2, 0.02); box(g, w + fr, fr, 0.14, mat, 0, -h / 2, 0.02);
   box(g, fr, h, 0.14, mat, -w / 2, 0, 0.02); box(g, fr, h, 0.14, mat, w / 2, 0, 0.02);
-  for (let i = 1; i < nx; i++) box(g, fr * 0.7, h, 0.1, mat, -w / 2 + i * w / nx, 0, 0.02);
-  for (let j = 1; j <= ny - 1; j++) box(g, w, fr * 0.7, 0.1, mat, 0, -h / 2 + j * h / ny, 0.02);
+  // 竖梃/横梃中心前移 5 mm：背面不与玻璃背面共面（避免闪烁）
+  for (let i = 1; i < nx; i++) box(g, fr * 0.7, h, 0.1, mat, -w / 2 + i * w / nx, 0, 0.025);
+  for (let j = 1; j <= ny - 1; j++) box(g, w, fr * 0.7, 0.1, mat, 0, -h / 2 + j * h / ny, 0.025);
   return g;
 }
 function planter(p, w, d, x, y, z, ry = 0, kind = 'shrub', off = null) {
@@ -234,7 +235,11 @@ function buildVilla() {
   for (let i = 0; i < 4; i++) box(V, 1.6, 0.3 * (i + 1), 0.4, tile, 6.3, -1.4 + 0.15 * (i + 1), -10.55 - (3 - i) * 0.4);
   const pw = new THREE.Mesh(new THREE.PlaneGeometry(14.6, 4.5, 1, 1), poolWaterMaterial()); pw.rotation.x = -Math.PI / 2; pw.position.set(0, 0.12, -12.6); pw.renderOrder = 2; pw.userData.live = true; V.add(pw);
   // 通往湖岸的汀步
-  for (let i = 0; i < 4; i++) box(V, 1.4, 0.12, 0.8, M.stone, -8.5 - Math.sin(i) * 0.6, -0.1, -18 - i * 1.25);
+  for (let i = 0; i < 4; i++) {   // 汀步贴合湖岸坡面：取四边中点地面平均高，沿坡向倾斜，顶面高出地面约 7 cm
+    const lx = -8.5 - Math.sin(i) * 0.6, lz = -18 - i * 1.25, wx0 = 180 + lx, wz0 = -46 + lz;
+    const gW = gh(wx0 - 0.7, wz0), gE = gh(wx0 + 0.7, wz0), gN = gh(wx0, wz0 - 0.4), gS = gh(wx0, wz0 + 0.4), gy = (gW + gE + gN + gS) / 4;
+    box(V, 1.4, 0.12, 0.8, M.stone, lx, gy - y0 + 0.01, lz, 0, -Math.atan2(gS - gN, 0.8), Math.atan2(gE - gW, 1.4));
+    COLL.walks.push({ kind: 'rect', x: wx0, z: wz0, hw: 0.7, hd: 0.4, rot: 0, y: gy + 0.07 }); }
   // 北门两侧扶桑花池（植株由植被模块按叶簇生成）
   for (const [px, len] of [[-8.6, 4.2], [-1.4, 2.6]]) { box(V, len, 0.5, 0.9, M.concreteWarm, px, 0.25, -7.85); for (let i = 0; i < Math.round(len / 0.9); i++) HIBISCUS.push([180 + px - len / 2 + 0.45 + i * 0.9, y0 + 0.5, -46 - 7.85]); }
   planter(V, 3.5, 0.8, 10.2, 0, -16.6, 0, 'narcissus', [180, y0, -46]);
@@ -275,6 +280,8 @@ function buildVilla() {
   box(V, 6, 0.88, 0.62, std(0xf0ede6, 0.5), 4.4, 0.57, 5.6); box(V, 6.1, 0.04, 0.65, M.white, 4.4, 1.03, 5.55);
   for (let i = 0; i < 8; i++) { box(V, 0.01, 0.8, 0.01, M.metalMid, 1.8 + i * 0.75, 0.55, 5.28); box(V, 0.2, 0.015, 0.02, M.alu, 2.17 + i * 0.75, 0.9, 5.27); }
   box(V, 6, 0.8, 0.38, std(0xf0ede6, 0.5), 4.4, 2.6, 5.75); box(V, 0.9, 2.0, 0.7, M.alu, 7.9, 1.13, 5.5);
+  box(V, 6.2, 3.45, 0.1, M.wallWarm, 5.4, 0.13 + 3.45 / 2, 6.0);   // 厨房背墙：吊柜挂墙，封住操作台与南墙之间的空当（从入户门洞东侧 x=2.3 起，不挡门）
+  collS(180 + 2.3, -46 + 6.0, 180 + 8.5, -46 + 6.0, y0 - 0.3, y0 + 3.4);
   // 电视墙（西墙）
   box(V, 0.06, 0.9, 1.6, std(0x0b0d10, 0.2, 0.2), -10.8, 1.6, -3.3); box(V, 0.45, 0.4, 2.2, M.woodDark, -10.6, 0.33, -3.3);
   const wx = (x) => 180 + x, wz = (z) => -46 + z, toW = (x, z) => [wx(x), wz(z)];
@@ -361,7 +368,7 @@ function buildVilla() {
   for (const x of [-4.7, -3.9, -3.1]) addSeat(wx(x), y0 + 4.08 + 0.42, wz(-8.35), 0);
   // ---- 楼梯 S2：二层 → 三层 ----
   stairs(V, toW, y0, -5.2, 4.6, -2.4, F1, 7.45, 1.1, { railSides: [1, -1] });
-  slab(-9.9, 11.1, -8.2, 5.8, 7.45, 0.2, M.metalDark, [-9.4, 10.6, -7.7, 5.3]);           // 二层顶檐口
+  slab(-9.9, 11.1, -8.2, 5.8, 7.445, 0.2, M.metalDark, [-9.4, 10.6, -7.7, 5.3]);          // 二层顶檐口（顶面比三层木地板低 5 mm，避免共面闪烁）
   // 二层屋面（三层外围露台）：北侧露台 + 东西两侧窄台
   slab(-9.4, 10.6, -7.7, -5.0, 7.45, 0.12, M.stone, null, 7.45);
   slab(-9.4, -6.4, -5.0, 5.3, 7.45, 0.12, M.stone, null, 7.45); slab(9.2, 10.6, -5.0, 5.3, 7.45, 0.12, M.stone, null, 7.45);
@@ -409,7 +416,8 @@ function buildVilla() {
   for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; box(V, 0.25, 0.08, 0.25, M.green, 1.4 + Math.cos(a) * 5.2, 11.13, 0.3 + Math.sin(a) * 5.2); }
   // ---- 入口雨篷 ----
   box(V, 5, 0.2, 3, M.metalDark, 2, 3.2, 8.5); cyl(V, 0.07, 0.07, 3.1, M.metalDark, 4.3, 1.6, 9.8, 8); cyl(V, 0.07, 0.07, 3.1, M.metalDark, -0.3, 1.6, 9.8, 8);
-  planter(V, 3, 0.9, -3, 0, 9.5, 0, 'narcissus', [180, y0, -46]); planter(V, 3, 0.9, 7.5, 0, 9.5, 0, 'narcissus', [180, y0, -46]);
+  for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
+    planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
   for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
   // 泳池旁（靠别墅一侧）两把沙滩椅 + 遮阳伞
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
@@ -480,8 +488,13 @@ function buildDorm() {
   box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
   box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
   // 前庭：绿篱、长椅、铺装步道
-  for (const sx of [-1, 1]) { planter(D, 7, 1.0, sx * 10, 0, Dp / 2 + 5); box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, 0.3, Dp / 2 + 5.5);
-    collR(L.dorm.x + sx * 10, L.dorm.z + Dp / 2 + 5, 3.5, 0.5, 0, 16.7, 14.2); collR(L.dorm.x + sx * 5.5, L.dorm.z + Dp / 2 + 5.5, 0.9, 0.25, 0, 16.7, 14.2); }   // 绿篱、长椅实心
+  // 前庭：绿篱、长椅放在楼前平整地带（再往外是道路边坡，地面起伏 1.5 m），按所在地面最低点取高，避免悬空
+  const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
+  for (const sx of [-1, 1]) {
+    const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
+    planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
+    const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
+    box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
   D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
 }
 // ---------------- 双人网球场 ----------------
@@ -572,7 +585,7 @@ function buildPens() {
     box(S, sw, 0.2, sd, M.concrete, 0, 0.1, 0);
     box(S, sw, sh, 0.12, M.cladGray, 0, sh / 2, -sd / 2);
     for (const sx of [-1, 1]) box(S, 0.12, sh, sd, M.cladGray, sx * sw / 2, sh / 2, 0);
-    if (kind === 'chicken') { box(S, sw, sh * 0.55, 0.12, M.wood, 0, sh * 0.3, sd / 2); for (let i = 0; i < 3; i++) box(S, 0.7, 0.45, 0.05, M.glass, -2 + i * 2, sh * 0.72, sd / 2 + 0.03); }
+    if (kind === 'chicken') { box(S, sw, sh * 0.55, 0.12, M.wood, 0, sh * 0.275, sd / 2); for (let i = 0; i < 3; i++) box(S, 0.7, 0.45, 0.05, M.glass, -2 + i * 2, sh * 0.34, sd / 2 + 0.085); }   // 窗嵌在木墙上
     box(S, sw + 0.6, 0.15, sd + 0.8, M.roofDark, 0, sh + 0.12, 0.1, 0, -0.08);
     S.position.set(pen.x, sy, z0 + 3.2); out.add(S);
     if (kind === 'pig') { box(out, 3, 0.4, 0.8, M.concreteDark, pen.x + 5, gh(pen.x + 5, pen.z + 3) + 0.2, pen.z + 3); }

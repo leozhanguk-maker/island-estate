@@ -79,7 +79,7 @@ function buildVegetation(X, scene, QS) {
       if (ny < 0.66 && R() < 0.6) continue;
       const forest = 1 - smoothstep(0.62, 0.88, s);
       if (R() < forest) trees.push([px, h, pz, ny]); else if (R() < 0.85) shrubs.push([px, h, pz, 1]);
-      if (R() < 0.35) shrubs.push([px + (R() - 0.5) * 3, h, pz + (R() - 0.5) * 3, 0.8]);
+      if (R() < 0.35) { const ox = px + (R() - 0.5) * 3, oz = pz + (R() - 0.5) * 3; shrubs.push([ox, gh(ox, oz), oz, 0.8]); }   // 偏移后按所在地面取高（陡坡上沿用原点高度会悬空或埋地）
     } else if (X.sdW[k] < -10 && !(X.beachW(px, pz) > 0.1 && X.sdW[k] > -40)) {
       // 盆地内灌木丛（避开农田、建筑与道路）
       if (!basinFree(px, pz) || X.roads.dist[k] < 4) continue;
@@ -87,7 +87,7 @@ function buildVegetation(X, scene, QS) {
       const edge = 1 - smoothstep(0, 14, sdb);
       const p = clamp(0.35 + edge * 0.6 + clump * 1.1, 0, 0.97);
       if (R() < p) shrubs.push([px, h, pz, 0.8 + 0.4 * edge]);
-      if (R() < p * 0.6) shrubs.push([px + (R() - 0.5) * 3.5, h, pz + (R() - 0.5) * 3.5, 0.7]);
+      if (R() < p * 0.6) { const ox = px + (R() - 0.5) * 3.5, oz = pz + (R() - 0.5) * 3.5; shrubs.push([ox, gh(ox, oz), oz, 0.7]); }
       if (R() < p * 0.06) trees.push([px, h, pz, 1, 'small']);
     }
   }
@@ -328,7 +328,9 @@ function buildRice(scene, QS) {
     for (let v = -34; v <= 34; v += rowS) for (let u = -34; u <= 34; u += hillS) {
       const x = cx + u * ca - v * sa, z = cz + u * sa + v * ca;
       if (id(x, z) !== p || id(x + 0.45, z) !== p || id(x - 0.45, z) !== p || id(x, z + 0.45) !== p || id(x, z - 0.45) !== p) continue;
-      hills.push([x + (R() - 0.5) * 0.04, pl.level - 0.12, z + (R() - 0.5) * 0.04, R()]);
+      const jx = (R() - 0.5) * 0.04, jz = (R() - 0.5) * 0.04, rr = R();            // 先取随机数，保持其余稻丛位置不变
+      if (gh(x, z) > pl.level + 0.15) continue;                                         // 梯田挡墙脚下地面已抬高，种下去会整丛埋进墙里
+      hills.push([x + jx, pl.level - 0.12, z + jz, rr]);
     }
   });
   const hg = new THREE.BufferGeometry(), hp = [], hu = [], hn = [], hc = [], hi = [];
