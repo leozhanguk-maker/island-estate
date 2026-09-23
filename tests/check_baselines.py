@@ -32,6 +32,7 @@ CHECKS = {
         ('机库地坪高出地面 0.3', lambda r: r['hangarFloorVsGround'], lambda v: near(v, 0.3, 0.05)),
         ('瞭望塔顶 56.7', lambda r: r['towerTop']['feet'], lambda v: near(v, 56.7, 0.1)),
         ('网球场 13.3', lambda r: r['tennis']['feet'], lambda v: near(v, 13.3, 0.1)),
+        ('开闸时走上闸门被移到桥墩（P-009）', lambda r: (r['g_openWalk']['x'], r['g_openWalk']['feet'], r['g_openWalk']['mode']), lambda v: near(abs(v[0]), 40.2, 0.6) and near(v[1], 5.0, 0.3) and v[2] == 'walk'),
         ('入水后为游泳状态', lambda r: r['swim']['mode'], lambda v: v == 'swim'),
         ('下潜到 -6', lambda r: r['dive']['feet'], lambda v: near(v, -6, 0.1)),
         ('潜水时相机在水下', lambda r: r['camUnder'], lambda v: isinstance(v, (int, float)) and v < 0),

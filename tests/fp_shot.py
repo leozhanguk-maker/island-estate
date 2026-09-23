@@ -10,11 +10,12 @@ def handle(route):
     else: route.continue_()
 def at(x, z, yaw, pitch=-0.15, third='false'):
     return "() => { const fp=__fp, st=fp._st, T=fp._test; st.pos.x=%s; st.pos.z=%s; st.feet=T.floorAt(%s,%s,99); st.vy=0; st.mode='walk'; st.third=%s; st.yaw=%s; st.pitch=%s; for(let i=0;i<30;i++) fp.update(1/60); }" % (x, z, x, z, third, yaw, pitch)
-def tp(x, z, yaw, y, pitch=-0.1, keys='', frames=30):
-    return "() => { const fp=__fp, st=fp._st; fp.teleport(%s,%s,%s,%s); st.pitch=%s; st.third=false; st.keys=new Set([%s]); for(let i=0;i<%d;i++) fp.update(1/60); st.keys=new Set(); }" % (x, z, yaw, y, pitch, keys, frames)
+def tp(x, z, yaw, y, pitch=-0.1, keys='', frames=30, boat='false'):
+    # boat='true'：传送到游艇上（启用船上可行走面，否则会落水）
+    return "() => { const fp=__fp, st=fp._st; fp.teleport(%s,%s,%s,%s,%s); st.pitch=%s; st.third=false; st.keys=new Set([%s]); for(let i=0;i<%d;i++) fp.update(1/60); st.keys=new Set(); }" % (x, z, yaw, y, boat, pitch, keys, frames)
 SC = {
  'villaIn': tp(176.5, -43.5, 0.35, 'undefined', -0.05), 'hangarIn': tp(-211.5, -133.5, -0.873 + 3.14159, 'undefined', 0.0),
- 'deck': tp(53.6, 87.0, 1.5708, 2.26, -0.05), 'towerView': tp(216.9, -143.9, 2.3, 77.33, -0.3),
+ 'deck': tp(53.6, 87.0, 1.5708, 2.26, -0.05, boat='true'), 'towerView': tp(216.9, -143.9, 2.3, 77.33, -0.3),
  'under': tp(0, 70, 3.14159, 'undefined', 0.05, "'KeyC'", 240),
  'beach': at(-10, 22, 2.6, -0.2), 'lawn': at(150, -30, 0.5, -0.2), 'road': at(-110, 24, 1.57, -0.25), 'paddy': at(50, -90, 3.14, -0.3),
  'pasture': at(-200, 20, 0.2, -0.2), 'meadow': at(-40, -8, -2.4, -0.18), 'sky': at(0, 8, 3.14, 0.35), 'forest': at(-150, 130, 0.0, -0.05), 'forest2': at(-60, 150, 1.2, 0.05), 'banana': at(-150, -78, -1.57, -0.2), 'orchard': at(80, -96, -0.5, -0.15), 'vine': at(-66.5, -20, 0.0, -0.1), 'veg': at(-150, -44, -1.57, -0.35), 'cliffE': at(208, -50, -1.3, 0.25), 'coast': at(-318, 30, 2.0, -0.3),
@@ -32,5 +33,5 @@ with sync_playwright() as p:
     for name, js in [(k,v) for k,v in SC.items() if k in only]:
         pg.evaluate(js)
         pg.evaluate("() => { const I=__island; if (I.grass) I.grass.update(__fp); I.shadowFollow(1); I.underwaterCheck && I.underwaterCheck(); for (const u of []) {} I.renderer.render(I.scene, I.camera); }")
-        pg.screenshot(path=f'fp_{name}.png', timeout=300000); print('shot', name)
+        pg.screenshot(path=os.path.join(os.environ.get('SHOT_DIR', '.'), f'fp_{name}.png'), timeout=300000); print('shot', name)
     b.close()

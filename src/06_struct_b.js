@@ -31,7 +31,7 @@ function towerStairs(p, toW, baseY, H, depth, name) {
   for (let k = 0; k < n; k++) {
     const lane = k % 2 === 0 ? 0.65 : -0.65, up = k % 2 === 0, yb = k * r, yt = (k + 1) * r;
     stairs(p, toW, baseY, lane, up ? zB : zA, up ? zA : zB, yb, yt, 1.2, { mat: M.galv, frame: M.galv, railSides: [lane > 0 ? 1 : -1], railMat: M.galv });
-    const c = toW(0, zA), d = toW(0, zB); collS(c[0], c[1], d[0], d[1], baseY + yb - 0.3, baseY + yt - 0.1);     // 两梯段之间的隔离
+    // 两梯段之间的隔离：stairs() 已在梯段内侧边（x=0）登记同一线段与高度带，这里不再重复登记
     if (k < n - 1) {                                                                                           // 中间休息平台
       const zz = up ? zA - 0.3 : zB + 0.3, yl = yt; box(p, 2.6, 0.12, 0.6, M.galv, 0, yl - 0.06, zz);
       const q = toW(0, zz); COLL.walks.push({ kind: 'rect', x: q[0], z: q[1], hw: 1.3, hd: 0.3, rot: TOWER_ROT, y: baseY + yl });
@@ -102,6 +102,19 @@ function buildWestTower() {
 }
 // 水闸：两扇底轴翻板闸门。开启时门叶向海侧放倒至水下（低于游艇吃水），闸顶步道随门叶转动
 const GATE = { open: 0, target: 0, leaves: [], lamp: null, lever: null, get closed() { return this.open < 0.02; } };
+// 每帧更新水闸（主循环与测试共用）：开闸期间门顶可行走面消失前（open < 0.02），把站在门顶的人移到就近桥墩；再推进门叶动画。返回门叶是否移动
+function updateGate(dt, fp) {
+  if (GATE.target > 0.5 && GATE.closed && fp.on) {
+    const p = fp.pos, ft = fp._st.feet; if (Math.abs(p.z - L.gateZ) < 1.4 && Math.abs(p.x) < 37 && ft > 4 && ft < 5.2) fp.teleport(Math.sign(p.x || 1) * 40.2, L.gateZ, p.x > 0 ? -Math.PI / 2 : Math.PI / 2, 5.0);
+  }
+  if (GATE.open === GATE.target) return false;
+  GATE.open = GATE.target > GATE.open ? Math.min(GATE.target, GATE.open + dt / 14) : Math.max(GATE.target, GATE.open - dt / 14);   // 约 14 秒完成
+  const e = GATE.open * GATE.open * (3 - 2 * GATE.open);
+  for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6;             // 下沉至海底（顶面低于游艇吃水）
+  if (GATE.lamp) GATE.lamp.material = GATE.open > 0.98 ? M.green : GATE.open < 0.02 ? M.red : M.yellow;
+  if (GATE.lever) GATE.lever.rotation.z = (GATE.target - 0.5) * 1.2;
+  return true;
+}
 function buildGate() {
   const G1 = new THREE.Group(), zc = L.gateZ, span = L.notch.x1 - L.notch.x0;
   for (const sx of [-1, 1]) {
@@ -266,6 +279,7 @@ function buildSolar() {
   }
   // 设备带：汇流/逆变柜
   const ex = so.x0 + 3.5; box(S, 1.8, 1.9, 0.9, M.pw, ex, gh(ex, -42) + 0.95, -42); box(S, 1.8, 1.9, 0.9, M.pw, ex, gh(ex, -44) + 0.95, -44);
+  collR(ex, -42, 0.9, 0.45); collR(ex, -44, 0.9, 0.45);   // 设备柜实心
   return S;
 }
 // ---------------- Tesla Powerwall 3 组（低矮安装墙） ----------------
@@ -273,6 +287,7 @@ function buildPowerwalls(x, z, ry, n = 6) {
   const P = new THREE.Group(), y = gh(x, z);
   const len = n * 0.95 + 0.6;
   box(P, len + 0.8, 0.2, 2.4, M.concrete, 0, 0.1, 0.5);
+  COLL.walks.push({ kind: 'rect', x: x + 0.5 * Math.sin(ry), z: z + 0.5 * Math.cos(ry), hw: (len + 0.8) / 2, hd: 1.2, rot: ry, y: y + 0.2 });   // 底座可站立
   box(P, len, 1.5, 0.28, M.concreteWarm, 0, 0.95, -0.2);
   box(P, len + 0.2, 0.08, 0.5, M.metalDark, 0, 1.74, -0.1);
   for (let i = 0; i < n; i++) {

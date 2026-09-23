@@ -296,7 +296,8 @@ def main():
         print(f'已登记但本轮未再出现 {len(stale)} 条（不同种子覆盖范围不同，核实后再从 known_issues.json 移除）')
     for v in new[:40]:
         print(f"  [{v['kind']}] {v['msg'][:90]} @ {v['x']},{v['z']} ×{v['count']} ({v['plan']})")
-    if arg('strict') and new:
+    # 门禁只拦确定性问题：掉帧在软件渲染下耗时波动大，照常报告与登记，但不判失败
+    if arg('strict') and [v for v in new if v['kind'] != '掉帧']:
         sys.exit(1)
 
 

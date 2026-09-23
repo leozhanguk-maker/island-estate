@@ -305,6 +305,7 @@ function setupFP(ctx) {
         else if (canStep(x0, z0, x0, z0 + sz, st.feet, swimming)) st.pos.z += sz;
         tmp.x = st.pos.x; tmp.z = st.pos.z; pushOut(tmp, st.feet);
         if (canStep(st.pos.x, st.pos.z, tmp.x, tmp.z, st.feet, swimming) || Math.hypot(tmp.x - st.pos.x, tmp.z - st.pos.z) < 0.05) { st.pos.x = tmp.x; st.pos.z = tmp.z; }
+        else { st.pos.x = x0; st.pos.z = z0; }   // 推出点不可达（如陡坡上的礁石）：退回本步起点，避免嵌进实心体
       }
       st.phase += dt * (swimming ? 4 : fast ? 11 : 7.5);
     } else { tmp.x = st.pos.x; tmp.z = st.pos.z; pushOut(tmp, st.feet); st.pos.x = tmp.x; st.pos.z = tmp.z; }
@@ -319,6 +320,7 @@ function setupFP(ctx) {
       st.diving = diving;
       if (st.feet > target + 0.05) { st.vy -= GRAV * 0.35 * dt; st.feet += st.vy * dt; if (st.feet < target) { st.feet = target; st.vy = 0; } }
       else { st.feet += clamp(target - st.feet, -2.2 * dt, 1.6 * dt); st.vy = 0; }
+      if (st.feet < floor) { st.feet = floor; st.vy = 0; }             // 潜游横移到抬升的海底斜坡时不嵌入水底
     } else {
       if (st.mode === 'swim') { st.feet = Math.max(st.feet, floor); st.vy = 0; }
       st.mode = 'walk';
@@ -377,5 +379,5 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }

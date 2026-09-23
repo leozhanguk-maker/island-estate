@@ -24,9 +24,10 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 | `npm run test:terrain` | 地形关键点高程、道路坡度（纯 node，约 1 秒） | 终端 |
 | `npm run test:invariants` | 基线不变量：共享几何体未被原地变换、泳池/别墅关键高程、设施与碰撞数量、三角面数 | 终端 |
 | `npm run test:baselines` | 跑 phys/drive/boat/cruise/heli 五个测试并断言基线数值 | 终端 |
+| `npm run test:regression` | 已修复程序缺陷的回归用例（编号对应 ISSUES.md），问题复发即失败 | 终端 |
 | `npm run test:visual` | 视觉回归：10 个固定机位与 `tests/baseline/visual/` 逐像素比对（阈值 1%，截图前固定动画时刻） | `reports/visual/` |
 | `npm run patrol` | 巡逻机器人：自动漫游、游泳、开车、开船、开直升机，检测报错、NaN、穿地、越界、卡住、穿墙、掉帧（按日期取种子，约 2 分钟） | `reports/patrol/report.md` |
-| `npm run patrol:quick` | 快速巡逻，固定种子 1，发现新问题即失败（门禁用） | 同上 |
+| `npm run patrol:quick` | 快速巡逻，固定种子 1，发现新问题即失败（门禁用；"掉帧"只报告不判失败） | 同上 |
 | `npm run audit:scene` | 场景体检：悬空/埋地、碰撞体重叠、可行走面未登记、构件无碰撞、座位不可达、共面闪烁、误沉水下、植被悬空/埋地（加 `--strict` 发现新问题即失败） | `reports/audit/report.md` |
 | `npm run shots` | 截图巡检：固定机位 + 随机机位 + 问题特写，自动初筛后拼成总览图，须人工按 `docs/VISUAL_CHECKLIST.md` 审阅 | `reports/shots/` |
 - 复现巡逻问题：`python3 tests/patrol.py --seed=<种子> --repro=<计划编号>`（报告里每条问题都附有这条命令和人工步骤）。
