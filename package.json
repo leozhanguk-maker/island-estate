@@ -7,11 +7,21 @@
   "scripts": {
     "build": "node build.mjs",
     "test:terrain": "node tests/terrain_test.mjs",
+    "test:invariants": "python3 tests/invariants.py",
+    "test:baselines": "python3 tests/check_baselines.py",
+    "test:visual": "python3 tests/visual_regression.py",
+    "patrol": "python3 tests/patrol.py",
+    "patrol:quick": "python3 tests/patrol.py --quick --seed=1 --strict",
+    "audit:scene": "python3 tests/scene_audit.py",
+    "shots": "python3 tests/shot_patrol.py",
+    "check": "npm run build && npm run test:terrain && npm run test:invariants && npm run test:baselines && npm run test:visual && npm run patrol:quick && python3 tests/scene_audit.py --strict",
     "test:physics": "python3 tests/phys_test.py",
     "test:drive": "python3 tests/drive_test.py && python3 tests/boat_test.py && python3 tests/cruise_test.py && python3 tests/heli_test.py",
     "test:perf": "python3 tests/audit.py q=high && python3 tests/audit.py q=low",
     "shot": "python3 tests/shot.py",
-    "test": "npm run build && npm run test:terrain && npm run test:physics && npm run test:drive && npm run test:perf"
+    "test": "npm run check"
   },
-  "devDependencies": { "three": "0.160.0" }
+  "devDependencies": {
+    "three": "0.160.0"
+  }
 }
