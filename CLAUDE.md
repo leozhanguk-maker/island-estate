@@ -15,6 +15,7 @@
 ## 构建与测试
 ```bash
 npm install                 # 本地 three@0.160.0，仅供测试路由；页面本身从 jsdelivr CDN 加载 r160
+pip install -r requirements.txt  # playwright==1.56.0，见下方说明
 npm run build               # 生成 dist/island.html（单文件）
 npm run test:terrain        # 纯 node，约 1 秒
 python3 tests/phys_test.py  # 漫游物理（需 playwright + chromium）
@@ -24,6 +25,7 @@ python3 tests/cruise_test.py# 游艇自动巡航全程（约 10 分钟模拟）
 python3 tests/heli_test.py  # 直升机自动往返 + 手动飞行
 python3 tests/shot.py "file://$PWD/dist/island.html" out.png 1920 1080 done 600 "still,clean"
 ```
+- playwright 固定为 1.56.0：云端容器预装的是 chromium-1194（`/opt/pw-browsers`），正好对应 1.56.0；更新版本（如 1.63 需要 chromium-1243）会找不到浏览器。**不要运行 `playwright install`**，也不要升级 playwright。
 - 无头浏览器参数：`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`；CDN 请求被路由到 `node_modules/three`。
 - 单次加载在软件渲染下约 60–170 秒，测试脚本超时要给足；多个测试请串行运行。
 - 调试地址参数：`#fp`（直接漫游）、`#still`（渲染 3 帧后停止并暴露 `window.__island / __fp / __dbg`）、`#q=high|mid|low`、`#noworker`。

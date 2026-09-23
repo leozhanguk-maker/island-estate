@@ -9,8 +9,9 @@ const { buildTerrain, sampleGrid, G } = run;
 const t0 = Date.now(), X = buildTerrain(), H = X.H;
 let fail = 0; const ok = (c, msg) => { console.log((c ? '通过 ' : '失败 ') + msg); if (!c) fail++; };
 const BASE = { '住宅楼': [0, -150, 15.0], '别墅': [181, -47, 11.2], '淡水湖底': [181, -78, 7.4], '直升机平台': [-226, -123, 38.0], '西端塔': [-334, -4, 20.0],
-  '光伏北缘': [268, -78, 48.8], '停车场': [216, 21, 8.6], '牛棚': [-201, -58, 13.0], '沙滩': [0, 25, 1.3], '水道': [0, 160, -10.4], '北脊': [0, -188, 36.6], '东峰平台': [222, -150, 57.2] };
-for (const k in BASE) { const [x, z, h] = BASE[k], v = sampleGrid(H, x, z); ok(Math.abs(v - h) <= 0.5, `${k} 高程 ${v.toFixed(1)}（基线 ${h}）`); }
+  '光伏北缘': [268, -78, 48.8], '停车场': [216, 21, 8.6], '牛棚': [-201, -58, 13.0], '沙滩': [0, 25, 0.8, 0.15], '水道': [0, 160, -10.4], '北脊': [0, -188, 36.6], '东峰平台': [222, -150, 57.2] };
+// 第 4 项为单点容差（默认 ±0.5）；沙滩按连续缓坡公式（水线起约 1:16）确定，无噪声项，故收紧
+for (const k in BASE) { const [x, z, h, tol = 0.5] = BASE[k], v = sampleGrid(H, x, z); ok(Math.abs(v - h) <= tol, `${k} 高程 ${v.toFixed(2)}（基线 ${h} ±${tol}）`); }
 for (const r of X.roads) {
   let g = 0; for (let i = 10; i < r.pts.length; i++) { let d = 0; for (let q = i - 9; q <= i; q++) d += Math.hypot(r.pts[q][0] - r.pts[q - 1][0], r.pts[q][1] - r.pts[q - 1][1]); g = Math.max(g, Math.abs(r.pts[i][2] - r.pts[i - 10][2]) / d); }
   const lim = r.id.startsWith('R') ? 0.135 : r.id === 'VILLA' ? 0.125 : 0.1;
