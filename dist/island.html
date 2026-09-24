@@ -284,6 +284,13 @@ const CREST_TABLE = [
   [180, 24], [198, 28], [225, 33], [270, 36], [300, 38], [330, 42]
 ];
 
+// ---------------- 木栈桥走向（主线程搭建栈道、后台线程生成地形时沿栈道削平岩石，两处共用） ----------------
+const BOARDWALK = {
+  south: [[58.5, 93], [60, 100], [58.8, 107], [55.5, 113], [51.5, 117.5]],
+  east: [[61.2, 80.4], [61.4, 70], [61.6, 55], [61.6, 40], [61.4, 25], [61.2, 16.5]],  // 从浮台垂直向北，接上最近的沙滩东路后结束
+  hw: 1.2                                                                                 // 桥面半宽
+};
+
 // ======================= 03 地形生成 =======================
 const G = { x0: -380, z0: -230, nx: 761, nz: 461 };
 const GN = G.nx * G.nz;
@@ -544,6 +551,7 @@ function buildTerrain(progress) {
   // ---- 道路 ----
   X.roads = buildRoads(H);
   carveRoads(H, X.roads);
+  carveBoardwalk(H);
   if (progress) progress(0.7);
   return X;
 }
@@ -588,6 +596,25 @@ function buildRoads(H) {
     out.push({ id: r.id, w: r.w, pts, widths, len });
   }
   return out;
+}
+// 栈道走廊：桥面两侧 2.2 m 内把高出桥面的地形（岩石、坡脚）削平到栈道中线地面附近，4 m 外恢复原地形；只削低不垫高。
+// 每个格点按最近的栈道中线点取削平高度 max(中线地面 + 0.05, 0.5)（桥面 ≈ max(中线地面 + 0.55, 0.9)），岩石不再侵入桥面与扶手；
+// 栈道两端之外、闸口警戒塔塔基范围内不削
+function carveBoardwalk(H) {
+  const H0 = H.slice(), core = 2.2, R = 4.0, tw = L.gateTower;
+  for (const pts of [BOARDWALK.south, BOARDWALK.east]) {
+    const P = smoothOpen(pts, 0.5), caps = P.map(([x, z]) => Math.max(sampleGrid(H0, x, z) + 0.05, 0.5));
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    const i0 = Math.max(0, Math.floor(x0 - R - G.x0)), i1 = Math.min(G.nx - 1, Math.ceil(x1 + R - G.x0));
+    const j0 = Math.max(0, Math.floor(z0 - R - G.z0)), j1 = Math.min(G.nz - 1, Math.ceil(z1 + R - G.z0));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = G.x0 + i, z = G.z0 + j; if (Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5) continue;
+      let bi = -1, bd = R; for (let n = 0; n < P.length; n++) { const d = Math.hypot(x - P[n][0], z - P[n][1]); if (d < bd) { bd = d; bi = n; } }
+      if (bi <= 0 || bi >= P.length - 1) continue;                       // 最近点是端点：格点在栈道两端之外
+      const k = j * G.nx + i; if (H[k] <= caps[bi]) continue;
+      H[k] = Math.min(H[k], lerp(caps[bi], H0[k], smoothstep(core, R, bd)));
+    }
+  }
 }
 function carveRoads(H, roads) {
   const infl = new Float32Array(GN), sw = new Float32Array(GN), sh = new Float32Array(GN);
@@ -1262,6 +1289,13 @@ const CREST_TABLE = [
   [180, 24], [198, 28], [225, 33], [270, 36], [300, 38], [330, 42]
 ];
 
+// ---------------- 木栈桥走向（主线程搭建栈道、后台线程生成地形时沿栈道削平岩石，两处共用） ----------------
+const BOARDWALK = {
+  south: [[58.5, 93], [60, 100], [58.8, 107], [55.5, 113], [51.5, 117.5]],
+  east: [[61.2, 80.4], [61.4, 70], [61.6, 55], [61.6, 40], [61.4, 25], [61.2, 16.5]],  // 从浮台垂直向北，接上最近的沙滩东路后结束
+  hw: 1.2                                                                                 // 桥面半宽
+};
+
 // ======================= 03 地形生成 =======================
 const G = { x0: -380, z0: -230, nx: 761, nz: 461 };
 const GN = G.nx * G.nz;
@@ -1522,6 +1556,7 @@ function buildTerrain(progress) {
   // ---- 道路 ----
   X.roads = buildRoads(H);
   carveRoads(H, X.roads);
+  carveBoardwalk(H);
   if (progress) progress(0.7);
   return X;
 }
@@ -1566,6 +1601,25 @@ function buildRoads(H) {
     out.push({ id: r.id, w: r.w, pts, widths, len });
   }
   return out;
+}
+// 栈道走廊：桥面两侧 2.2 m 内把高出桥面的地形（岩石、坡脚）削平到栈道中线地面附近，4 m 外恢复原地形；只削低不垫高。
+// 每个格点按最近的栈道中线点取削平高度 max(中线地面 + 0.05, 0.5)（桥面 ≈ max(中线地面 + 0.55, 0.9)），岩石不再侵入桥面与扶手；
+// 栈道两端之外、闸口警戒塔塔基范围内不削
+function carveBoardwalk(H) {
+  const H0 = H.slice(), core = 2.2, R = 4.0, tw = L.gateTower;
+  for (const pts of [BOARDWALK.south, BOARDWALK.east]) {
+    const P = smoothOpen(pts, 0.5), caps = P.map(([x, z]) => Math.max(sampleGrid(H0, x, z) + 0.05, 0.5));
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    const i0 = Math.max(0, Math.floor(x0 - R - G.x0)), i1 = Math.min(G.nx - 1, Math.ceil(x1 + R - G.x0));
+    const j0 = Math.max(0, Math.floor(z0 - R - G.z0)), j1 = Math.min(G.nz - 1, Math.ceil(z1 + R - G.z0));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = G.x0 + i, z = G.z0 + j; if (Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5) continue;
+      let bi = -1, bd = R; for (let n = 0; n < P.length; n++) { const d = Math.hypot(x - P[n][0], z - P[n][1]); if (d < bd) { bd = d; bi = n; } }
+      if (bi <= 0 || bi >= P.length - 1) continue;                       // 最近点是端点：格点在栈道两端之外
+      const k = j * G.nx + i; if (H[k] <= caps[bi]) continue;
+      H[k] = Math.min(H[k], lerp(caps[bi], H0[k], smoothstep(core, R, bd)));
+    }
+  }
 }
 function carveRoads(H, roads) {
   const infl = new Float32Array(GN), sw = new Float32Array(GN), sh = new Float32Array(GN);
@@ -3125,7 +3179,7 @@ function updateGate(dt, fp) {
   const e = GATE.open * GATE.open * (3 - 2 * GATE.open);
   for (const lf of GATE.leaves) lf.position.y = -3.0 - e * 7.6;             // 下沉至海底（顶面低于游艇吃水）
   if (GATE.lamp) GATE.lamp.material = GATE.open > 0.98 ? M.green : GATE.open < 0.02 ? M.red : M.yellow;
-  if (GATE.lever) GATE.lever.rotation.z = (GATE.target - 0.5) * 1.2;
+  if (GATE.lever) GATE.lever.rotation.x = -GATE.target * 2.2;   // 拉手：关闸时朝上，开闸时向外拉下
   return true;
 }
 function buildGate() {
@@ -3137,12 +3191,27 @@ function buildGate() {
     collR(sx * (span / 2 + 2.2), zc, 3.5, 5, 0, 4.3);
     COLL.walks.push({ kind: 'rect', x: sx * (span / 2 + 2.2), z: zc, hw: 3.5, hd: 5, rot: 0, y: 5.0 });
   }
+  // 水闸开关：东闸墩闸机箱北立面上的拉手式开关（拉下＝开闸，推上＝关闸），上方指示灯，墙顶挑出雨棚
+  { const px = span / 2 + 1.2, fz = zc - 2.3, y0 = 5.0;                              // 闸机箱北立面 z = 125.7，墩顶 5.0
+    box(G1, 0.7, 0.9, 0.22, M.metalMid, px, y0 + 1.35, fz - 0.11);                     // 开关箱
+    box(G1, 0.5, 0.08, 0.1, M.metalDark, px, y0 + 1.84, fz - 0.07);                    // 箱顶檐
+    const lv = new THREE.Group(); lv.position.set(px, y0 + 1.35, fz - 0.26); lv.userData.live = true; G1.add(lv);   // 转轴在开关箱正面中部
+    const add = (m) => { m.userData.live = true; return m; };
+    add(cyl(lv, 0.035, 0.035, 0.5, M.metalDark, 0, 0, 0, 8)).rotation.z = Math.PI / 2;  // 横轴
+    for (const sx of [-0.18, 0.18]) add(box(lv, 0.04, 0.5, 0.05, M.galv, sx, 0.25, -0.03));   // 两根拉杆
+    add(cyl(lv, 0.03, 0.03, 0.44, M.yellow, 0, 0.5, -0.03, 8)).rotation.z = Math.PI / 2;        // 黄色把手
+    GATE.lever = lv;
+    GATE.lamp = add(box(G1, 0.14, 0.14, 0.08, M.red, px, y0 + 2.05, fz - 0.05));
+    // 雨棚：闸机箱顶下沿挑出 1.4 m、外低内高，两根斜撑
+    const cv = box(G1, 2.4, 0.08, 1.5, M.metalMid, px, 7.95, fz - 0.72); cv.rotation.x = -0.18;
+    for (const sx of [-1.0, 1.0]) { const br = box(G1, 0.06, 0.06, 1.55, M.metalDark, px + sx, 7.5, fz - 0.62); br.rotation.x = 0.55; }
+    INTERACT.push({ x: px, z: fz - 0.9, r: 1.2, y: y0, label: () => GATE.target > 0.5 ? '推上拉手，关闭水闸' : '拉下拉手，打开水闸', fn: () => { GATE.target = GATE.target > 0.5 ? 0 : 1; } }); }
   { const sb = Math.min(gh(0, zc - 4.5), gh(0, zc + 4.5), gh(0, zc)) - 0.3, top = 4.95; box(G1, 4, top - sb, 9, M.concreteDark, 0, (top + sb) / 2, zc); }   // 中央墩落到海底
   collR(0, zc, 2, 4.5, 0, 4.3);
   box(G1, 3.8, 2.6, 4.2, M.metalDark, 0, 6.2, zc);
   box(G1, span + 2, 0.8, 3, M.concreteDark, 0, -3.4, zc + 0.4);        // 底槛
   // 东侧桥墩：从闸塔码头上墩顶的台阶
-  stairs(G1, (x, z) => [x, z], 0, 42.4, 118.0, zc - 5, 2.2, 5.0, 1.3, { solid: true, mat: M.concreteDark, rail: false });
+  stairs(G1, (x, z) => [x, z], 0, 42.4, 118.0, zc - 5, 2.6, 5.0, 1.3, { solid: true, mat: M.concreteDark, rail: false });   // 从警戒塔塔基顶面（2.6）起步
   // 下沉式门叶（通透栅栏式，形如铁窗）：一排竖向圆钢栅条＋上下框梁与两道横向扁钢箍，海水与海浪可自由穿过；
   // 关闭时顶面高出水面 4.4 米、栅条间隙 0.36 米挡住人和船，开启时整体沉入海底
   const barN = Math.round((span / 2 - 3.6) / 0.56) + 1, barH = 6.3;
@@ -3173,22 +3242,36 @@ function buildGateTower() {
   const I = new THREE.Group(); I.position.y = 0.4; T.add(I);
   for (const [a, b] of [[-S, -S], [S, -S], [S, S], [-S, S]]) { box(I, 0.26, H, 0.26, M.galv, a, H / 2, b); collC(cx + a, cz + b, 0.25); }
   for (let s2 = 1; s2 <= 3; s2++) { const y = s2 * H / 3; for (const r of [0, 1, 2, 3]) { const g = new THREE.Group(); g.rotation.y = r * Math.PI / 2; I.add(g); box(g, 2 * S + 0.2, 0.14, 0.14, M.galv, 0, y, S); } }
-  // 一层闸控室：金属墙板围合，北侧门，室内配电柜与水闸电源开关
-  const rh = 2.8, toW = (lx, lz) => [cx + lx, cz + lz];
+  // 一层闸控室：金属墙板围合，北侧门，室内配电柜（水闸开关已移到东闸墩，见 buildGate）
+  const rh = 2.5, toW = (lx, lz) => [cx + lx, cz + lz];
   for (const [w, d, x, z] of [[2 * S, 0.12, 0, S], [0.12, 2 * S, -S, 0], [0.12, 2 * S, S, 0], [S - 0.55, 0.12, -(S + 0.55) / 2, -S], [S - 0.55, 0.12, (S + 0.55) / 2, -S]]) box(I, w, rh, d, M.cladGray, x, rh / 2, z);
   box(I, 1.1, rh - 2.2, 0.12, M.cladGray, 0, 2.2 + (rh - 2.2) / 2, -S);
-  box(I, 2 * S, 0.15, 2 * S, M.metalDark, 0, rh + 0.08, 0);
   for (const [p0, p1] of [[[-S, S], [S, S]], [[-S, -S], [-S, S]], [[S, -S], [S, S]], [[-S, -S], [-0.55, -S]], [[0.55, -S], [S, -S]]]) collS(cx + p0[0], cz + p0[1], cx + p1[0], cz + p1[1], -1e9, base + 1.5);
   box(I, 0.5, 1.8, 1.4, M.metalMid, -S + 0.35, 0.9, -1.0); box(I, 0.03, 0.5, 0.9, M.yachtGlass, -S + 0.61, 1.35, -1.0);
-  GATE.lamp = box(I, 0.04, 0.12, 0.12, M.red, -S + 0.62, 1.75, -0.5); GATE.lamp.userData.live = true;
-  GATE.lever = box(I, 0.06, 0.35, 0.06, M.yellow, -S + 0.65, 1.1, -1.3); GATE.lever.userData.live = true;
   collR(cx - S + 0.35, cz - 1.0, 0.3, 0.75, 0, base + 1);
-  INTERACT.push({ x: cx - S + 1.1, z: cz - 1.0, r: 1.2, y: base, label: () => GATE.target > 0.5 ? '关闭水闸（电源开关）' : '打开水闸（电源开关）', fn: () => { GATE.target = GATE.target > 0.5 ? 0 : 1; } });
-  COLL.walks.push({ kind: 'rect', x: cx, z: cz, hw: S, hd: S, rot: 0, y: base });
-  // 塔内楼梯（从闸控室上到观察室）
-  TOWER_ROT = 0; towerStairs(I, toW, base, H - 0.4, 3.4, '闸口');
-  const top = cabin(I, 3.6, 2.8, H - 0.4, 0.5, [0, 1.3, -1.1, 1.1]);
-  towerTop(cx, cz, 0, base + H - 0.4 + 0.125, 3.6, 3.4);
+  COLL.walks.push({ kind: 'rect', x: cx, z: cz, hw: 4.75, hd: 4.75, rot: 0, y: base });   // 混凝土塔基顶面（含闸控室地面）
+  // 塔内楼梯：每层一跑直梯。楼层 0 / 2.65 / 5.3 / 7.95 / 10.6（观察室），梯段在东西两条车道交替、方向交替，
+  // 上一跑的到达端就是下一跑的起步端；一楼第一跑从北门内侧起步，门洞前不再有横跨的休息平台
+  const F = [0, 2.65, 5.3, 7.95, H - 0.4], zE = 1.45, lane = (k) => k % 2 === 0 ? -0.65 : 0.65, dir = (k) => k % 2 === 0 ? 1 : -1;
+  for (let k = 0; k < 4; k++) stairs(I, toW, base, lane(k), -dir(k) * zE, dir(k) * zE, F[k], F[k + 1], 1.2, { mat: M.galv, frame: M.galv, railSides: [lane(k) > 0 ? 1 : -1], railMat: M.galv });
+  for (let j = 1; j <= 3; j++) {
+    const y = F[j], L0 = lane(j - 1), d = dir(j - 1);
+    // 楼板开洞：到达本层那一跑的车道，从梯段四分之一处到到达端（保证下方梯段净高）
+    const hx0 = L0 < 0 ? -1.3 : 0, hx1 = L0 < 0 ? 0 : 1.3, hz0 = d > 0 ? -zE + 0.5 * zE : -zE, hz1 = d > 0 ? zE : zE - 0.5 * zE;
+    for (const [x0, x1, z0, z1] of [[-S, S, -S, hz0], [-S, S, hz1, S], [-S, hx0, hz0, hz1], [hx1, S, hz0, hz1]]) {
+      if (x1 - x0 < 0.01 || z1 - z0 < 0.01) continue;
+      box(I, x1 - x0, 0.08, z1 - z0, M.galv, (x0 + x1) / 2, y - 0.04, (z0 + z1) / 2);
+      const q = toW((x0 + x1) / 2, (z0 + z1) / 2); COLL.walks.push({ kind: 'rect', x: q[0], z: q[1], hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, rot: 0, y: base + y });
+    }
+    // 外圈护栏与井口护栏（井口到达端敞开，下梯后转到另一条车道继续上楼）
+    const ox = L0 < 0 ? hx0 : hx1, ix = L0 < 0 ? hx1 : hx0, fz = d > 0 ? hz0 : hz1;
+    for (const [p0, p1] of [[[-S, -S], [S, -S]], [[S, -S], [S, S]], [[S, S], [-S, S]], [[-S, S], [-S, -S]], [[ox, hz0], [ox, hz1]], [[hx0, fz], [hx1, fz]], [[ix, hz0], [ix, hz1]]]) {
+      railing(I, [new THREE.Vector3(p0[0], y, p0[1]), new THREE.Vector3(p1[0], y, p1[1])], 1.0, M.galv, 1.2, 0.025);
+      const e0 = toW(...p0), e1 = toW(...p1); collS(e0[0], e0[1], e1[0], e1[1], base + y - 0.3, base + y + 1.1);
+    }
+  }
+  const top = cabin(I, 3.6, 2.8, H - 0.4, 0.5, [0, 1.3, -zE, zE]);
+  towerTop(cx, cz, 0, base + H - 0.4 + 0.125, 3.6, 2 * zE + 1.2);
   cyl(I, 0.05, 0.06, 4, M.galv, -1.2, top + 2, -1.2, 6);
   T.position.set(cx, 2.2, cz); return T;
 }
@@ -3321,10 +3404,7 @@ function buildPowerwalls(x, z, ry, n = 6) {
   P.position.set(x, y, z); P.rotation.y = ry; return P;
 }
 // ---------------- 木栈桥与登岸浮台 ----------------
-const BOARDWALK = {
-  south: [[58.5, 93], [60, 100], [58.8, 107], [55.5, 113], [51.5, 117.5]],
-  east: [[61.2, 80.4], [61.4, 70], [61.6, 55], [61.6, 40], [61.4, 25], [61.2, 16.5]]   // 从浮台垂直向北，接上最近的沙滩东路后结束
-};
+// 栈道走向 BOARDWALK 定义在 02_layout（地形生成要沿栈道削平侵入的岩石）
 function buildBoardwalk() {
   const B = new THREE.Group(), w = 2.4;
   // 登岸浮台
@@ -3332,11 +3412,15 @@ function buildBoardwalk() {
   box(B, 6, 0.55, 13, M.metalMid, lx, 0.1, lz); box(B, 6.1, 0.12, 13.1, M.teak, lx, 0.44, lz);
   for (const [a, b] of [[-2.7, -6], [-2.7, 6], [2.7, -6], [2.7, 6], [-2.7, 0]]) cyl(B, 0.15, 0.18, 0.5, M.metalDark, lx + a, 0.75, lz + b, 8);
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) cyl(B, 0.3, 0.3, 5, M.metalDark, lx + a, 0.3, lz + b, 10);   // 靠海侧系缆柱
-  const path = (pts, startY) => {
+  // endY：末端桥面中心高度；'ground' 表示末端贴地（桥面底面落在地面上），数值表示接到该高度的平台
+  const path = (pts, startY, endY) => {
     const P = smoothOpen(pts, 1.0);
     const ys = P.map((p, i) => Math.max(gh(p[0], p[1]) + 0.55, 0.9));
     if (startY !== undefined) for (let i = 0; i < Math.min(6, ys.length); i++) ys[i] = lerp(startY, ys[i], i / 6);
     for (let pass = 0; pass < 3; pass++) for (let i = 1; i < ys.length - 1; i++) ys[i] = (ys[i - 1] + ys[i] + ys[i + 1]) / 3;
+    if (endY !== undefined) { const n = ys.length, K = Math.min(8, n - 1);   // 末端 8 m 渐变到目标高度，贴地时全程不低于地面
+      for (let d = 0; d <= K; d++) { const i = n - 1 - d, g = gh(P[i][0], P[i][1]) + 0.07, want = endY === 'ground' ? g : endY;
+        ys[i] = lerp(want, ys[i], smoothstep(0, K, d)); if (endY === 'ground') ys[i] = Math.max(ys[i], g); } }
     const V = P.map((p, i) => new THREE.Vector3(p[0], ys[i], p[1]));
     for (let i = 1; i < V.length; i++) {
       const a = V[i - 1], b = V[i], m = a.clone().add(b).multiplyScalar(0.5), len = a.distanceTo(b), ang = Math.atan2(b.x - a.x, b.z - a.z);
@@ -3351,8 +3435,8 @@ function buildBoardwalk() {
     COLL.walks.push({ kind: 'path', pts: V.map(v => ({ x: v.x, y: v.y + 0.06, z: v.z })), hw: w / 2 });
   };
   COLL.walks.push({ kind: 'rect', x: lx, z: lz, hw: 3.05, hd: 6.55, rot: 0, y: 0.5 });
-  path(BOARDWALK.south, 0.5);
-  path(BOARDWALK.east, 0.5);
+  path(BOARDWALK.south.concat([[51.0, 118.1]]), 0.5, 2.54);   // 南端伸进警戒塔塔基 0.2 m，桥面与塔基顶面（2.6）齐平
+  path(BOARDWALK.east, 0.5, 'ground');                         // 北端落到沙面上
   // 泊位系缆桩（船首两根钢桩）与缆绳
   for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
@@ -4733,7 +4817,7 @@ function setupFP(ctx) {
   }
   const TP = [
     ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
-    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['住宅楼', 0, -128, 0],
+    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['宿舍楼', 14.7, -132.0, Math.PI, 13.91],
   ];
   const tpBox = document.getElementById('fptp');
   for (const t of TP) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t[0]; b.onclick = (e) => { e.stopPropagation(); teleport(t[1], t[2], t[3], t[4]); startRoam(); }; tpBox.appendChild(b); }
@@ -6335,6 +6419,7 @@ try {
     fenceLoop(L.pasture, 1.3, M.galv, M.galv, 3.2)];
   for (const t of L.turbines) buildTurbine(t[0], t[1], scene);
   for (const lf of GATE.leaves) scene.add(lf);
+  if (GATE.lever) scene.attach(GATE.lever);   // 水闸拉手（整组随开关转动，不参与烘焙）
   await stage(0.7, '游艇与载具');
   const yacht = buildYacht(); scene.add(yacht); const heliG = buildH125();
   const ct = buildCybertruck(); scene.add(ct); makeCar(ct, L.parking.x - 2.15, L.parking.z - 5.2, Math.PI / 2);   // 车头朝北停入车位

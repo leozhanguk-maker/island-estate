@@ -2,7 +2,7 @@
 #   P-001 陡坡礁石吞人、P-002 潜水嵌入海底：用巡逻的精确复现计划严格重放
 #   P-008 直升机高空穿楼：页面内脚本，直升机在 25 m 高度朝住宅楼平飞
 #   P-007 离开舵位后船继续开/打转：页面内脚本，全速左满舵时按 E 离开舵位
-#   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致
+#   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致；宿舍楼传送点按用户指定位置 (14.7, 13.91, -132.0) 朝向 180°
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
@@ -75,6 +75,10 @@ def main():
     bad = [t for t in tps if t['mode'] != 'walk' or t['gap'] > 0.3 or t['nan'] or not t['xyzOk']]
     print(f"  {'✓' if not bad else '✗'} 传送点 {len(tps)} 个：全部落在可站立地面、坐标栏与程序坐标一致" + ('' if not bad else '；异常：' + '；'.join(f"{t['name']} {t['mode']} 离地 {t['gap']} 坐标栏「{t['txt']}」" for t in bad)))
     failed += 0 if not bad else 1
+    dorm = next((t for t in tps if t['name'] == '宿舍楼'), None)
+    ok = dorm is not None and dorm['pos'] == [14.7, 13.91, -132.0] and '朝向 180°' in dorm['txt']
+    print(f"  {'✓' if ok else '✗'} 宿舍楼传送点在 (14.7, 13.91, -132.0) 朝向 180°：实际 {dorm and dorm['pos']}「{dorm and dorm['txt']}」")
+    failed += 0 if ok else 1
     with Session('#q=high,debug,noworker', size=(640, 360), ready=READY) as s:
         r = s.js(FALLBACK_JS)
         errs = list(s.errors) + ([r['err']] if r['err'] else [])

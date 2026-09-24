@@ -240,7 +240,7 @@ function setupFP(ctx) {
   }
   const TP = [
     ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
-    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['住宅楼', 0, -128, 0],
+    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['宿舍楼', 14.7, -132.0, Math.PI, 13.91],
   ];
   const tpBox = document.getElementById('fptp');
   for (const t of TP) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t[0]; b.onclick = (e) => { e.stopPropagation(); teleport(t[1], t[2], t[3], t[4]); startRoam(); }; tpBox.appendChild(b); }

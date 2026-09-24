@@ -1,6 +1,6 @@
 # 基线不变量：页面内断言“不应改变的东西”
 #   1. 共享几何体未被原地变换（BOXG 事故的防线）
-#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致
+#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致；栈道两端贴合、沿线无岩石侵入
 #   3. 设施与交互数量、碰撞登记数量、三角面数（对照 tests/baseline/invariants.json）
 # 用法：python3 tests/invariants.py [--update]   # --update 重写数量基线（须单独提交并说明原因）
 import os, sys, json
@@ -73,6 +73,16 @@ JS = r'''() => {
     const sea = (__statics.waterMats || []).find(m => m.uniforms && m.uniforms.uFresh && m.uniforms.uFresh.value === 0);
     if (!sea) fails.push('找不到海水材质');
     else for (const bad of ['max(calm', '0.35 * calm', '0.85 * calm']) if (sea.fragmentShader.includes(bad)) fails.push(`海水着色器仍按潟湖静水区压低海浪（含 “${bad}”），闸内外海浪应一致`); }
+  // ---- 2f. 栈道：北端桥面落在沙面上、南端与闸口警戒塔塔基顶面（2.6）齐平并伸进塔基；沿线桥面两侧 1.7 m 内地形不高出桥面（岩石不侵入扶手）；塔基可站立 ----
+  { const T2 = __fp._test, ws = D.COLL.walks.filter(w => w.kind === 'path'), tw = D.L.gateTower;
+    if (ws.length !== 2) fails.push(`栈道可行走路径应为 2 条，实际 ${ws.length}`);
+    for (const w of ws) { const P = w.pts, e = P.at(-1), g = D.gh(e.x, e.z), onPlinth = Math.abs(e.x - tw.x) < 4.75 && Math.abs(e.z - tw.z) < 4.75;
+      if (onPlinth) { if (Math.abs(e.y - 2.6) > 0.03) fails.push(`栈道南端桥面 ${r3(e.y)}，应与塔基顶面 2.6 齐平`); }
+      else if (e.y - g > 0.1 || e.y < g) fails.push(`栈道北端桥面 ${r3(e.y)} 高出地面 ${r3(e.y - g)} m，应贴地（0～0.1）`);
+      for (let i = 1; i < P.length - 1; i++) { const dx = P[i + 1].x - P[i - 1].x, dz = P[i + 1].z - P[i - 1].z, l = Math.hypot(dx, dz) || 1;
+        for (const s of [-1.7, -1.4, -1.15, 1.15, 1.4, 1.7]) { const x = P[i].x - dz / l * s, z = P[i].z + dx / l * s, over = D.gh(x, z) - (P[i].y - 0.06);
+          if (over > 0.05 && !(Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5)) { fails.push(`栈道 (${r3(P[i].x)}, ${r3(P[i].z)}) 旁 ${s} m 处地形高出桥面 ${r3(over)} m（岩石侵入）`); i = P.length; break; } } } }
+    const pf = T2.floorAt(tw.x + 3.5, tw.z - 3.5, 3.0); if (Math.abs(pf - 2.6) > 0.02) fails.push(`闸口警戒塔塔基顶面可站立高度 ${r3(pf)}，应为 2.6`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

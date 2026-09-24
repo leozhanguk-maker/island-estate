@@ -68,7 +68,15 @@ JS = r'''
     out.t_cabin = walkTo(...toW(0, zA - 0.4), 3); out.t_door = walkTo(...toW(0, -2.5), 4); out.t_platform = walkTo(...toW(-2.6, -2.6), 3); out.t_expected = +(L.summitPad.h + 0.6 + H + 0.125).toFixed(2); }
   // ---- 水闸：码头台阶上墩顶，走上闸顶步道；闸控室开关开闸 ----
   setp(42.4, 116.8); run([], 0.1); out.g_stair = walkTo(42.4, 124.5); walkTo(40.5, 128); walkTo(37.5, 128); out.g_walk = walkTo(30, 128);
-  setp(46.5, 116.0); run([], 0.1); out.g_room = walkTo(46.5, 119.8); out.g_panel = walkTo(45.6, 119.5); out.g_prompt = lab(); E(); out.g_target = GATE.target;
+  // 闸口警戒塔：从北门进入，每层一跑楼梯（东西车道交替）登上观察室平台
+  { const cx = L.gateTower.x, cz = L.gateTower.z, zE = 1.45, lane = (k) => k % 2 === 0 ? -0.65 : 0.65, dir = (k) => k % 2 === 0 ? 1 : -1;
+    setp(cx, cz - 4.5); run([], 0.1); out.gt_plinth = walkTo(cx - 0.3, cz - 2.6); out.gt_room = walkTo(cx - 0.3, cz - 1.8);
+    out.gt_floors = [];
+    for (let k = 0; k < 4; k++) { walkTo(cx + lane(k), cz - dir(k) * (zE + 0.25), 4); out.gt_floors.push(walkTo(cx + lane(k), cz + dir(k) * (zE + 0.3), 10).feet);
+      if (k < 3) walkTo(cx + lane(k + 1), cz + dir(k) * (zE + 0.3), 4); }
+    out.gt_top = walkTo(cx, cz - 2.4, 4); out.gt_expected = +(2.6 + 10.6 + 0.125).toFixed(2); }
+  // 水闸开关：东闸墩闸机箱北立面的拉手
+  setp(39.1, 123.1); st.feet = 5.0; st.grounded = true; run([], 0.1); out.g_panel = walkTo(39.1, 124.7); out.g_prompt = lab(); E(); out.g_target = GATE.target;
   // 开闸全流程（走主循环同款逻辑 __sim.step）：门叶开始下沉、门顶可行走面尚未消失时走上闸门，应被移到就近桥墩而不是随门落水
   { const S = __sim; let g = 0; while (GATE.open < 0.01 && g++ < 600) S.step(1 / 60, []);
     setp(20, 128); st.feet = 4.53; st.grounded = true; for (let i = 0; i < 60 * 16; i++) S.step(1 / 60, []);

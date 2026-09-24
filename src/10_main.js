@@ -35,6 +35,7 @@ try {
     fenceLoop(L.pasture, 1.3, M.galv, M.galv, 3.2)];
   for (const t of L.turbines) buildTurbine(t[0], t[1], scene);
   for (const lf of GATE.leaves) scene.add(lf);
+  if (GATE.lever) scene.attach(GATE.lever);   // 水闸拉手（整组随开关转动，不参与烘焙）
   await stage(0.7, '游艇与载具');
   const yacht = buildYacht(); scene.add(yacht); const heliG = buildH125();
   const ct = buildCybertruck(); scene.add(ct); makeCar(ct, L.parking.x - 2.15, L.parking.z - 5.2, Math.PI / 2);   // 车头朝北停入车位
