@@ -57,7 +57,9 @@ CHECKS = {
         ('出港四段零碰撞', lambda r: [r[k]['hit'] for k in ('leg1', 'leg2', 'leg3', 'leg4')], lambda v: all(h is None for h in v)),
         ('驶出峡谷（bz > 250）', lambda r: r['leg4']['bz'], lambda v: isinstance(v, (int, float)) and v > 250),
         ('航行中人随船移动', lambda r: r['carried']['onBoat'], lambda v: v is True),
-        ('海上下到客舱（下甲板 0.29）', lambda r: (r['cabin']['onBoat'], r['cabin']['feet']), lambda v: v[0] is True and near(v[1], 0.29, 0.1)),
+        ('主甲板走过负一舱盖不掉下去（2.45）', lambda r: (r['hatch']['onBoat'], r['hatch']['feet']), lambda v: v[0] is True and near(v[1], 2.45, 0.05)),
+        ('上甲板经楼梯上日光甲板（7.88）', lambda r: (r['sunDeck']['feet'], r['sunDeckIn']['feet']), lambda v: near(v[0], 7.88, 0.05) and near(v[1], 7.88, 0.05)),
+        ('外海鸣笛召唤鲸群与鱼群', lambda r: (r['horn'], r['showNear']), lambda v: '正在游向游艇' in v[0] and v[1] == 4),
     ],
     'cruise': [
         ('自动巡航完成', lambda r: r['done'], lambda v: v is True),
