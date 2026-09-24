@@ -47,7 +47,12 @@ function makeGround(X, texW = 4096) {
     }
     if (h > -0.4 && h < 1.6 && sdw > -6 && X.beachW(x, z) < 0.12) c = mixRGB(c, C.wet, 0.7);
     // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
-    { const lk = -Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
+    { const s1 = lakeSD(x, z, L.lake, 0), s2 = lakeSD(x, z, L.upperLake, 0), lk = -Math.max(s1, s2);
+      if (lk < 0.3) {
+        // 淡水湖底按水深分层：湖岸浅水米色砂砾（鹅卵石半埋其中）→ 中部细沙夹淤泥 → 深处深色淤泥；山顶小湖沿用原泥色
+        const dep = L.lake.level - h, mc = s1 >= s2 ? (dep < 1.2 ? mixRGB([172, 160, 132], [124, 112, 86], smoothstep(0.3, 1.2, dep)) : mixRGB([124, 112, 86], [56, 50, 38], smoothstep(1.4, 2.4, dep))) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
+        c = mixRGB(c, mc, clamp(0.3 - lk, 0, 1));
+      } }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
     if (ny < 0.72 && h > 0) c = mixRGB(c, C.rock, smoothstep(0.72, 0.55, ny));
     const ao = X.ao[gi_];

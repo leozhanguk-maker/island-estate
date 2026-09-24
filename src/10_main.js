@@ -42,11 +42,12 @@ try {
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
   setHeliObstacles(statics);   // 直升机与建筑构件的碰撞（须在烘焙前，构件仍在分组中）
   statics.forEach(bake);
+  ECO.waterMats = W.mats;
   if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   await stage(0.8, '雨林与作物');
-  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene);
+  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene);
   await stage(0.92, '光影');
   // ---------------- 相机与视角 ----------------
   const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 3, 20000);
@@ -89,11 +90,12 @@ try {
   function underwaterCheck() {
     let u = false;
     if (fp.on) { const w = fp._test.waterAt(camera.position.x, camera.position.z); u = !!(w && camera.position.y < w.level - 0.05); if (u) { const kind = w.pool ? 'pool' : w.level > 5 ? 'lake' : 'sea'; if (kind !== underKind) { underKind = kind; fogWater.color.set(kind === 'pool' ? 0x5fb8c6 : kind === 'lake' ? 0x2e6a52 : 0x1f6a68); fogWater.density = kind === 'pool' ? 0.045 : kind === 'lake' ? 0.11 : 0.06; if (under) renderer.setClearColor(fogWater.color); } } }
+    ecoUnderwater(camera, u, underKind, fogWater, renderer, document.getElementById('uw'));
     if (u === under) return; under = u;
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, updateEcology, ecoZone, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -156,6 +158,7 @@ try {
     if (grass) grass.update(fp);
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
     updateAnimals(dt, fp.on ? fp.pos : null);
+    { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateEcology(dt, t, camera, fp.on ? { x: st_.pos.x, y: camera.position.y, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 0.3), under: !!(w_ && camera.position.y < w_.level) } : null); }
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
     if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
     for (const l of LIVE) if (l.type === 'rotor') l.obj.rotation.z -= dt * l.speed;

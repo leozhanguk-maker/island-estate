@@ -7,7 +7,7 @@ const root = dirname(fileURLToPath(import.meta.url)), src = (f) => readFileSync(
 const WORKER = ['01_util.js', '02_layout.js', '03_terrain.js', '04_ground.js', '04b_detail.js', 'worker_main.js'];
 // 主线程代码（顺序即依赖顺序）
 const MAIN = ['00_gen.js', '01_util.js', '02_layout.js', '03_terrain.js', '04_ground.js', '04b_detail.js', '05_scene.js', '06_struct_a.js', '06_struct_b.js',
-  '07_vehicles.js', '08b_foliage.js', '08_vegetation.js', '09_animals.js', '11_fp.js', '12_grass.js', '13_drive.js', '14_boat.js', '15_marine.js', '16_heli.js', '10_main.js'];
+  '07_vehicles.js', '08b_foliage.js', '08_vegetation.js', '09_animals.js', '11_fp.js', '12_grass.js', '13_drive.js', '14_boat.js', '15_marine.js', '16_heli.js', '17a_eco_core.js', '17b_eco_lake.js', '17c_eco_lagoon.js', '17d_eco_ocean.js', '17e_eco_water.js', '10_main.js'];
 const gen = `<script id="gensrc" type="text/plain">\n'use strict';\n${WORKER.map(src).join('\n')}\n</script>`;
 const html = src('head.html').replace('<!--GENSRC-->', gen) + MAIN.map(src).join('\n') + src('tail.html');
 const out = process.argv[2] || join(root, 'dist', 'island.html');
