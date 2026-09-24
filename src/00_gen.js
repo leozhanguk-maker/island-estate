@@ -40,7 +40,9 @@ function generateIsland(texW, onProgress) {
     const X = buildTerrain(); X.normals = terrainNormals(X.H); X.ao = terrainAO(X.H);
     const GT = makeGround(X, texW);
     const matMap = makeMaterialMap(X), det = ['grass', 'sand', 'gravel', 'soil', 'rock'].map(k => makeDetailTex(k));
-    return finish({ matMap, det, H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roads: X.roads, roadDist: X.roads.dist, ground: GT.canvas, mask: GT.mask }, 'main');
+    // 与后台线程输出同一格式 {data, w, h}：近景草叶取色、小地图底图都按像素数据读取，直接传 canvas 会得到 NaN 下标（P-012）
+    const px = (cv) => { const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height); return { data: d.data, w: d.width, h: d.height }; };
+    return finish({ matMap, det, H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roads: X.roads, roadDist: X.roads.dist, ground: px(GT.canvas), mask: px(GT.mask) }, 'main');
   };
   return new Promise((resolve) => {
     let w = null, w2 = null, done = false, timer = null, main = null, det = null;
