@@ -9,19 +9,22 @@ function lattice(p, base, top, h, sections, legR, braceR, mat) {
   }
 }
 // 观察室：四面玻璃（+z 面留门）、窗下墙、屋顶；平台在楼梯井处开洞
+// 塔顶观察室外圈巡逻走道宽度（原 0.75 m，按用户要求加宽到 1.6 m，可绕观察室走一整圈）；屋檐同步挑出覆盖走道
+const TOWER_RING = 1.6;
 function cabin(p, w, h, y, roofOver = 0.5, shaft = null) {
-  const P = w + 1.6, hw = P / 2;
-  if (shaft) { const [sx0, sx1, sz0, sz1] = shaft; for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sz0], [-hw, hw, sz1, hw], [-hw, sx0, sz0, sz1], [sx1, hw, sz0, sz1]]) box(p, x1 - x0, 0.25, z1 - z0, M.metalDark, (x0 + x1) / 2, y, (z0 + z1) / 2);
+  const P = w + 2 * TOWER_RING + 0.1, hw = P / 2;
+  if (shaft) { const [sx0, sx1, sz0, sz1] = shaft; for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sz0], [-hw, hw, sz1, hw], [-hw, sx0, sz0, sz1], [sx1, hw, sz0, sz1]]) box(p, x1 - x0, 0.25, z1 - z0, M.deckWhite, (x0 + x1) / 2, y, (z0 + z1) / 2);
     for (const [a0, b0, a1, b1] of [[sx0, sz0 + 0.02, sx0, sz1], [sx0, sz1, sx1, sz1]]) { const v0 = new THREE.Vector3(a0, y + 0.12, b0), v1 = new THREE.Vector3(a1, y + 0.12, b1); railing(p, [v0, v1], 1.0, M.galv, 0.8, 0.025); } }
-  else box(p, P, 0.25, P, M.metalDark, 0, y, 0);
-  railing(p, [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([a, b]) => new THREE.Vector3(a * (w / 2 + 0.75), y + 0.12, b * (w / 2 + 0.75))), 1.05, M.galv, 1.2, 0.028);
+  else box(p, P, 0.25, P, M.deckWhite, 0, y, 0);                                    // 白色地板
+  railing(p, [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([a, b]) => new THREE.Vector3(a * (w / 2 + TOWER_RING), y + 0.12, b * (w / 2 + TOWER_RING))), 1.05, M.galv, 1.2, 0.028);
   for (const r of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
     const g = new THREE.Group(); g.rotation.y = r; p.add(g);
     if (r === Math.PI) { for (const sx of [-1, 1]) { box(g, w / 2 - 0.5, 0.9, 0.12, M.metalDark, sx * (w / 4 + 0.25), y + 0.57, w / 2); box(g, w / 2 - 0.5, h - 1.3, 0.08, M.glass, sx * (w / 4 + 0.25), y + 1.02 + (h - 1.3) / 2, w / 2 - 0.02); } box(g, 1.0, 0.3, 0.12, M.metalDark, 0, y + h - 0.05, w / 2); }
     else { box(g, w, 0.9, 0.12, M.metalDark, 0, y + 0.57, w / 2); box(g, w - 0.2, h - 1.3, 0.08, M.glass, 0, y + 1.02 + (h - 1.3) / 2, w / 2 - 0.02); }
   }
   for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) box(p, 0.14, h, 0.14, M.metalDark, a * (w / 2 - 0.05), y + h / 2 + 0.12, b * (w / 2 - 0.05));
-  box(p, w + roofOver * 2, 0.3, w + roofOver * 2, M.metalDark, 0, y + h + 0.25, 0);
+  const ro = Math.max(roofOver, TOWER_RING + 0.3);                                    // 屋檐挑出盖住外圈走道（防雨）
+  box(p, w + ro * 2, 0.3, w + ro * 2, M.metalDark, 0, y + h + 0.25, 0);
   box(p, w - 0.2, 0.05, w - 0.2, M.ceiling, 0, y + h + 0.08, 0);
   return y + h + 0.4;
 }
@@ -46,7 +49,7 @@ let TOWER_ROT = 0;
 // 塔顶平台（含观察室地面）：楼梯井开洞；外圈栏杆；观察室墙体（-z 门）
 function towerTop(cx, cz, rot, y, w, depth) {
   const toW = (lx, lz) => [cx + lx * Math.cos(rot) + lz * Math.sin(rot), cz - lx * Math.sin(rot) + lz * Math.cos(rot)];
-  const hw = w / 2 + 0.75, zA = -(depth - 1.2) / 2, zB = -zA, sh = [0.0, 1.3, zA, zB];   // 仅最后一跑（+x 侧）上方开洞
+  const hw = w / 2 + TOWER_RING, zA = -(depth - 1.2) / 2, zB = -zA, sh = [0.0, 1.3, zA, zB];   // 仅最后一跑（+x 侧）上方开洞
   for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sh[2]], [-hw, hw, sh[3], hw], [-hw, sh[0], sh[2], sh[3]], [sh[1], hw, sh[2], sh[3]]]) { const q = toW((x0 + x1) / 2, (z0 + z1) / 2); COLL.walks.push({ kind: 'rect', x: q[0], z: q[1], hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, rot, y }); }
   const C = [[-hw, -hw], [hw, -hw], [hw, hw], [-hw, hw]].map(p => toW(...p));
   for (let i = 0; i < 4; i++) { const a = C[i], b = C[(i + 1) % 4]; collS(a[0], a[1], b[0], b[1], y - 1); }
