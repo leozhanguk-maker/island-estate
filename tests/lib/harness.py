@@ -26,8 +26,9 @@ def _route(route):
 class Session:
     """一次页面会话：with Session('#fp,still,q=low') as s: s.js('...')"""
 
-    def __init__(self, hash_='#fp,still,q=low', size=(320, 180), timeout=600000):
-        self.hash, self.size, self.timeout = hash_, size, timeout
+    def __init__(self, hash_='#fp,still,q=low', size=(320, 180), timeout=600000, ready="document.title.startsWith('done')"):
+        # ready：页面就绪条件。still 模式渲染 3 帧后改标题；非 still 模式（主循环持续运行）可改为等加载遮罩完成
+        self.hash, self.size, self.timeout, self.ready = hash_, size, timeout, ready
         self.console = []      # [(类型, 文本)]
         self.errors = []       # 未捕获异常
 
@@ -40,7 +41,7 @@ class Session:
         self.page.on('console', self._on_console)
         t0 = time.time()
         self.page.goto(PAGE + self.hash)
-        self.page.wait_for_function("document.title.startsWith('done')", timeout=self.timeout)
+        self.page.wait_for_function(self.ready, timeout=self.timeout)
         self.load_s = round(time.time() - t0, 1)
         self.page.evaluate(SIM_JS)
         return self
