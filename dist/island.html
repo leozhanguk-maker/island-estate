@@ -6264,6 +6264,7 @@ function ecoRaysInit(scene) {
         gl_FragColor = vec4(vec3(0.62, 0.8, 0.95) * edge * fall * fl * near * uI * 0.16, 1.0); }` });
   const ph = new THREE.InstancedBufferAttribute(new Float32Array(n).map(() => ECO_R()), 1); g.setAttribute('iPh', ph);
   const im = new THREE.InstancedMesh(g, m, n); im.frustumCulled = false; im.visible = false; scene.add(im);
+  { const far = new THREE.Matrix4().makeTranslation(0, -1000, 0); for (let i = 0; i < n; i++) im.setMatrixAt(i, far); }   // 未启用时停在极远处（与其他隐藏实例的约定一致）
   // 水下背景：跟随相机的反面大球，完全被雾覆盖，保证远处与水面、海底的雾色一致（清屏色不经色调映射，直接露出会形成一道硬边）
   const bg = new THREE.Mesh(new THREE.SphereGeometry(160, 24, 12), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide, depthWrite: false }));
   bg.frustumCulled = false; bg.renderOrder = -10; bg.visible = false; scene.add(bg); ECO.uwBack = bg;
