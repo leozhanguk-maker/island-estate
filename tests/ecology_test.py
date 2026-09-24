@@ -49,6 +49,9 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     if (r.nan) fails.push(`${name} 有 ${r.nan} 个生物位置为 NaN/无穷`);
     if (r.bad) fails.push(`${name} 有 ${r.bad} 个生物离开了所属水域，例如 ${r.first}`);
     if (r.vert) fails.push(`${name} 有 ${r.vert} 个生物钻进水底或跑出水面，例如 ${r.first}`); }
+  // 溪蟹在大卵石之间横行：所有可选的窝都必须在水下（曾把岸边水线以上的卵石当作窝，溪蟹会爬出水面）
+  if (!(E.lakeInfo && E.lakeInfo.crabHomes && E.lakeInfo.crabHomes.length)) fails.push('ECO.lakeInfo.crabHomes 未登记（无法检查溪蟹的窝）');
+  for (const h of (E.lakeInfo && E.lakeInfo.crabHomes) || []) if (!(D.ecoZone(h.x, h.z) === 'lake' && D.L.lake.level - D.gh(h.x, h.z) > 0.15)) { fails.push(`溪蟹的窝 (${h.x.toFixed(1)}, ${h.z.toFixed(1)}) 不在水下（水深 ${(D.L.lake.level - D.gh(h.x, h.z)).toFixed(2)} m）`); break; }
   // 淡水与海水物种不混用：湖区只有淡水生物、潟湖和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
   for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'lagoon' ? 'lagoon' : 'ocean';
     for (const f of Z.flocks || []) if (f.zone !== want) fails.push(`${name} 里登记了属于 ${f.zone} 的鱼群`); }

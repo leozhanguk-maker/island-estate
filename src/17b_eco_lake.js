@@ -225,7 +225,7 @@ function buildEcoLake(scene) {
   // 溪蟹：褐色，躲在鹅卵石下（只露出前半身），偶尔横向爬到另一块石头
   const crab = (lo) => ecoCrabGeo({ w: 0.065, c1: 0x5a3a22, c2: 0x7a5232, cc: 0x6a4428, tip: 0x2a1a10 }, lo);
   const crabLod = new EcoLod(scene, [crab(false), crab(true)], ecoMat('crawl', { freq: 12, amp: 0.004, rough: 0.55 }), 8, 8, 40);
-  const bigStones = stones.filter(s => s.s > 0.1), crabs = [];
+  const bigStones = stones.filter(s => s.s > 0.1 && inLake(s.x, s.z, 0.2)), crabs = [];   // 只用水下的大卵石（岸边水线以上的卵石不能当溪蟹的窝）
   for (let i = 0; i < 8 && bigStones.length; i++) { const st = bigStones[Math.floor(ECO_R() * bigStones.length)]; crabs.push({ x: st.x, z: st.z, y: st.y, yaw: ECO_R() * TAU, s: ecoRand(0.8, 1.2), ph: ECO_R(), state: 'idle', tm: ecoRand(4, 20), st, sideDir: 1 }); }
   new EcoCritters(crabLod, crabs, (c, dt) => {
     const moving = ecoCrawl(c, dt, 0.09, (cc) => { const st = bigStones[Math.floor(ECO_R() * bigStones.length)]; if (Math.hypot(st.x - cc.x, st.z - cc.z) > 2.5) return null; cc.st = st; cc.sideDir = ECO_R() < 0.5 ? 1 : -1; return { x: st.x, z: st.z }; }, true);
@@ -241,5 +241,5 @@ function buildEcoLake(scene) {
   const f2 = new EcoFlock({ zone: 'lake', n: 12, lod: ecoFishLod(scene, tilapia, 12, 12, 45), mode: 'school', home: { x: lk.x - 2, y: lk.level - 1.2, z: lk.z }, range: 9, rangeZ: 0.6, spawn: 1.2, speed: 0.45, maxSpeed: 1.4, per: 0.6, minDepth: 0.7, floorGap: 0.2, ceilGap: 0.3, predators: predL, size: 1, band: 0.45 });
   Z.flocks = [f1, f2]; Z.critters = ECO.critters.slice(c0);
   ECO.zones.lake = Z;
-  ECO.lakeInfo = { stones: stones.length, logs: logs.length, crays: crays.length, prawns: prawns.length, crabs: crabs.length, weeds: weedSpots.length, weedSpots, logPts: logs };
+  ECO.lakeInfo = { stones: stones.length, logs: logs.length, crays: crays.length, prawns: prawns.length, crabs: crabs.length, weeds: weedSpots.length, weedSpots, logPts: logs, crabHomes: bigStones };
 }
