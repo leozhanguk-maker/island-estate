@@ -74,7 +74,10 @@ JS = r'''
     out.gt_floors = [];
     for (let k = 0; k < 4; k++) { walkTo(cx + lane(k), cz - dir(k) * (zE + 0.25), 4); out.gt_floors.push(walkTo(cx + lane(k), cz + dir(k) * (zE + 0.3), 10).feet);
       if (k < 3) walkTo(cx + lane(k + 1), cz + dir(k) * (zE + 0.3), 4); }
-    out.gt_top = walkTo(cx, cz - 2.4, 4); out.gt_expected = +(2.6 + 10.6 + 0.125).toFixed(2); }
+    out.gt_top = walkTo(cx, cz - 2.4, 4); out.gt_expected = +(2.6 + 10.6 + 0.125).toFixed(2);
+    // 顶层外圈巡逻走道绕观察室走一整圈（北 → 西 → 南 → 东 → 回到北）
+    const ring = 3.0; out.gt_ring = [];   // 外圈走道 1.8～3.4 m：3.0 m 处只有加宽后的走道能到（原走道护栏在 2.55 m）
+    for (const [a, b] of [[-ring, -ring], [-ring, ring], [ring, ring], [ring, -ring], [0, -ring]]) { const r = walkTo(cx + a, cz + b, 6); out.gt_ring.push(+Math.hypot(r.x - cx - a, r.z - cz - b).toFixed(2), r.feet); } }
   // 水闸开关：东闸墩闸机箱北立面的拉手
   setp(39.1, 123.1); st.feet = 5.0; st.grounded = true; run([], 0.1); out.g_panel = walkTo(39.1, 124.7); out.g_prompt = lab(); E(); out.g_target = GATE.target;
   // 开闸全流程（走主循环同款逻辑 __sim.step）：门叶开始下沉、门顶可行走面尚未消失时走上闸门，应被移到就近桥墩而不是随门落水

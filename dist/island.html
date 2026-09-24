@@ -2449,7 +2449,7 @@ function buildWater(X, dataTex, QS = {}) {
 // ======================= 06a 材质 / 批处理 / 盆地建筑 =======================
 const std = (color, rough = 0.8, metal = 0, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: rough, metalness: metal }, extra));
 const M = {
-  concrete: std(0xd2cfc7, 0.88), concreteDark: std(0xa7a49c, 0.9), concreteWarm: std(0xcfc6b8, 0.85),
+  deckWhite: std(0xf1f0eb, 0.62), concrete: std(0xd2cfc7, 0.88), concreteDark: std(0xa7a49c, 0.9), concreteWarm: std(0xcfc6b8, 0.85),
   wallWarm: std(0xeee9e0, 0.72), wallGray: std(0xcdcdc8, 0.78), wallLight: std(0xe4e3de, 0.75),
   metalDark: std(0x3a3f45, 0.45, 0.6), metalMid: std(0x6c737a, 0.42, 0.65), galv: std(0xb3babf, 0.36, 0.85),
   // aluWhite：白色烤漆铝合金（游艇舷梯等）
@@ -3075,19 +3075,22 @@ function lattice(p, base, top, h, sections, legR, braceR, mat) {
   }
 }
 // 观察室：四面玻璃（+z 面留门）、窗下墙、屋顶；平台在楼梯井处开洞
+// 塔顶观察室外圈巡逻走道宽度（原 0.75 m，按用户要求加宽到 1.6 m，可绕观察室走一整圈）；屋檐同步挑出覆盖走道
+const TOWER_RING = 1.6;
 function cabin(p, w, h, y, roofOver = 0.5, shaft = null) {
-  const P = w + 1.6, hw = P / 2;
-  if (shaft) { const [sx0, sx1, sz0, sz1] = shaft; for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sz0], [-hw, hw, sz1, hw], [-hw, sx0, sz0, sz1], [sx1, hw, sz0, sz1]]) box(p, x1 - x0, 0.25, z1 - z0, M.metalDark, (x0 + x1) / 2, y, (z0 + z1) / 2);
+  const P = w + 2 * TOWER_RING + 0.1, hw = P / 2;
+  if (shaft) { const [sx0, sx1, sz0, sz1] = shaft; for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sz0], [-hw, hw, sz1, hw], [-hw, sx0, sz0, sz1], [sx1, hw, sz0, sz1]]) box(p, x1 - x0, 0.25, z1 - z0, M.deckWhite, (x0 + x1) / 2, y, (z0 + z1) / 2);
     for (const [a0, b0, a1, b1] of [[sx0, sz0 + 0.02, sx0, sz1], [sx0, sz1, sx1, sz1]]) { const v0 = new THREE.Vector3(a0, y + 0.12, b0), v1 = new THREE.Vector3(a1, y + 0.12, b1); railing(p, [v0, v1], 1.0, M.galv, 0.8, 0.025); } }
-  else box(p, P, 0.25, P, M.metalDark, 0, y, 0);
-  railing(p, [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([a, b]) => new THREE.Vector3(a * (w / 2 + 0.75), y + 0.12, b * (w / 2 + 0.75))), 1.05, M.galv, 1.2, 0.028);
+  else box(p, P, 0.25, P, M.deckWhite, 0, y, 0);                                    // 白色地板
+  railing(p, [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([a, b]) => new THREE.Vector3(a * (w / 2 + TOWER_RING), y + 0.12, b * (w / 2 + TOWER_RING))), 1.05, M.galv, 1.2, 0.028);
   for (const r of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
     const g = new THREE.Group(); g.rotation.y = r; p.add(g);
     if (r === Math.PI) { for (const sx of [-1, 1]) { box(g, w / 2 - 0.5, 0.9, 0.12, M.metalDark, sx * (w / 4 + 0.25), y + 0.57, w / 2); box(g, w / 2 - 0.5, h - 1.3, 0.08, M.glass, sx * (w / 4 + 0.25), y + 1.02 + (h - 1.3) / 2, w / 2 - 0.02); } box(g, 1.0, 0.3, 0.12, M.metalDark, 0, y + h - 0.05, w / 2); }
     else { box(g, w, 0.9, 0.12, M.metalDark, 0, y + 0.57, w / 2); box(g, w - 0.2, h - 1.3, 0.08, M.glass, 0, y + 1.02 + (h - 1.3) / 2, w / 2 - 0.02); }
   }
   for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) box(p, 0.14, h, 0.14, M.metalDark, a * (w / 2 - 0.05), y + h / 2 + 0.12, b * (w / 2 - 0.05));
-  box(p, w + roofOver * 2, 0.3, w + roofOver * 2, M.metalDark, 0, y + h + 0.25, 0);
+  const ro = Math.max(roofOver, TOWER_RING + 0.3);                                    // 屋檐挑出盖住外圈走道（防雨）
+  box(p, w + ro * 2, 0.3, w + ro * 2, M.metalDark, 0, y + h + 0.25, 0);
   box(p, w - 0.2, 0.05, w - 0.2, M.ceiling, 0, y + h + 0.08, 0);
   return y + h + 0.4;
 }
@@ -3112,7 +3115,7 @@ let TOWER_ROT = 0;
 // 塔顶平台（含观察室地面）：楼梯井开洞；外圈栏杆；观察室墙体（-z 门）
 function towerTop(cx, cz, rot, y, w, depth) {
   const toW = (lx, lz) => [cx + lx * Math.cos(rot) + lz * Math.sin(rot), cz - lx * Math.sin(rot) + lz * Math.cos(rot)];
-  const hw = w / 2 + 0.75, zA = -(depth - 1.2) / 2, zB = -zA, sh = [0.0, 1.3, zA, zB];   // 仅最后一跑（+x 侧）上方开洞
+  const hw = w / 2 + TOWER_RING, zA = -(depth - 1.2) / 2, zB = -zA, sh = [0.0, 1.3, zA, zB];   // 仅最后一跑（+x 侧）上方开洞
   for (const [x0, x1, z0, z1] of [[-hw, hw, -hw, sh[2]], [-hw, hw, sh[3], hw], [-hw, sh[0], sh[2], sh[3]], [sh[1], hw, sh[2], sh[3]]]) { const q = toW((x0 + x1) / 2, (z0 + z1) / 2); COLL.walks.push({ kind: 'rect', x: q[0], z: q[1], hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, rot, y }); }
   const C = [[-hw, -hw], [hw, -hw], [hw, hw], [-hw, hw]].map(p => toW(...p));
   for (let i = 0; i < 4; i++) { const a = C[i], b = C[(i + 1) % 4]; collS(a[0], a[1], b[0], b[1], y - 1); }
@@ -4810,7 +4813,7 @@ function setupFP(ctx) {
     // 闸口警戒塔在出海峡谷东岸，“岛心→塔”方向正对峡谷东坡，改为朝峡谷出海口 (0, 300) 看出去
     return [['东峰瞭望塔', L.eastTower, -0.38, 2.2, L.summitPad.h + 20.725], ['西部瞭望塔', L.westTower, 0.3, 1.7, 32.625], ['闸口警戒塔', L.gateTower, 0, 1.8, 13.325, { x: 0, z: 300 }]].map(([name, c, rot, hw, y, sea]) => {
       const ex = sea ? sea.x - c.x : c.x, ez = sea ? sea.z - c.z : c.z, d = Math.hypot(ex, ez), dx = ex / d, dz = ez / d, co = Math.cos(rot), si = Math.sin(rot);
-      const ux = dx * co - dz * si, uz = dx * si + dz * co, r = hw + 0.375;     // 外海方向换到塔的局部坐标，选主轴所在的一面
+      const ux = dx * co - dz * si, uz = dx * si + dz * co, r = hw + TOWER_RING / 2;     // 外海方向换到塔的局部坐标，选主轴所在的一面；站在外圈走道中线
       const lx = Math.abs(ux) >= Math.abs(uz) ? Math.sign(ux) * r : 0, lz = Math.abs(ux) >= Math.abs(uz) ? 0 : Math.sign(uz) * r;
       return [name, c.x + lx * co + lz * si, c.z - lx * si + lz * co, Math.atan2(-dx, -dz), y];
     });

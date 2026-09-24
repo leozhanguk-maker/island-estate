@@ -31,6 +31,7 @@ CHECKS = {
         ('闸顶步道 4.53', lambda r: r['g_walk']['feet'], lambda v: near(v, 4.53, 0.05)),
         ('闸口警戒塔每层一跑楼梯登顶（各层 5.25 / 7.9 / 10.55，观察室 13.32）', lambda r: r['gt_floors'] + [r['gt_top']['feet']], lambda v: all(near(a, b, 0.1) for a, b in zip(v, [5.25, 7.9, 10.55, 13.32, 13.32]))),
         ('闸口警戒塔北门进入一楼不被挡（2.6）', lambda r: (r['gt_room']['feet'], r['gt_room']['z']), lambda v: near(v[0], 2.6, 0.05) and v[1] > 118.3),
+        ('闸口警戒塔顶层外圈可绕观察室走一整圈（各角误差 < 0.3 m、始终在顶层 13.32）', lambda r: r['gt_ring'], lambda v: isinstance(v, list) and len(v) == 10 and all(v[i] < 0.3 and near(v[i + 1], 13.32, 0.1) for i in range(0, 10, 2))),
         ('东闸墩拉手开闸', lambda r: (r['g_prompt'], r['g_target']), lambda v: '拉下拉手' in v[0] and v[1] == 1),
         ('机库地坪高出地面 0.3', lambda r: r['hangarFloorVsGround'], lambda v: near(v, 0.3, 0.05)),
         ('瞭望塔顶 56.7', lambda r: r['towerTop']['feet'], lambda v: near(v, 56.7, 0.1)),
