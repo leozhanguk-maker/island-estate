@@ -78,7 +78,7 @@ JS = r'''() => {
     if (ws.length !== 2) fails.push(`栈道可行走路径应为 2 条，实际 ${ws.length}`);
     for (const w of ws) { const P = w.pts, e = P.at(-1), g = D.gh(e.x, e.z), onPlinth = Math.abs(e.x - tw.x) < 4.75 && Math.abs(e.z - tw.z) < 4.75;
       if (onPlinth) { if (Math.abs(e.y - 2.6) > 0.03) fails.push(`栈道南端桥面 ${r3(e.y)}，应与塔基顶面 2.6 齐平`); }
-      else if (e.y - g > 0.1 || e.y < g) fails.push(`栈道北端桥面 ${r3(e.y)} 高出地面 ${r3(e.y - g)} m，应贴地（0～0.1）`);
+      else if (e.y - g > 0.2 || e.y - g < 0.05) fails.push(`栈道北端桥面顶面 ${r3(e.y)} 高出地面 ${r3(e.y - g)} m，应贴地（桥板厚 0.12，顶面高出地面 0.05～0.2）`);
       for (let i = 1; i < P.length - 1; i++) { const dx = P[i + 1].x - P[i - 1].x, dz = P[i + 1].z - P[i - 1].z, l = Math.hypot(dx, dz) || 1;
         for (const s of [-1.7, -1.4, -1.15, 1.15, 1.4, 1.7]) { const x = P[i].x - dz / l * s, z = P[i].z + dx / l * s, over = D.gh(x, z) - (P[i].y - 0.06);
           if (over > 0.05 && !(Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5)) { fails.push(`栈道 (${r3(P[i].x)}, ${r3(P[i].z)}) 旁 ${s} m 处地形高出桥面 ${r3(over)} m（岩石侵入）`); i = P.length; break; } } } }
