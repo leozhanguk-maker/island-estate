@@ -19,7 +19,8 @@ function makeGround(X, texW = 4096) {
   const C = {
     forest: hexRGB(0x2c4322), forest2: hexRGB(0x3b5229), shrub: hexRGB(0x5d6b33), shrub2: hexRGB(0x6f7a3c),
     grass: hexRGB(0x66873a), grass2: hexRGB(0x4f7430), dry: hexRGB(0x8a8f50), rock: hexRGB(0x6d6352),
-    wet: hexRGB(0x4a443b), sand: hexRGB(0xe8e2d3), sandWet: hexRGB(0xcfc6b1), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
+    // sand / sandWet：碧海银沙，略偏冷的银白
+    wet: hexRGB(0x4a443b), sand: hexRGB(0xefece4), sandWet: hexRGB(0xcdc9bc), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
   };
   for (let py = 0; py < bh; py++) for (let px = 0; px < bw; px++) {
     const x = TX.x0 + px + 0.5, z = TX.z0 + py + 0.5;
