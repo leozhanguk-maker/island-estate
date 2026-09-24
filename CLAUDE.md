@@ -98,6 +98,7 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 - 游艇上的一切在船体局部坐标 `YL` 定义，`syncBoat()` 每帧换算到 `DYN`；只有 `st.onBoat` 为真时才使用船上可行走面（必须按 E 登船）。
 - 座位 `SEATS`（世界坐标）与 `BOAT.seats`（随船的 getter）统一由 `sitDown/standUp` 处理。
 - 交互 `INTERACT` 条目可用 getter 做动态位置，`label` 可为函数，`fn` 执行动作。
+- 漫游时小地图下方的坐标栏显示 `X Y Z 朝向`，与程序坐标一致：步行时 Y 为脚底高度，可直接用作 `teleport(x, z, yaw, y)` 的参数；驾驶时为载具坐标。朝向是罗盘方位（0° 正北、顺时针），对应 `yaw = -朝向（弧度）`。用户报告问题时可按这组数字定位。出生点在别墅南门外（`START`）。
 
 ## 待办与已知问题
 - 问题清单：`docs/ISSUES.md`（唯一来源）；截图审阅清单：`docs/VISUAL_CHECKLIST.md`；每晚巡检报告：`docs/NIGHTLY.md`。

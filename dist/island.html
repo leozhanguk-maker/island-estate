@@ -53,6 +53,7 @@ body.fp #fpui{display:block}
 #fpgate button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #fpprompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);padding:6px 12px;border-radius:8px;background:rgba(12,28,36,.6);color:#e8efec;font-size:13px;opacity:0;transition:opacity .2s}
 #minimap{position:absolute;right:16px;top:calc(80px + env(safe-area-inset-top,0px));width:180px;height:180px}
+#fpxyz{position:absolute;right:16px;top:calc(264px + env(safe-area-inset-top,0px));width:180px;text-align:center;font:10.5px/1.45 ui-monospace,Menlo,Consolas,monospace;color:#e8efec;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:pre}
 #uw{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at 50% 20%,rgba(120,200,210,.12),rgba(6,34,40,.55));mix-blend-mode:normal}
 @keyframes caus{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-4%,3%) rotate(8deg)}}
 body.under #uw{opacity:1}
@@ -77,8 +78,8 @@ body.under #uw{opacity:1}
 <div id="tools" class="ui"><span id="qsel" aria-label="画质"><span class="ql">画质</span></span><span id="hint">拖动旋转，右键平移，滚轮缩放</span><button id="hideui" type="button">隐藏界面</button></div>
 <button id="showui" type="button">显示界面</button>
 <div id="uw"></div>
-<div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas></div>
-<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅北门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
+<div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas><div id="fpxyz"></div></div>
+<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script id="gensrc" type="text/plain">
 'use strict';
@@ -4474,7 +4475,7 @@ function buildPerson() {
 function setupFP(ctx) {
   const { scene, camera, controls, renderer } = ctx;
   const EYE = 1.68, PR = 0.32, WALK = 4.2, RUN = 11, SWIM = 1.9, SWIM_FAST = 3.2, GRAV = 22, JUMP = 7;
-  const START = { x: 175.3, z: -55.4, yaw: 0 };   // 别墅正北门口（面朝泳池、淡水湖与瀑布）
+  const START = { x: 181.3, z: -35.5, yaw: Math.PI };   // 出生点：别墅南门外 3.5 m（避开门边立柱），面朝正南
   const person = buildPerson(); person.visible = false; person.rotation.order = 'YXZ'; scene.add(person);
   const st = { drag: false, dragging: false, touchMove: null, touchLook: null, on: false, third: false, yaw: 0, pitch: 0,
     pos: new THREE.Vector3(), feet: 0, vy: 0, grounded: true, phase: 0, mode: 'walk', keys: new Set(), saved: null, stuckT: 0 };
@@ -4643,13 +4644,24 @@ function setupFP(ctx) {
   // ---- 传送、交互、小地图 ----
   const baseRef = (x, z) => Math.max(gh(x, z), 0) + 1.0;
   function teleport(x, z, yaw, y, boat = false) { st.onBoat = boat; st.pos.x = x; st.pos.z = z; st.feet = y !== undefined ? y : floorAt(x, z, baseRef(x, z)); st.vy = 0; st.mode = 'walk'; st.grounded = true; if (yaw !== undefined) st.yaw = yaw; st.pitch = -0.1; }
+  // 三座塔：传送到顶层观察室外的环廊（宽 0.75 m），取最朝外海的一面，站在环廊中线上面朝外海（默认为岛心指向塔的方向）
+  // 参数与 06_struct_b 中各塔一致：[名称, 塔心, 塔体旋转, 观察室半宽, 顶层地面高]
+  function towerTP() {
+    // 闸口警戒塔在出海峡谷东岸，“岛心→塔”方向正对峡谷东坡，改为朝峡谷出海口 (0, 300) 看出去
+    return [['东峰瞭望塔', L.eastTower, -0.38, 2.2, L.summitPad.h + 20.725], ['西部瞭望塔', L.westTower, 0.3, 1.7, 32.625], ['闸口警戒塔', L.gateTower, 0, 1.8, 13.325, { x: 0, z: 300 }]].map(([name, c, rot, hw, y, sea]) => {
+      const ex = sea ? sea.x - c.x : c.x, ez = sea ? sea.z - c.z : c.z, d = Math.hypot(ex, ez), dx = ex / d, dz = ez / d, co = Math.cos(rot), si = Math.sin(rot);
+      const ux = dx * co - dz * si, uz = dx * si + dz * co, r = hw + 0.375;     // 外海方向换到塔的局部坐标，选主轴所在的一面
+      const lx = Math.abs(ux) >= Math.abs(uz) ? Math.sign(ux) * r : 0, lz = Math.abs(ux) >= Math.abs(uz) ? 0 : Math.sign(uz) * r;
+      return [name, c.x + lx * co + lz * si, c.z - lx * si + lz * co, Math.atan2(-dx, -dz), y];
+    });
+  }
   const TP = [
-    ['别墅北门', START.x, START.z, 0], ['登岸浮台', 60, 87, Math.PI / 2], ['水闸步道', 30, 126.4, Math.PI / 2, 4.46], ['沙滩', 0, 20, Math.PI],
-    ['西山机场', -228, -98, 0.9], ['东峰瞭望塔', L.eastTower.x - 0.98, L.eastTower.z + 2.46, 0.4, L.summitPad.h + 20.13], ['农业区', -40, -8, 0], ['住宅楼', 0, -128, 0],
+    ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
+    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['住宅楼', 0, -128, 0],
   ];
   const tpBox = document.getElementById('fptp');
   for (const t of TP) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t[0]; b.onclick = (e) => { e.stopPropagation(); teleport(t[1], t[2], t[3], t[4]); startRoam(); }; tpBox.appendChild(b); }
-  const prompt = document.getElementById('fpprompt'); let act = null;
+  const prompt = document.getElementById('fpprompt'), xyz = document.getElementById('fpxyz'); let act = null;
   function findInteract() {
     act = null; let best = 1e9;
     for (const it of (DYN.interact.length ? INTERACT.concat(DYN.interact) : INTERACT)) { const d = Math.hypot(st.pos.x - it.x, st.pos.z - it.z); const fy = it.y !== undefined ? it.y : gh(it.x, it.z); if (d < it.r && d < best && Math.abs(st.feet - fy) < 1.8) { best = d; act = it; } }
@@ -4676,6 +4688,9 @@ function setupFP(ctx) {
     mctx.fillStyle = '#c4df94'; mctx.strokeStyle = '#0c1c24'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.moveTo(9, 0); mctx.lineTo(-6, 6); mctx.lineTo(-3, 0); mctx.lineTo(-6, -6); mctx.closePath(); mctx.fill(); mctx.stroke();
     mctx.restore(); mctx.strokeStyle = 'rgba(226,238,232,0.35)'; mctx.lineWidth = 1; mctx.beginPath(); mctx.arc(S / 2, S / 2, S / 2 - 1, 0, TAU); mctx.stroke();
     mctx.fillStyle = 'rgba(232,239,236,0.8)'; mctx.font = '10px sans-serif'; mctx.textAlign = 'center'; mctx.fillText('北', S / 2, 12); mctx.fillText(R + ' 米', S / 2, S - 6);
+    // 坐标：与程序内坐标一致（x 东、z 南、y 上；步行时 y 为脚底高度，即 teleport(x, z, yaw, y) 的参数；驾驶时为载具坐标）。朝向按罗盘方位，0° 为正北
+    const V = DRIVE.active, cx = V ? V.x : st.pos.x, cy = V ? V.y : st.feet, cz = V ? V.z : st.pos.z, cyaw = V && V.yaw !== undefined ? V.yaw - Math.PI / 2 : st.yaw;
+    xyz.textContent = `X ${cx.toFixed(1)}  Y ${cy.toFixed(2)}  Z ${cz.toFixed(1)}\n朝向 ${Math.round(((-cyaw * 180 / Math.PI) % 360 + 360) % 360)}°`;
   }
   function setMapBase(img) { mapBase = img; }
   // ---- 每帧更新 ----
