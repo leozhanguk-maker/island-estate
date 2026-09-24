@@ -40,19 +40,43 @@ function fishMaterial(freq) {
   };
   return m;
 }
-// 海豚：宽吻海豚（长约 2.6 米）：纺锤体 + 喙 + 额隆 + 背鳍 + 胸鳍 + 水平尾叶；背深灰腹浅灰
+// 海豚：宽吻海豚（长约 2.6 米）。按真实外形分段放样：短而分明的喙（下颌略长）→ 喙基折线 → 圆隆的额隆 → 纺锤形躯干 → 侧扁的尾柄 → 中间带缺刻的水平尾叶；
+// 背部深灰、体侧浅灰、腹部近白；嘴角线向眼睛方向上扬（“微笑”），黑色眼睛与头顶新月形呼吸孔；镰刀形背鳍、胸鳍。头部放样截面加密，细节更清楚
 function dolphinGeo() {
-  const pos = [], col = [], bend = [], idx = [], SEG = 28, RING = 14, L = 2.6, top = new THREE.Color(0x4f5a63), belly = new THREE.Color(0xd6dde0);
-  const r = (t) => t < 0.1 ? 0.05 + t * 0.8 : t < 0.2 ? 0.13 + (t - 0.1) * 1.6 : 0.29 * Math.pow(Math.sin(Math.PI * Math.min(1, (t - 0.12) / 0.95)), 0.7) * (1 - 0.6 * t * t) + 0.02;
+  const pos = [], col = [], bend = [], idx = [], L = 2.6, SEG = 46, RING = 22;
+  const cTop = new THREE.Color(0x4c5862), cSide = new THREE.Color(0x87939b), cBelly = new THREE.Color(0xe4e9ea), cLine = new THREE.Color(0x262b30), cEye = new THREE.Color(0x0b0c0e);
+  // [距吻端 s, 背线高, 腹线深（取正值）, 半宽]
+  const K = [[0, 0.012, 0.018, 0.02], [0.05, 0.034, 0.046, 0.044], [0.12, 0.047, 0.064, 0.062], [0.18, 0.057, 0.078, 0.076], [0.22, 0.118, 0.098, 0.097],
+    [0.3, 0.188, 0.132, 0.14], [0.42, 0.236, 0.182, 0.19], [0.6, 0.272, 0.24, 0.238], [0.9, 0.3, 0.29, 0.268], [1.2, 0.282, 0.28, 0.25], [1.5, 0.222, 0.212, 0.18],
+    [1.8, 0.142, 0.132, 0.098], [2.1, 0.086, 0.076, 0.05], [2.35, 0.05, 0.045, 0.03], [2.45, 0.03, 0.03, 0.022], [2.6, 0.01, 0.01, 0.01]];
+  const prof = (s) => { let i = 0; while (i < K.length - 2 && K[i + 1][0] < s) i++; const a = K[i], b = K[i + 1], t = clamp((s - a[0]) / (b[0] - a[0]), 0, 1), u = t * t * (3 - 2 * t);
+    return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; };
   for (let i = 0; i <= SEG; i++) {
-    const t = i / SEG, x = L / 2 - t * L, rr = r(t), ry = rr * (t < 0.2 ? 0.9 : 1.05), rz = rr * 0.9 * (t > 0.8 ? 0.6 : 1);
-    for (let k = 0; k < RING; k++) { const a = k / RING * TAU; pos.push(x, Math.sin(a) * ry + (t > 0.12 && t < 0.2 ? 0.03 : 0), Math.cos(a) * rz); bend.push(t); const c = top.clone().lerp(belly, clamp(-Math.sin(a) * 1.4 + 0.3, 0, 1)); if (t < 0.17 && t > 0.14 && Math.abs(Math.sin(a)) < 0.3 && Math.cos(a) > 0.5) c.set(0x111111); col.push(c.r, c.g, c.b); }
+    const s = L * Math.pow(i / SEG, 1.55), x = L / 2 - s, [top, bot, w] = prof(s), t = s / L;
+    // 嘴角线：从吻端下方沿下颌向后、到眼前上扬
+    const mouthY = s < 0.34 ? -0.012 + 0.05 * smoothstep(0.12, 0.34, s) - 0.004 * (1 - s / 0.34) : null;
+    for (let k = 0; k < RING; k++) {
+      const a = k / RING * TAU, sa = Math.sin(a), ca = Math.cos(a), y = sa >= 0 ? top * sa : bot * sa, z = w * ca * (t > 0.7 ? 0.75 : 1);
+      pos.push(x, y, z); bend.push(t);
+      const c = cTop.clone().lerp(cSide, clamp(1 - sa * 1.6, 0, 1)).lerp(cBelly, clamp(-sa * 1.5 - 0.1, 0, 1));
+      if (mouthY !== null && Math.abs(y - mouthY) < 0.011 && Math.abs(ca) > 0.35) c.copy(cLine);
+      if (s > 0.52 && s < 0.6 && sa > 0.93 && Math.abs(ca) < 0.3) c.copy(cLine);   // 呼吸孔（头顶新月形）
+      col.push(c.r, c.g, c.b);
+    }
     if (i < SEG) for (let k = 0; k < RING; k++) { const a = i * RING + k, b = a + RING, a1 = i * RING + (k + 1) % RING, b1 = a1 + RING; idx.push(a, b, a1, a1, b, b1); }
   }
-  const fin = (pts, bnd) => { const b = pos.length / 3; for (const p of pts) { pos.push(...p); col.push(top.r, top.g, top.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
-  fin([[0.05, 0.26, 0], [-0.25, 0.62, 0], [-0.32, 0.6, 0], [-0.4, 0.25, 0]], p => 0.5 - p[0] / L);
-  for (const s of [-1, 1]) fin([[0.55, -0.12, s * 0.2], [0.25, -0.28, s * 0.55], [0.18, -0.24, s * 0.52], [0.35, -0.1, s * 0.2]], () => 0.3);
-  fin([[-1.2, 0, 0], [-1.52, 0, 0.42], [-1.6, 0, 0.36], [-1.45, 0, 0], [-1.6, 0, -0.36], [-1.52, 0, -0.42]], p => 1 + (-1.2 - p[0]));
+  // 眼睛：嘴角线末端上方，略凸出体表的小黑球
+  const sph = (cx, cy, cz, r, c, bnd) => { const b = pos.length / 3, NU = 8, NV = 6; for (let v = 0; v <= NV; v++) for (let u = 0; u <= NU; u++) { const th = v / NV * Math.PI, ph = u / NU * TAU; pos.push(cx + r * Math.sin(th) * Math.cos(ph), cy + r * Math.cos(th), cz + r * Math.sin(th) * Math.sin(ph)); col.push(c.r, c.g, c.b); bend.push(bnd); }
+    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) { const a = b + v * (NU + 1) + u, d = a + NU + 1; idx.push(a, d, a + 1, a + 1, d, d + 1); } };
+  { const s = 0.37, [, , w] = prof(s); for (const sd of [-1, 1]) sph(L / 2 - s, 0.045, sd * (w * 0.93), 0.016, cEye, s / L); }
+  const fin = (pts, bnd, c = cTop) => { const b = pos.length / 3; for (const p of pts) { pos.push(...p); col.push(c.r, c.g, c.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
+  const bx = (s) => L / 2 - s;
+  // 镰刀形背鳍（后缘内凹）
+  fin([[bx(1.02), 0.29, 0], [bx(1.1), 0.44, 0], [bx(1.26), 0.58, 0], [bx(1.44), 0.63, 0], [bx(1.4), 0.52, 0], [bx(1.42), 0.4, 0], [bx(1.52), 0.24, 0]], p => (L / 2 - p[0]) / L);
+  // 胸鳍：体侧下方向后下方伸出
+  for (const s of [-1, 1]) fin([[bx(0.58), -0.1, s * 0.2], [bx(0.72), -0.22, s * 0.42], [bx(0.9), -0.3, s * 0.52], [bx(0.86), -0.24, s * 0.44], [bx(0.76), -0.12, s * 0.22]], () => 0.3, cSide);
+  // 水平尾叶：左右两叶，后缘中间有缺刻
+  fin([[bx(2.36), 0, 0], [bx(2.5), 0, 0.2], [bx(2.66), 0, 0.42], [bx(2.72), 0, 0.4], [bx(2.62), 0, 0.14], [bx(2.6), 0, 0], [bx(2.62), 0, -0.14], [bx(2.72), 0, -0.4], [bx(2.66), 0, -0.42], [bx(2.5), 0, -0.2]], p => 1 + Math.max(0, (L / 2 - p[0]) - L) / L);
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('bend', new THREE.Float32BufferAttribute(bend, 1)); g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
