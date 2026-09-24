@@ -131,12 +131,20 @@ function buildGate() {
   box(G1, span + 2, 0.8, 3, M.concreteDark, 0, -3.4, zc + 0.4);        // 底槛
   // 东侧桥墩：从闸塔码头上墩顶的台阶
   stairs(G1, (x, z) => [x, z], 0, 42.4, 118.0, zc - 5, 2.2, 5.0, 1.3, { solid: true, mat: M.concreteDark, rail: false });
-  for (const sx of [-1, 1]) {   // 下沉式门叶：关闭时顶面高出水面 4.4 米，开启时整体沉入海底
+  // 下沉式门叶（通透栅栏式，形如铁窗）：一排竖向圆钢栅条＋上下框梁与两道横向扁钢箍，海水与海浪可自由穿过；
+  // 关闭时顶面高出水面 4.4 米、栅条间隙 0.36 米挡住人和船，开启时整体沉入海底
+  const barN = Math.round((span / 2 - 3.6) / 0.56) + 1, barH = 6.3;
+  for (const sx of [-1, 1]) {
     const leaf = new THREE.Group(); leaf.position.set(sx * (span / 4 + 0.5), -3.0, zc); leaf.userData.live = true;
     const w = span / 2 - 3, add = (mesh) => { mesh.userData.live = true; return mesh; };
-    add(box(leaf, w, 7.2, 1.6, M.metalDark, 0, 3.6, 0));
-    for (let k = 0; k < 7; k++) add(box(leaf, w, 0.18, 0.25, M.metalMid, 0, 0.6 + k * 1.05, 0.9));
-    for (let k = 0; k < 9; k++) add(box(leaf, 0.2, 7.0, 0.3, M.metalMid, -w / 2 + 0.3 + k * (w - 0.6) / 8, 3.6, 0.9));
+    add(box(leaf, w + 0.4, 0.55, 1.1, M.metalDark, 0, 6.93, 0));                        // 上框梁（承托门顶步道）
+    add(box(leaf, w, 0.45, 0.9, M.metalDark, 0, 0.23, 0));                               // 下框梁
+    for (const ex of [-1, 1]) add(box(leaf, 0.42, 7.2, 1.0, M.metalDark, ex * (w / 2 - 0.21), 3.6, 0));   // 两端立柱
+    for (const y of [2.35, 4.6]) add(box(leaf, w - 0.4, 0.14, 0.42, M.metalMid, 0, y, 0));              // 横向扁钢箍（栅条从中穿过）
+    // 竖向圆钢栅条：一个实例化网格（新建几何体，不共用 BOXG）
+    const bg = new THREE.CylinderGeometry(0.1, 0.1, barH, 10), bars = new THREE.InstancedMesh(bg, M.metalMid, barN), m4 = new THREE.Matrix4();
+    for (let i = 0; i < barN; i++) bars.setMatrixAt(i, m4.makeTranslation(-w / 2 + 0.6 + i * (w - 1.2) / (barN - 1), 0.45 + barH / 2, 0));
+    bars.castShadow = true; bars.receiveShadow = true; add(bars); leaf.add(bars);
     add(box(leaf, w + 0.4, 0.22, 2.2, M.galv, 0, 7.31, 0));                            // 门顶面（无围栏）
     for (let k = 0; k < 18; k++) add(box(leaf, 0.08, 0.01, 2.1, M.metalDark, -w / 2 + 1 + k * (w - 2) / 17, 7.43, 0));
     GATE.leaves.push(leaf);

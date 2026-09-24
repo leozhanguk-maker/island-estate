@@ -1,6 +1,6 @@
 # 基线不变量：页面内断言“不应改变的东西”
 #   1. 共享几何体未被原地变换（BOXG 事故的防线）
-#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）
+#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致
 #   3. 设施与交互数量、碰撞登记数量、三角面数（对照 tests/baseline/invariants.json）
 # 用法：python3 tests/invariants.py [--update]   # --update 重写数量基线（须单独提交并说明原因）
 import os, sys, json
@@ -64,6 +64,15 @@ JS = r'''() => {
       { const c = px(L_LAKE.x, L_LAKE.z); if (c[0] + c[1] + c[2] > 270) fails.push(`湖底 (${L_LAKE.x}, ${L_LAKE.z}) 地表色 ${c}，应为深色泥`); } }
     if (I.grass) { const fp = __fp; fp.teleport(120, 40, 0); fp._st.on = true; I.grass.update(fp); const n = I.grass.mesh.count; fp._st.on = false; I.grass.update(fp);   // 恢复隐藏，免得计入三角面统计
       if (n < 200) fails.push(`草地 (120, 40) 周围近景草叶只有 ${n} 丛，材质权重图的草地权重可能被清零`); } }
+  // ---- 2e. 水闸为通透栅栏式（铁窗风）：关闭状态下，沿闸门水平方向在水面上下各扫一排视线，大部分能穿过门叶；闸内外海浪一致（水面着色器不再按潟湖静水区压低浪高、浪陡与泡沫） ----
+  { const G = D.GATE, keep = G.leaves.map(l => l.position.y); G.leaves.forEach(l => { l.position.y = -3.0; l.updateMatrixWorld(true); });
+    for (const y of [2.5, -1.5]) { let pass = 0, n = 0; for (let x = -34; x <= 34; x += 0.37) { if (Math.abs(x) < 2.6) continue; n++;
+        const h = new TH.Raycaster(new TH.Vector3(x, y, D.L.gateZ - 6), new TH.Vector3(0, 0, 1), 0, 12).intersectObjects(G.leaves, true)[0]; if (!h) pass++; }
+      if (pass / n < 0.5) fails.push(`水闸门叶在高 ${y} m 处只有 ${Math.round(pass / n * 100)}% 的视线能穿过，应为通透栅栏（≥ 50%）`); }
+    G.leaves.forEach((l, i) => { l.position.y = keep[i]; l.updateMatrixWorld(true); });
+    const sea = (__statics.waterMats || []).find(m => m.uniforms && m.uniforms.uFresh && m.uniforms.uFresh.value === 0);
+    if (!sea) fails.push('找不到海水材质');
+    else for (const bad of ['max(calm', '0.35 * calm', '0.85 * calm']) if (sea.fragmentShader.includes(bad)) fails.push(`海水着色器仍按潟湖静水区压低海浪（含 “${bad}”），闸内外海浪应一致`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
