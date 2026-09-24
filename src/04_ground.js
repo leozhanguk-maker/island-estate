@@ -50,7 +50,7 @@ function makeGround(X, texW = 4096) {
     { const s1 = lakeSD(x, z, L.lake, 0), s2 = lakeSD(x, z, L.upperLake, 0), lk = -Math.max(s1, s2);
       if (lk < 0.3) {
         // 淡水湖底（水族馆式清澈湖）：干净的浅色细砂，随水深略微变暗，上面铺满水草；山顶小湖沿用原泥色
-        const dep = L.lake.level - h, mc = s1 >= s2 ? mixRGB([200, 192, 166], [150, 144, 118], smoothstep(0.3, 2.6, dep)) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
+        const dep = L.lake.level - h, mc = s1 >= s2 ? mixRGB([204, 196, 170], [172, 164, 138], smoothstep(0.3, 2.6, dep)) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
         c = mixRGB(c, mc, clamp(0.3 - lk, 0, 1));
       } }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
