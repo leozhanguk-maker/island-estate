@@ -79,7 +79,8 @@ function makeMaterialMap(X) {
     else if (sdb >= 0 || sdw > -40) gr = 1;
     else { const s = sdc / (sdc - sdb); so = 1 - smoothstep(0.55, 0.85, s); gr = 1 - so; }
     if (sdw < 0 && sdw > -38 && X.beachW(x, z) > 0.12) { const b = smoothstep(0.12, 0.3, X.beachW(x, z)) * (1 - smoothstep(33, 38, -sdw)); sa = Math.max(sa, b); if (b > 0.2) { gr = 0; so = 0; } else gr *= 1 - b; }
-    if (Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) < 0.5) { gr = 0; sa = 0.5; so = 0.5; }
+    // 湖岸 0.5 m 内与湖底：沙土各半（lakeSD 湖内为正；旧写法符号反了，湖外全岛都成了沙土、没有草，P-013）
+    if (Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) > -0.5) { gr = 0; sa = 0.5; so = 0.5; }
     // 农田与场地
     if (inR(x, z, L.rice)) { gr = 0.15; so = 0.85; }
     else if (inR(x, z, L.veg)) { gr = 0.2; so = 0.8; }
