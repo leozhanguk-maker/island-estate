@@ -26,6 +26,7 @@ def near(v, want, tol):
 # 每条断言：(说明, 取值函数, 判定函数)
 CHECKS = {
     'phys': [
+        ('别墅正门门洞左中右三条线都能从雨篷下走进首层大堂（z < -42.2、脚底 11.48）', lambda r: r['v_entry'], lambda v: isinstance(v, list) and len(v) == 6 and all(v[i] < -42.2 and near(v[i + 1], 11.48, 0.1) for i in range(0, 6, 2))),
         ('别墅屋顶脚底 22.45', lambda r: r['v_roof']['feet'], lambda v: near(v, 22.45, 0.05)),
         ('东峰塔平台 77.93', lambda r: r['t_platform']['feet'], lambda v: near(v, 77.93, 0.05)),
         ('闸顶步道 4.53', lambda r: r['g_walk']['feet'], lambda v: near(v, 4.53, 0.05)),
