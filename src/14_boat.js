@@ -27,6 +27,8 @@ function syncBoat(t) {
   DYN.rects = YL.rects.map(r => { const c = T([r.x, r.z]); return { x: c[0], z: c[1], hw: r.hw, hd: r.hd, rot: BOAT.yaw + (r.rot || 0), bottom: r.bottom + by, top: r.top + by }; });
   DYN.interact = [];
   { const c = T([-24.2, 1.6]); DYN.interact.push({ x: c[0], z: c[1], r: 1.6, y: 2.26 + by, label: () => BOAT.atHome ? '下船回到登岸浮台' : '游艇未靠泊，暂不能下船', fn: () => { if (BOAT.atHome) FP_API.teleport(L.landing.x + 1, L.landing.z, -Math.PI / 2, 0.5, false); } }); }
+  { const c = T([5.2, -2.9]); DYN.interact.push({ x: c[0], z: c[1], r: 1.0, y: 2.45 + by, label: '下层船舱舱盖（船员通道，暂不开放）', fn: () => {} }); }
+  { const c = T([6.75, -0.55]); DYN.interact.push({ x: c[0], z: c[1], r: 0.9, y: 5.15 + by, label: '按喇叭（在闸外海域可召唤鲸群与鱼群）', fn: () => boatHorn() }); }
   for (const sv of BOAT.seats) DYN.interact.push({ x: sv.x, z: sv.z, r: sv.type === 'lie' ? 1.8 : 1.3, y: sv.y - (sv.type === 'lie' ? 0.62 : 0.45), label: sv.type === 'lie' ? '躺下休息' : '坐下', fn: () => FP_API.sitDown(sv) });
   DYN.interact.push(...YL.interact.map(it => { const c = T([it.x, it.z]); return { x: c[0], z: c[1], r: it.r, y: it.y + by, label: () => BOAT.auto ? '接管手动驾驶（按 C 取消自动巡航）' : '手动驾驶游艇，按 C 自动巡航（开闸 → 绕岛一周 → 回港）', fn: () => { BOAT.auto = null; DRIVE.active = BOAT; BOAT.thr = 0; document.body.classList.add('driving'); }, cruise: startCruise }; }));
   const atHome = Math.hypot(BOAT.x - BOAT.home.x, BOAT.z - BOAT.home.z) < 0.6 && Math.abs(BOAT.yaw - BOAT.home.yaw) < 0.03; BOAT.atHome = atHome;

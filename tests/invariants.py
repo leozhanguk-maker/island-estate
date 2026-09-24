@@ -1,6 +1,6 @@
 # 基线不变量：页面内断言“不应改变的东西”
 #   1. 共享几何体未被原地变换（BOXG 事故的防线）
-#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致；栈道两端贴合、沿线无岩石侵入
+#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致；栈道两端贴合、沿线无岩石侵入；游艇主甲板室内地板可见（V-015）
 #   3. 设施与交互数量、碰撞登记数量、三角面数（对照 tests/baseline/invariants.json）
 # 用法：python3 tests/invariants.py [--update]   # --update 重写数量基线（须单独提交并说明原因）
 import os, sys, json
@@ -83,6 +83,11 @@ JS = r'''() => {
         for (const s of [-1.7, -1.4, -1.15, 1.15, 1.4, 1.7]) { const x = P[i].x - dz / l * s, z = P[i].z + dx / l * s, over = D.gh(x, z) - (P[i].y - 0.06);
           if (over > 0.05 && !(Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5)) { fails.push(`栈道 (${r3(P[i].x)}, ${r3(P[i].z)}) 旁 ${s} m 处地形高出桥面 ${r3(over)} m（岩石侵入）`); i = P.length; break; } } } }
     const pf = T2.floorAt(tw.x + 3.5, tw.z - 3.5, 3.0); if (Math.abs(pf - 2.6) > 0.02) fails.push(`闸口警戒塔塔基顶面可站立高度 ${r3(pf)}，应为 2.6`); }
+  // ---- 2g. 游艇主甲板室内地板不被外甲板面遮住（V-015）：从室内前部几处向下看，第一个命中的是室内地板 2.45，而不是沿舷弧升高的外甲板面 ----
+  { const Y = D.BOAT.g; Y.updateMatrixWorld(true); const inv = new TH.Matrix4().copy(Y.matrixWorld).invert();
+    for (const [lx, lz] of [[-4, 1.5], [2, -1.5], [8, 0.5], [11.5, -2]]) { const o = new TH.Vector3(lx, 4.5, lz).applyMatrix4(Y.matrixWorld), d = new TH.Vector3(0, -1, 0);
+      const h = new TH.Raycaster(o, d, 0, 5).intersectObject(Y, true)[0], ly = h ? h.point.clone().applyMatrix4(inv).y : null;
+      if (ly === null || Math.abs(ly - 2.45) > 0.06) { fails.push(`游艇主甲板室 (${lx}, ${lz}) 向下第一个命中高度 ${ly === null ? '无' : r3(ly)}，应为室内地板 2.45（外甲板面把室内地板盖住了）`); break; } } }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
