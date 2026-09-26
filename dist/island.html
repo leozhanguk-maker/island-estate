@@ -79,7 +79,7 @@ body.under #uw{opacity:1}
 <button id="showui" type="button">显示界面</button>
 <div id="uw"></div>
 <div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas><div id="fpxyz"></div></div>
-<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
+<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>H</dt><dd>鸣笛：驾驶汽车、拖拉机、直升机、游艇时按 H，各有音色；游艇驾驶台的红色按钮同效，在闸外鸣笛会召唤鲸群和鱼群</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script id="gensrc" type="text/plain">
 'use strict';
@@ -3795,7 +3795,7 @@ function buildCybertruck() {
   { const roof = new THREE.Mesh(new THREE.PlaneGeometry(1.7, Wb * 0.82), std(0x14202a, 0.1, 0.2, { transparent: true, opacity: 0.55, side: THREE.DoubleSide })); roof.rotation.set(Math.PI / 2, 0, 0); roof.rotateY(Math.atan2(1.78 - 1.4, 1.65)); roof.position.set(-1.05, 1.6, 0); cab.add(roof); }
   box(cab, 0.55, 0.5, 0.55, std(0xf0ede6, 0.8), -0.2, 0.75, 0.42); box(cab, 0.12, 0.7, 0.55, std(0xf0ede6, 0.8), -0.5, 1.1, 0.42);
   box(cab, 1.5, 0.05, Wb * 0.9, dark, 0.2, 0.55, 0);
-  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
+  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', horn: 'car', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
   C.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return C;
 }
@@ -3817,7 +3817,7 @@ function buildTractor() {
     cyl(T, r * 0.6, r * 0.6, w + 0.02, M.yellow, x, r, z, 12, Math.PI / 2);
   }
   box(T, 0.3, 0.2, 0.7, dark, -1.35, 0.55, 0);          // 三点悬挂
-  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
+  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', horn: 'tractor', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
   T.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return T;
 }
@@ -4868,8 +4868,8 @@ function setupFP(ctx) {
     for (const it of (DYN.interact.length ? INTERACT.concat(DYN.interact) : INTERACT)) { const d = Math.hypot(st.pos.x - it.x, st.pos.z - it.z); const fy = it.y !== undefined ? it.y : gh(it.x, it.z); if (d < it.r && d < best && Math.abs(st.feet - fy) < 1.8) { best = d; act = it; } }
     prompt.textContent = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : ''; prompt.style.opacity = act ? 1 : 0;
   }
-  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
-  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
+  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyH') hornSound('heli'); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
+  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyH') { hornSound(DRIVE.active.sp && DRIVE.active.sp.horn || 'car'); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
   st.mapR = 150;
   const mm = document.getElementById('minimap'), mctx = mm.getContext('2d');
   let mapBase = null, lastMap = 0;
@@ -5160,6 +5160,39 @@ function updateDrive(dt, keys, camera, fpApi) {
     camera.position.copy(p); camera.lookAt(p.x + f.x * 10, p.y - 0.9 + Math.sin(car.pitch) * 10, p.z + f.z * 10);
   }
   return { kmh: Math.round(car.v * 3.6), hit };
+}
+
+// ======================= 13b 载具喇叭：汽车、拖拉机、直升机、游艇各自的音色（WebAudio 现场合成，不引入音频文件） =======================
+// 驾驶任意载具时按 H 鸣笛；游艇另有驾驶台红色按钮，且在闸外鸣笛会召唤鲸群与鱼群（17f boatHorn）
+const HORN = { ac: null, last: null, count: 0 };
+const HORN_KIND = {
+  car: 'Cybertruck 电子双音喇叭',
+  tractor: '拖拉机单音喇叭（两短声）',
+  heli: '直升机机外警示音（高低双音）',
+  boat: '游艇汽笛（低沉长鸣）',
+};
+function hornSound(kind) {
+  HORN.last = { kind, t: performance.now() }; HORN.count++;
+  try {
+    const A = HORN.ac || (HORN.ac = new (window.AudioContext || window.webkitAudioContext)()); if (A.state === 'suspended') A.resume();
+    const t0 = A.currentTime + 0.01;
+    // 一段音：若干振荡器 → 滤波 → 包络（起音、保持、释放）
+    const tone = (freqs, type, start, dur, vol, filt) => {
+      const g = A.createGain(), f = A.createBiquadFilter(); f.type = filt.type; f.frequency.value = filt.f; f.Q.value = filt.q || 0.7;
+      g.gain.setValueAtTime(0.0001, start); g.gain.exponentialRampToValueAtTime(vol, start + 0.015); g.gain.setValueAtTime(vol, start + dur - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      f.connect(g); g.connect(A.destination);
+      for (const fr of freqs) { const o = A.createOscillator(); o.type = type; o.frequency.value = fr; o.connect(f); o.start(start); o.stop(start + dur + 0.02); }
+    };
+    if (kind === 'car') tone([415, 520], 'square', t0, 0.55, 0.12, { type: 'bandpass', f: 1300, q: 0.9 });                 // 电子双音，略带鼻音
+    else if (kind === 'tractor') { for (const s of [0, 0.3]) tone([330, 333], 'sawtooth', t0 + s, 0.2, 0.14, { type: 'lowpass', f: 1500 }); }   // 两短声，微拍频显得粗糙
+    else if (kind === 'heli') { [950, 740, 950, 740].forEach((fr, i) => tone([fr], 'triangle', t0 + i * 0.26, 0.24, 0.12, { type: 'lowpass', f: 3000 })); }
+    else {   // 游艇汽笛：三个锯齿波叠成低沉和弦，长鸣约 2.3 秒
+      const g = A.createGain(), f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.08); g.gain.setValueAtTime(0.32, t0 + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.3);
+      f.connect(g); g.connect(A.destination);
+      for (const fr of [110, 138.6, 165]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t0); o.stop(t0 + 2.4); }
+    }
+  } catch (e) { /* 浏览器不支持或未允许播放声音时静默 */ }
 }
 
 let FP_API = null;
@@ -6497,15 +6530,8 @@ function ecoUnderwater(camera, under, kind, fog, renderer, uw) {
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
 // 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
-function ecoHornSound() {
-  try {
-    const A = ECO_SHOW.ac || (ECO_SHOW.ac = new (window.AudioContext || window.webkitAudioContext)()); if (A.state === 'suspended') A.resume();
-    const t0 = A.currentTime, g = A.createGain(), f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.08); g.gain.setValueAtTime(0.32, t0 + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.3);
-    f.connect(g); g.connect(A.destination);
-    for (const fr of [110, 138.6, 165]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t0); o.stop(t0 + 2.4); }
-  } catch (e) { /* 浏览器不支持或未允许播放声音时静默 */ }
-}
+// 游艇汽笛音色统一在 13b_horn.js
+function ecoHornSound() { hornSound('boat'); }
 function ecoToast(msg) {
   let el = document.getElementById('fptoast');
   if (!el) { el = document.createElement('div'); el.id = 'fptoast'; el.style.cssText = 'position:fixed;left:50%;top:16%;transform:translateX(-50%);padding:8px 16px;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;font-size:15px;pointer-events:none;transition:opacity .6s;z-index:30;opacity:0'; document.body.appendChild(el); }
@@ -6646,7 +6672,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -6699,10 +6725,10 @@ try {
     if (anim) { anim.t = Math.min(1, anim.t + dt / 1.6); const e = anim.t < 0.5 ? 4 * anim.t ** 3 : 1 - Math.pow(-2 * anim.t + 2, 3) / 2; camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e); if (anim.t >= 1) anim = null; }
     { const prev = updateBoat(dt, t, fp._st.keys); if (BOAT.moved) { if (fp.on) carryOnBoat(fp._st, prev); syncBoat(t); } }
     { const hr = updateHeli(dt, fp._st.keys, fp.on ? camera : null);
-      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
+      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
     if (fp.on && DRIVE.active === HELI) {}
     else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', pile: '碰撞系缆桩', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位`; }
-    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  V 视角  E 下车`; }
+    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  H 喇叭  V 视角  E 下车`; }
     else if (!fp.update(dt)) controls.update();
     for (const m of W.mats) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = t;
     for (const u of TIME_U) u.value = t;
