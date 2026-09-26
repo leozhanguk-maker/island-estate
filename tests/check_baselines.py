@@ -1,6 +1,6 @@
 # 物理/载具基线断言：运行现有的 5 个浏览器测试，解析输出并对照基线数值（HANDOVER“当前测试基线”）
 # 这些脚本本身只打印数据，本文件负责判定通过/失败。
-# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli]
+# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm]
 import os, sys, ast, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +67,18 @@ CHECKS = {
         ('用时约 10.4 分钟', lambda r: r['minutes'], lambda v: near(v, 10.4, 0.4)),
         ('回到泊位 (30, 87, π)', lambda r: (r['final']['x'], r['final']['z'], r['final']['yaw']), lambda v: near(v[0], 30, 0.5) and near(v[1], 87, 0.5) and near(v[2], 3.142, 0.05)),
         ('人仍在船上', lambda r: r['player']['onBoat'], lambda v: v is True),
+    ],
+    'dorm': [
+        ('前庭经入口台阶走进 1 层大堂（脚底 15.94）', lambda r: r['lobby']['feet'], lambda v: near(v, 15.94, 0.03)),
+        ('梯厅按 E 叫电梯，门在 3 秒内打开', lambda r: (r['callPrompt'], r['doorOpenT']), lambda v: '电梯' in v[0] and v[1] < 3),
+        ('走进轿厢（轿厢地面 15.94）', lambda r: (r['inCar']['z'], r['inCar']['feet']), lambda v: v[0] < -2.2 and near(v[1], 15.94, 0.03)),
+        ('轿厢内按 E 选 12 层，60 秒内到站开门，人随轿厢到 48.93', lambda r: (r['sel'], r['rideT'], r['carTop']['at'], r['carTop']['feet']), lambda v: v[0] == 11 and v[1] < 60 and v[2] == 11 and near(v[3], 48.93, 0.05)),
+        ('出电梯到 12 层楼道', lambda r: (r['corr12']['z'], r['corr12']['feet']), lambda v: v[0] > -1.25 and near(v[1], 48.93, 0.03)),
+        ('另一部电梯不在本层：厅门关着走不进电梯井', lambda r: (r['bAt'], r['shaftB']['z']), lambda v: v[0] != 11 and v[1] > -1.3),
+        ('户门关着走不进户', lambda r: (r['doorPrompt'], r['doorClosed']['z']), lambda v: '开门进入' in v[0] and v[1] > -1.3),
+        ('按 E 开门后进户、走到客厅与主卧', lambda r: (r['inUnit']['z'], r['living']['x'], r['master']['x'], r['master']['feet']), lambda v: v[0] < -2.5 and v[1] > 9 and v[2] > 11 and near(v[3], 48.93, 0.03)),
+        ('12 层楼梯经中间平台（50.43）上到屋顶（51.93）', lambda r: (r['midLanding']['feet'], r['roofLanding']['feet'], r['roof']['feet']), lambda v: near(v[0], 50.43, 0.05) and near(v[1], 51.93, 0.03) and near(v[2], 51.93, 0.03)),
+        ('屋顶女儿墙挡住，不会走出楼外', lambda r: r['roofEdge']['z'], lambda v: isinstance(v, (int, float)) and v < 10),
     ],
     'heli': [
         ('登机', lambda r: r['inHeli'], lambda v: v is True),
