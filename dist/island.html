@@ -660,7 +660,8 @@ function makeGround(X, texW = 4096) {
   const C = {
     forest: hexRGB(0x2c4322), forest2: hexRGB(0x3b5229), shrub: hexRGB(0x5d6b33), shrub2: hexRGB(0x6f7a3c),
     grass: hexRGB(0x66873a), grass2: hexRGB(0x4f7430), dry: hexRGB(0x8a8f50), rock: hexRGB(0x6d6352),
-    wet: hexRGB(0x4a443b), sand: hexRGB(0xe8e2d3), sandWet: hexRGB(0xcfc6b1), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
+    // sand / sandWet：碧海银沙，略偏冷的银白
+    wet: hexRGB(0x4a443b), sand: hexRGB(0xefece4), sandWet: hexRGB(0xcdc9bc), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
   };
   for (let py = 0; py < bh; py++) for (let px = 0; px < bw; px++) {
     const x = TX.x0 + px + 0.5, z = TX.z0 + py + 0.5;
@@ -686,7 +687,8 @@ function makeGround(X, texW = 4096) {
       c = mixRGB(c, sc, bwt);
     }
     if (h > -0.4 && h < 1.6 && sdw > -6 && X.beachW(x, z) < 0.12) c = mixRGB(c, C.wet, 0.7);
-    { const lk = Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
+    // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
+    { const lk = -Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
     if (ny < 0.72 && h > 0) c = mixRGB(c, C.rock, smoothstep(0.72, 0.55, ny));
     const ao = X.ao[gi_];
@@ -927,7 +929,8 @@ function makeMaterialMap(X) {
     else if (sdb >= 0 || sdw > -40) gr = 1;
     else { const s = sdc / (sdc - sdb); so = 1 - smoothstep(0.55, 0.85, s); gr = 1 - so; }
     if (sdw < 0 && sdw > -38 && X.beachW(x, z) > 0.12) { const b = smoothstep(0.12, 0.3, X.beachW(x, z)) * (1 - smoothstep(33, 38, -sdw)); sa = Math.max(sa, b); if (b > 0.2) { gr = 0; so = 0; } else gr *= 1 - b; }
-    if (Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) < 0.5) { gr = 0; sa = 0.5; so = 0.5; }
+    // 湖岸 0.5 m 内与湖底：沙土各半（lakeSD 湖内为正；旧写法符号反了，湖外全岛都成了沙土、没有草，P-013）
+    if (Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) > -0.5) { gr = 0; sa = 0.5; so = 0.5; }
     // 农田与场地
     if (inR(x, z, L.rice)) { gr = 0.15; so = 0.85; }
     else if (inR(x, z, L.veg)) { gr = 0.2; so = 0.8; }
@@ -1630,7 +1633,8 @@ function makeGround(X, texW = 4096) {
   const C = {
     forest: hexRGB(0x2c4322), forest2: hexRGB(0x3b5229), shrub: hexRGB(0x5d6b33), shrub2: hexRGB(0x6f7a3c),
     grass: hexRGB(0x66873a), grass2: hexRGB(0x4f7430), dry: hexRGB(0x8a8f50), rock: hexRGB(0x6d6352),
-    wet: hexRGB(0x4a443b), sand: hexRGB(0xe8e2d3), sandWet: hexRGB(0xcfc6b1), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
+    // sand / sandWet：碧海银沙，略偏冷的银白
+    wet: hexRGB(0x4a443b), sand: hexRGB(0xefece4), sandWet: hexRGB(0xcdc9bc), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
   };
   for (let py = 0; py < bh; py++) for (let px = 0; px < bw; px++) {
     const x = TX.x0 + px + 0.5, z = TX.z0 + py + 0.5;
@@ -1656,7 +1660,8 @@ function makeGround(X, texW = 4096) {
       c = mixRGB(c, sc, bwt);
     }
     if (h > -0.4 && h < 1.6 && sdw > -6 && X.beachW(x, z) < 0.12) c = mixRGB(c, C.wet, 0.7);
-    { const lk = Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
+    // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
+    { const lk = -Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
     if (ny < 0.72 && h > 0) c = mixRGB(c, C.rock, smoothstep(0.72, 0.55, ny));
     const ao = X.ao[gi_];
@@ -1897,7 +1902,8 @@ function makeMaterialMap(X) {
     else if (sdb >= 0 || sdw > -40) gr = 1;
     else { const s = sdc / (sdc - sdb); so = 1 - smoothstep(0.55, 0.85, s); gr = 1 - so; }
     if (sdw < 0 && sdw > -38 && X.beachW(x, z) > 0.12) { const b = smoothstep(0.12, 0.3, X.beachW(x, z)) * (1 - smoothstep(33, 38, -sdw)); sa = Math.max(sa, b); if (b > 0.2) { gr = 0; so = 0; } else gr *= 1 - b; }
-    if (Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) < 0.5) { gr = 0; sa = 0.5; so = 0.5; }
+    // 湖岸 0.5 m 内与湖底：沙土各半（lakeSD 湖内为正；旧写法符号反了，湖外全岛都成了沙土、没有草，P-013）
+    if (Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)) > -0.5) { gr = 0; sa = 0.5; so = 0.5; }
     // 农田与场地
     if (inR(x, z, L.rice)) { gr = 0.15; so = 0.85; }
     else if (inR(x, z, L.veg)) { gr = 0.2; so = 0.8; }
@@ -2097,6 +2103,31 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
         detailN += vec3(rn.x * (1.0 - an.x), rn.y, rn.x * an.x) * 2.2 * max(rm, steepD);
         wetSand = mw.g * smoothstep(0.9, 0.2, vWP.y) * step(-0.3, vWP.y);
         col *= 1.0 - 0.28 * wetSand;
+        // ---- 海边沙滩：银白细沙（颗粒、深色矿物点、阳光闪点、干沙风纹）与冲岸浪（薄水层周期涌上沙面，前沿泡沫，退后留湿沙） ----
+        float beachS = mw.g * step(-0.6, vWP.y) * (1.0 - smoothstep(2.6, 4.0, vWP.y)) * (1.0 - rm), sandGlint = 0.0;
+        if (beachS > 0.05) {
+          float nearD = 1.0 - smoothstep(18.0, 70.0, camD);
+          float gc = hash12(floor(vWP.xz * 55.0)), gn = vnoise(vWP.xz * 9.0);
+          col *= mix(1.0, 0.94 + 0.09 * gn + 0.04 * gc, beachS * nearD);
+          col = mix(col, col * 0.6, step(0.988, gc) * beachS * nearD * 0.55);
+          float dry = smoothstep(0.55, 1.3, vWP.y);
+          vec2 rd = vec2(0.93, 0.37); float ra = dot(vWP.xz, rd) * 7.5 + vnoise(vWP.xz * 0.6) * 5.0;
+          detailN += vec3(rd.x, 0.0, rd.y) * cos(ra) * 0.09 * dry * beachS * nearD;
+          // 冲岸浪：沿岸各段相位错开，run 为此刻水层上沿的高度（海面 0 以上）
+          float ph = uTime * 0.62 + vWP.x * 0.045 + vnoise(vWP.xz * 0.08) * 3.0, cyc = 0.5 + 0.5 * sin(ph);
+          float run = 0.05 + 0.42 * cyc * cyc, dS = run + (vnoise(vWP.xz * 1.6 + uTime * 0.2) - 0.5) * 0.05 - vWP.y;
+          float film = smoothstep(0.0, 0.035, dS) * beachS;
+          float lace = (smoothstep(-0.012, 0.008, dS) - smoothstep(0.012, 0.07, dS)) * beachS * smoothstep(0.3, 0.7, vnoise(vWP.xz * 3.5 + uTime * 0.3) + 0.3);
+          col = mix(col, col * vec3(0.6, 0.8, 0.84), film * 0.7);
+          col = mix(col, vec3(0.95, 0.97, 0.98), clamp(lace, 0.0, 1.0) * 0.9);
+          float wetB = beachS * smoothstep(0.55, 0.38, vWP.y) * (1.0 - film);
+          col *= 1.0 - 0.2 * wetB;
+          wetSand = max(wetSand, max(film, wetB * 0.7));
+          // 闪点：少数沙粒在太阳镜面方向上闪亮（干沙、近处）
+          vec3 Vs = normalize(cameraPosition - vWP), Hs = normalize(uSunD + Vs);
+          float cell = hash12(floor(vWP.xz * 80.0) + 7.0);
+          sandGlint = step(0.993, cell) * pow(max(dot(Hs, normalize(vWN + vec3(cell - 0.5, 0.0, fract(cell * 13.7) - 0.5) * 0.6)), 0.0), 60.0) * beachS * nearD * (1.0 - film) * 1.6;
+        }
         // 云影
         col *= 1.0 - 0.22 * cloudShadow(vWP, uSunD, uTime);
         // 水下：焦散光纹 + 水体染色（海/泊港、淡水湖、山顶小湖）
@@ -2119,6 +2150,7 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
       `)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.32, wetMask); roughnessFactor = mix(roughnessFactor, 0.35, wetSand); diffuseColor.rgb *= mix(1.0, 0.8, wetMask);')
       .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(normal + (viewMatrix * vec4(detailN, 0.0)).xyz);')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.98, 0.94) * sandGlint;')
       .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= vAO; reflectedLight.indirectSpecular *= vAO * mix(1.0, 1.6, wetMask);');
   };
   const mesh = new THREE.Mesh(geo, mat);
@@ -2126,14 +2158,14 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
   return mesh;
 }
 function buildWaterData(X) {
-  // R=地形高程 G=离岸距离 B=闸内静水
+  // R=地形高程 G=离岸距离 B=闸内静水 A=沙滩（水底为白沙）
   const land = new Uint8Array(GN); for (let k = 0; k < GN; k++) land[k] = X.H[k] > 0.05 ? 1 : 0;
   const dLand = edt(land, 1);
   const data = new Uint16Array(GN * 4), h2f = THREE.DataUtils.toHalfFloat;
   for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) {
     const k = j * G.nx + i, x = G.x0 + i, z = G.z0 + j;
     const calm = (z < L.notch.zGate + 0.5 && X.sdW[k] > -3) ? 1 : smoothstep(L.notch.zGate + 18, L.notch.zGate, z) * (X.sdW[k] > 0 ? 0.4 : 0);
-    data[k * 4] = h2f(X.H[k]); data[k * 4 + 1] = h2f(Math.min(dLand[k], 60)); data[k * 4 + 2] = h2f(calm); data[k * 4 + 3] = h2f(1);
+    data[k * 4] = h2f(X.H[k]); data[k * 4 + 1] = h2f(Math.min(dLand[k], 60)); data[k * 4 + 2] = h2f(calm); data[k * 4 + 3] = h2f(X.beachW(x, z));
   }
   const tex = new THREE.DataTexture(data, G.nx, G.nz, THREE.RGBAFormat, THREE.HalfFloatType);
   tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; tex.needsUpdate = true;
@@ -2194,6 +2226,15 @@ function makeWaterMaterial(dataTex, opts) {
         float amp = mix(1.0, 0.3, max(calm, uFresh));
         vec2 gr = waveGrad(vW.xz, uTime, amp, fade);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); gr += normalize(vW.xz - uPlunge + 1e-3) * sin(dp*2.2 - uTime*6.0) * 0.18 * exp(-dp*0.28); }
+        // 近岸涌浪：沿离岸距离场的梯度（指向外海）朝岸推进，水越浅浪越陡，港内静水区减弱
+        vec2 cellUV = 1.0 / (uGrid.zw + 1.0);
+        vec2 sg = vec2(texture2D(uData, clamp(uv + vec2(cellUV.x, 0.0), 0.0, 1.0)).g - texture2D(uData, clamp(uv - vec2(cellUV.x, 0.0), 0.0, 1.0)).g,
+                       texture2D(uData, clamp(uv + vec2(0.0, cellUV.y), 0.0, 1.0)).g - texture2D(uData, clamp(uv - vec2(0.0, cellUV.y), 0.0, 1.0)).g);
+        vec2 toSea = length(sg) > 1e-4 ? normalize(sg) : vec2(0.0);
+        float surfZone = smoothstep(28.0, 3.0, shore) * smoothstep(0.0, 1.2, shore) * inside * (1.0 - uFresh) * fade;
+        float swPh = shore * 0.85 + uTime * 1.5 + vnoise(vW.xz * 0.05) * 4.0;
+        float steep = mix(0.12, 0.32, smoothstep(12.0, 2.0, shore)) * (1.0 - 0.35 * calm);
+        gr += toSea * cos(swPh) * steep * surfZone;
         vec3 n = normalize(vec3(-gr.x, 1.0, -gr.y));
         float fres = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
         vec3 R = reflect(-V, n);
@@ -2205,7 +2246,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.015, 0.09, 0.09), uFresh);
         vec3 body = mix(shallow, mid, smoothstep(0.4, mix(7.0, 2.2, uFresh), depth));
         body = mix(body, deep, smoothstep(6.0, 30.0, depth) * (1.0 - uFresh));
-        vec3 sand = vec3(0.62, 0.54, 0.38);
+        vec3 sand = mix(vec3(0.62, 0.54, 0.38), vec3(0.86, 0.85, 0.80), dt.a * inside * (1.0 - uFresh));   // 沙滩前的浅水透出白沙，其余岸边与淡水湖为沙褐色水底
         body = mix(sand * 0.8, body, smoothstep(0.0, 1.2, depth));
         float diff = max(dot(n, uSun), 0.0);
         float csh = cloudShadow(vW, uSun, uTime);
@@ -2220,9 +2261,13 @@ function makeWaterMaterial(dataTex, opts) {
         float nz1 = vnoise(vW.xz * 0.32 + vec2(uTime * 0.15, -uTime*0.1));
         float nz2 = vnoise(vW.xz * 1.1 - vec2(uTime * 0.3, 0.0));
         float edge = smoothstep(2.6, 0.2, shore + (nz1 - 0.5) * 2.5);
-        float bands = pow(0.5 + 0.5 * sin(shore * 1.15 - uTime * 1.4 + nz1 * 5.0), 7.0) * smoothstep(12.0, 2.0, shore);
-        float foam = (edge * 0.8 + bands * 0.55) * smoothstep(0.25, 0.65, nz2 + edge * 0.4);
-        foam *= 1.0 - 0.85 * calm;
+        // 浪带朝岸推进（相位随时间增加、浪峰向离岸距离减小的方向移动）；近岸涌浪浪峰处卷起白沫
+        float bands = pow(0.5 + 0.5 * sin(shore * 1.15 + uTime * 1.4 + nz1 * 5.0), 7.0) * smoothstep(12.0, 2.0, shore);
+        // 浪只在浅滩上破碎：浪峰白沫随水深渐隐（码头墙、深水岸边不起沫）；港内静水区只在 2 m 以内的浅滩（沙滩前沿）保留泡沫
+        float shoal = smoothstep(2.0, 0.25, depth);
+        float crest = pow(0.5 + 0.5 * sin(swPh + 1.2), 6.0) * smoothstep(10.0, 1.2, shore) * surfZone * smoothstep(2.5, 0.3, depth);
+        float foam = (edge * 0.8 + bands * 0.55) * smoothstep(0.25, 0.65, nz2 + edge * 0.4) * (1.0 - 0.85 * calm * (1.0 - shoal));
+        foam += crest * smoothstep(0.2, 0.6, nz2 * 0.7 + nz1 * 0.5);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); foam = smoothstep(4.5, 0.5, dp + (nz2-0.5)*2.5) * 0.9 + smoothstep(0.35, 0.0, depth) * 0.25; }
         col = mix(col, vec3(0.9, 0.94, 0.95), clamp(foam, 0.0, 0.9));
         float ff = 1.0 - exp(-uFogD * uFogD * dist * dist);

@@ -1,6 +1,6 @@
 # 基线不变量：页面内断言“不应改变的东西”
 #   1. 共享几何体未被原地变换（BOXG 事故的防线）
-#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）
+#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）
 #   3. 设施与交互数量、碰撞登记数量、三角面数（对照 tests/baseline/invariants.json）
 # 用法：python3 tests/invariants.py [--update]   # --update 重写数量基线（须单独提交并说明原因）
 import os, sys, json
@@ -10,7 +10,7 @@ from harness import Session, arg, ROOT
 BASE = os.path.join(ROOT, 'tests', 'baseline', 'invariants.json')
 
 JS = r'''() => {
-  const TH = __statics.THREE, D = __dbg, I = __island, fails = [], r3 = (v) => Math.round(v * 1000) / 1000;
+  const TH = __statics.THREE, D = __dbg, I = __island, fails = [], r3 = (v) => Math.round(v * 1000) / 1000, L_LAKE = { x: 181, z: -78 };   // 淡水湖中心（02_layout L.lake）
   // ---- 1. 共享的基础几何体必须以原点为中心、尺寸与参数一致 ----
   const users = new Map();
   const visit = (o) => { if (o.isMesh && o.geometry) users.set(o.geometry, (users.get(o.geometry) || 0) + 1); };
@@ -54,6 +54,16 @@ JS = r'''() => {
   { const Y = D.BOAT.g; Y.updateMatrixWorld(true); const o = new TH.Vector3(-32, 1.95, 0).applyMatrix4(Y.matrixWorld), d = new TH.Vector3(1, 0, 0).transformDirection(Y.matrixWorld);
     const h = new TH.Raycaster(o, d, 0, 30).intersectObject(Y, true)[0], lx = h ? Y.worldToLocal(h.point.clone()).x : null;
     if (lx === null || Math.abs(lx + 24.9) > 0.3) fails.push(`游艇尾封板有缺口：从船尾中线高 1.95 m 处看进去，第一个命中点在船体局部 x=${lx === null ? '无' : r3(lx)}，应为 -24.9 左右`); }
+  // ---- 2d. 地表底色与近景草叶（P-013）：沙滩为银白细沙、草地为绿色、湖底为深色泥；草地上长出近景草叶 ----
+  { let terr = null; I.scene.traverse(o => { if (!terr && o.isMesh && o.geometry.attributes.ao && o.material.map && o.material.map.image && o.material.map.image.data) terr = o; });
+    if (!terr) fails.push('找不到地形网格的地表贴图');
+    else { const img = terr.material.map.image, TX = { x0: -360, z0: -210, w: 720, h: 420 };
+      const px = (x, z) => { const o = (Math.floor((z - TX.z0) / TX.h * img.height) * img.width + Math.floor((x - TX.x0) / TX.w * img.width)) * 4; return [img.data[o], img.data[o + 1], img.data[o + 2]]; };
+      for (const [x, z] of [[0, 25], [-20, 30]]) { const c = px(x, z); if (Math.min(...c) < 200) fails.push(`港口沙滩 (${x}, ${z}) 地表色 ${c}，应为银白细沙（三通道都不低于 200）`); }
+      for (const [x, z] of [[-100, -60], [120, 40]]) { const c = px(x, z); if (!(c[1] > c[0] + 15 && c[1] > c[2] + 30)) fails.push(`草地 (${x}, ${z}) 地表色 ${c}，应为绿色`); }
+      { const c = px(L_LAKE.x, L_LAKE.z); if (c[0] + c[1] + c[2] > 270) fails.push(`湖底 (${L_LAKE.x}, ${L_LAKE.z}) 地表色 ${c}，应为深色泥`); } }
+    if (I.grass) { const fp = __fp; fp.teleport(120, 40, 0); fp._st.on = true; I.grass.update(fp); const n = I.grass.mesh.count; fp._st.on = false; I.grass.update(fp);   // 恢复隐藏，免得计入三角面统计
+      if (n < 200) fails.push(`草地 (120, 40) 周围近景草叶只有 ${n} 丛，材质权重图的草地权重可能被清零`); } }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

@@ -19,7 +19,8 @@ function makeGround(X, texW = 4096) {
   const C = {
     forest: hexRGB(0x2c4322), forest2: hexRGB(0x3b5229), shrub: hexRGB(0x5d6b33), shrub2: hexRGB(0x6f7a3c),
     grass: hexRGB(0x66873a), grass2: hexRGB(0x4f7430), dry: hexRGB(0x8a8f50), rock: hexRGB(0x6d6352),
-    wet: hexRGB(0x4a443b), sand: hexRGB(0xe8e2d3), sandWet: hexRGB(0xcfc6b1), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
+    // sand / sandWet：碧海银沙，略偏冷的银白
+    wet: hexRGB(0x4a443b), sand: hexRGB(0xefece4), sandWet: hexRGB(0xcdc9bc), seabed: hexRGB(0xb6a77d), deep: hexRGB(0x5c6a64)
   };
   for (let py = 0; py < bh; py++) for (let px = 0; px < bw; px++) {
     const x = TX.x0 + px + 0.5, z = TX.z0 + py + 0.5;
@@ -45,7 +46,8 @@ function makeGround(X, texW = 4096) {
       c = mixRGB(c, sc, bwt);
     }
     if (h > -0.4 && h < 1.6 && sdw > -6 && X.beachW(x, z) < 0.12) c = mixRGB(c, C.wet, 0.7);
-    { const lk = Math.min(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
+    // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
+    { const lk = -Math.max(lakeSD(x, z, L.lake, 0), lakeSD(x, z, L.upperLake, 0)); if (lk < 0.3) c = mixRGB(c, mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk)), clamp(0.3 - lk, 0, 1)); }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
     if (ny < 0.72 && h > 0) c = mixRGB(c, C.rock, smoothstep(0.72, 0.55, ny));
     const ao = X.ao[gi_];
