@@ -26,7 +26,7 @@ try {
   const matTex = new THREE.DataTexture(GR.matMap.data, GR.matMap.w, GR.matMap.h, THREE.RGBAFormat); matTex.flipY = false; matTex.magFilter = THREE.LinearFilter; matTex.minFilter = THREE.LinearFilter; matTex.needsUpdate = true;
   scene.add(buildTerrainMesh(X, gtex, mtex, QS.terrainStep, { mat: matTex, det: detTex }, QS));
   await stage(0.52, '海水与湖泊');
-  const W = buildWater(X, buildWaterData(X), QS); scene.add(W.group);
+  const W = buildWater(X, buildWaterData(X), QS, renderer); scene.add(W.group);
   await stage(0.6, '建筑与设施');
   const statics = [buildVilla(), buildDorm(), buildTennis(), buildParking(), buildBarn(), buildPens(), buildGreenhouses(),
     buildEastTower(), buildWestTower(), buildGate(), buildGateTower(), buildAirfield(), buildSolar(),
@@ -96,7 +96,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -156,6 +156,7 @@ try {
     else if (!fp.update(dt)) controls.update();
     for (const m of W.mats) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = t;
     for (const u of TIME_U) u.value = t;
+    if (W.sea) W.sea.update(renderer, camera, t);
     if (grass) grass.update(fp);
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
     updateAnimals(dt, fp.on ? fp.pos : null);
@@ -172,6 +173,7 @@ try {
     if (location.hash.includes('still') && frames >= 3) return;
     requestAnimationFrame(loop);
   }
+  if (DEBUG) window.__sea = W.sea;
   if (DEBUG) window.__island = { scene, camera, controls, renderer, X, veg, goView, QS, grass, shadowFollow, underwaterCheck }; if (location.hash.includes('still')) { let tri = 0; scene.traverse(o => { if (o.isMesh) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tri += n * (o.isInstancedMesh ? o.count : 1); } }); console.log('veg', JSON.stringify(veg), 'tris', Math.round(tri / 1000) + 'k'); }
   await stage(1, '');
   loop();

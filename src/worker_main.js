@@ -7,6 +7,8 @@ self.onmessage = (e) => {
     const X = buildTerrain();
     post(0.28, '法线与遮蔽');
     X.normals = terrainNormals(X.H); X.ao = terrainAO(X.H);
+    post(0.32, '海岸坐标场');
+    const shore = shoreFieldHalf(buildShoreField(X.H, X.sdW));
     post(0.36, '地表与农田');
     const GT = makeGround(X, e.data.texW);
     post(0.4, '细节纹理与材质');
@@ -17,7 +19,7 @@ self.onmessage = (e) => {
     const ground = { data: gi.data, w: gi.width, h: gi.height }, mask = { data: mi.data, w: mi.width, h: mi.height };
     post(0.44, '传回主线程');
     const roads = X.roads.map(r => ({ id: r.id, w: r.w, pts: r.pts, widths: r.widths, len: r.len }));
-    const msg = { type: 'done', H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roadDist: X.roads.dist, roads, ground, mask, matMap };
-    self.postMessage(msg, [X.H.buffer, X.normals.buffer, X.ao.buffer, X.sdB.buffer, X.sdC.buffer, X.sdW.buffer, X.roads.dist.buffer, gi.data.buffer, mi.data.buffer, matMap.data.buffer]);
+    const msg = { type: 'done', H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roadDist: X.roads.dist, roads, ground, mask, matMap, shore };
+    self.postMessage(msg, [X.H.buffer, X.normals.buffer, X.ao.buffer, X.sdB.buffer, X.sdC.buffer, X.sdW.buffer, X.roads.dist.buffer, gi.data.buffer, mi.data.buffer, matMap.data.buffer, shore.f0.buffer, shore.f1.buffer, shore.f2.buffer]);
   } catch (err) { self.postMessage({ type: 'error', msg: String(err && err.stack || err) }); }
 };
