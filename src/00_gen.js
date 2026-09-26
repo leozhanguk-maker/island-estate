@@ -32,7 +32,7 @@ function detectQuality() {
 function generateIsland(texW, onProgress) {
   const finish = (d, via) => {
     const roads = d.roads; roads.dist = d.roadDist;
-    const X = { H: d.H, normals: d.normals, ao: d.ao, sdB: d.sdB, sdC: d.sdC, sdW: d.sdW, roads,
+    const X = { H: d.H, normals: d.normals, ao: d.ao, sdB: d.sdB, sdC: d.sdC, sdW: d.sdW, roads, shore: d.shore,
       beachW: (x, z) => smoothstep(58, 44, z) * smoothstep(72, 58, Math.abs(x)) };
     return { X, ground: d.ground, mask: d.mask, matMap: d.matMap, det: d.det, via };
   };
@@ -42,7 +42,7 @@ function generateIsland(texW, onProgress) {
     const matMap = makeMaterialMap(X), det = ['grass', 'sand', 'gravel', 'soil', 'rock'].map(k => makeDetailTex(k));
     // 与后台线程输出同一格式 {data, w, h}：近景草叶取色、小地图底图都按像素数据读取，直接传 canvas 会得到 NaN 下标（P-012）
     const px = (cv) => { const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height); return { data: d.data, w: d.width, h: d.height }; };
-    return finish({ matMap, det, H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roads: X.roads, roadDist: X.roads.dist, ground: px(GT.canvas), mask: px(GT.mask) }, 'main');
+    return finish({ matMap, det, H: X.H, normals: X.normals, ao: X.ao, sdB: X.sdB, sdC: X.sdC, sdW: X.sdW, roads: X.roads, roadDist: X.roads.dist, ground: px(GT.canvas), mask: px(GT.mask), shore: shoreFieldHalf(buildShoreField(X.H, X.sdW)) }, 'main');
   };
   return new Promise((resolve) => {
     let w = null, w2 = null, done = false, timer = null, main = null, det = null;

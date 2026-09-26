@@ -366,11 +366,16 @@ function makeWaterMaterial(dataTex, opts) {
       }`
   });
 }
-function buildWater(X, dataTex, QS = {}) {
+function buildWater(X, dataTex, QS = {}, renderer = null) {
   const group = new THREE.Group(), mats = [];
-  const seaMat = makeWaterMaterial(dataTex, { level: 0, clouds: QS.clouds }); mats.push(seaMat);
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000, 120, 120), seaMat);
-  sea.rotation.x = -Math.PI / 2; sea.position.y = 0; group.add(sea);
+  // 海面：FFT 风浪 + 涌浪/碎浪/崖岸拍浪（05b_sea.js）；设备不支持浮点渲染目标或带 #oldsea 时回退到原海面
+  const seaNew = location.hash.includes('oldsea') ? null : buildSea(X, dataTex, QS, renderer);
+  if (seaNew) { group.add(seaNew.mesh); mats.push(seaNew.mat); }
+  else {
+    const seaMat = makeWaterMaterial(dataTex, { level: 0, clouds: QS.clouds }); mats.push(seaMat);
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000, 120, 120), seaMat);
+    sea.rotation.x = -Math.PI / 2; sea.position.y = 0; group.add(sea);
+  }
   // 淡水湖与山顶小湖：用略大的椭圆面片（地形遮挡岸线以外部分）
   for (const lk of [L.lake, L.upperLake]) {
     const m = makeWaterMaterial(dataTex, { level: lk.level, fresh: true, clouds: QS.clouds }); mats.push(m);
@@ -450,5 +455,5 @@ function buildWater(X, dataTex, QS = {}) {
         vA = 0.5 * (1.0 - ph);
         vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = (0.08 + seed.w * 0.1) * 800.0 / -mv.z; }`);
   }
-  return { group, mats };
+  return { group, mats, sea: seaNew };
 }
