@@ -68,16 +68,23 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     const nearShore = (x, z) => { for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12; if (D.gh(x + Math.cos(a) * 9.5, z + Math.sin(a) * 9.5) > 0) return true; } return false; };
     const badOf = (w) => { for (const a of w.a) { if (forbid(a.x, a.z)) return `进入水闸口/峡谷/闸内港口 (${a.x.toFixed(1)}, ${a.z.toFixed(1)})`; if (nearShore(a.x, a.z)) return `离岸不足 10 m (${a.x.toFixed(1)}, ${a.z.toFixed(1)})`; } return null; };
     const run = (secs, t0) => { for (let s = 0; s < secs * 30; s++) for (const w of E.whales) { w.update(1 / 30, t0 + s / 30); if (s % 15 === 0) { const b = badOf(w); if (b) return b; } } return null; };
-    const put = (w, x, z) => { const dx = x - w.a[0].x, dz = z - w.a[0].z; for (const a of w.a) { a.x += dx; a.z += dz; } };
+    // 按编队位置摆放（只平移领头的会把离队较远的跟随者一起带进峡谷）
+    const put = (w, x, z) => { for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : x) + sl[0]; a.z = (f ? f.z : z) + sl[1]; a.yaw = 0; a.v = 0; } };
     let bad = null;
+    // 判定本身（确定性）：全岛外海每 1.7 m 取点，凡被判为鲸群可去的，72 个方向、0.25 m 步长直到 9.5 m 都不能有陆地
+    // （曾在半径 10 m 上只取 16 个方向，细小岬角从两点之间漏过，鲸群贴着岬角游到离岸 9.5 m 以内）
+    { let gap = null; for (let z = -228; z < 228 && !gap; z += 1.7) for (let x = -378; x < 378 && !gap; x += 1.7) { const g = D.gh(x, z); if (g > -8 || g < -30 || !D.ecoWhaleOk(x, z, 8)) continue;
+        for (let k = 0; k < 72 && !gap; k++) { const a = k * Math.PI / 36; for (let r = 0.25; r <= 9.5; r += 0.25) if (D.gh(x + Math.cos(a) * r, z + Math.sin(a) * r) > 0) { gap = `(${x.toFixed(1)}, ${z.toFixed(1)}) 被判为可去，但 ${r} m 外就是陆地`; break; } } }
+      if (gap) bad = `离岸判定有漏洞：${gap}`; }
     const snap = E.whales.map(w => ({ w, a: w.a.map(c => ({ ...c })), wp: { ...w.wp }, wt: w.wt, chaseT: w.chaseT, chasing: w.chasing }));
-    { const b = run(60, 100); if (b) bad = `自由巡游时${b}`; }
+    if (!bad) { const b = run(60, 100); if (b) bad = `自由巡游时${b}`; }
     // 把各鲸群放到峡谷出口外 35 m 的深水里，航点依次设在峡谷中、水闸口、闸内港口，各推进 30 秒
     for (const [nm, wx, wz] of [['峡谷中', 0, 160], ['水闸口', 0, gz + 2], ['闸内港口', 0, 80]]) { if (bad) break;
       for (const [i, w] of E.whales.entries()) { put(w, -40 + i * 40, 240); w.wp = { x: wx, z: wz }; w.wt = 999; w.chasing = 0; w.chaseT = 1e9; }
+      const b0 = E.whales.map(badOf).find(Boolean); if (b0) { bad = `测试摆放位置本身不合规：${b0}`; break; }
       const b = run(30, 200); if (b) bad = `航点设在${nm}时${b}`; }
     // 游艇在峡谷出口外鸣笛：召唤来的鲸群出现的位置与之后 30 秒都不违规
-    if (!bad) { for (const w of E.whales) w.chaseT = 30; const msg = D.ecoOceanShow(0, 222); const b0 = E.whales.map(badOf).find(Boolean); const b = b0 || run(30, 300);
+    if (!bad) { for (const w of E.whales) w.chaseT = 30; const msg = D.ecoOceanShow(0, 222); if (!D.ECO_SHOW.moved) bad = `峡谷出口外鸣笛没有召唤成功：${msg}`; const b0 = E.whales.map(badOf).find(Boolean); const b = b0 || run(30, 300);
       if (b) bad = `峡谷出口外鸣笛（${msg}）后${b}`; }
     // 还原：召唤的水域挪回原处、鲸群回到测试前的状态（不影响后面的绘制调用测量）
     if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }

@@ -66,9 +66,9 @@ class EcoPod {
       const vWant = i === 0 ? (this.chasing > 0 ? this.chaseSpeed : this.speed) : clamp(d * 0.5, 0, this.speed * 1.6);
       w.v = lerp(w.v, vWant, dt * 0.5);
       // 前方水太浅、离岸不足 10 m 或进入水闸口/峡谷/闸内港口（编队位置或两航点之间的直线可能跨过去）：不前进，原地转向；领头的换一个航点（P-017）。
-      // 已经处在禁区里（例如被召唤挪过来时编队展开）的，只要不更靠岸、不进闸内就允许游出来
+      // 已经处在禁区里（例如被召唤挪过来时编队展开）的，只要不变浅、不更靠岸、不进闸内就允许游出来
       { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt, m = this.minFloor * 0.6;
-        const ok = ecoWhaleOk(nx, nz, m) || (!ecoWhaleOk(w.x, w.z, m) && gh(nx, nz) < -m && ecoIn('ocean', nx, nz) && !ecoGateArea(nx, nz) && gh(nx, nz) <= gh(w.x, w.z));
+        const ok = ecoWhaleOk(nx, nz, m) || (!ecoWhaleOk(w.x, w.z, m) && gh(nx, nz) < -m && ecoIn('ocean', nx, nz) && !ecoGateArea(nx, nz) && gh(nx, nz) <= gh(w.x, w.z) && ecoShoreDist(nx, nz, ECO_SHORE + 2) >= ecoShoreDist(w.x, w.z, ECO_SHORE + 2));
         if (ok) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
       // 换气：定时上浮到水面、喷气，再下潜；跃身：加速冲出水面后落回，溅起水花
       w.breath -= dt;

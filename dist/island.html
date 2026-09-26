@@ -5591,10 +5591,26 @@ function ecoZone(x, z) {
 const ECO_CANYON = { hw: 39, z1: 202 };   // 闸外水道峡谷：|x| < 39 m，从水闸（z = gateZ）一直到 z ≈ 202 出海
 const ECO_SHORE = 10;
 const ecoGateArea = (x, z) => (Math.abs(x) < 75 && z > 0 && z < L.gateZ) || (Math.abs(x) < ECO_CANYON.hw + ECO_SHORE && z >= L.gateZ && z < ECO_CANYON.z1 + ECO_SHORE);
+// 陆地格：地形是 1 m 网格双线性插值，格内任一点高程不超过四角最大值；四角任一高于 -0.3 m 就算可能露出水面的陆地格（保守）。首次使用时建一次
+let ECO_LAND = null;
+function ecoLandMask() {
+  if (ECO_LAND) return ECO_LAND;
+  const nx = G.nx - 1, nz = G.nz - 1, node = new Uint8Array(G.nx * G.nz), m = new Uint8Array(nx * nz);
+  for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) node[j * G.nx + i] = gh(G.x0 + i, G.z0 + j) > -0.3 ? 1 : 0;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * G.nx + i; m[j * nx + i] = node[k] | node[k + 1] | node[k + G.nx] | node[k + G.nx + 1]; }
+  return (ECO_LAND = m);
+}
+// 到最近陆地格的精确距离（点到格子方块的最近距离），超过 R 时返回 R。网格外是深海（地形在网格边缘取边值），不会有陆地
+function ecoShoreDist(x, z, R) {
+  const m = ecoLandMask(), nx = G.nx - 1, nz = G.nz - 1, fx = x - G.x0, fz = z - G.z0;
+  const i0 = Math.max(0, Math.floor(fx - R)), i1 = Math.min(nx - 1, Math.floor(fx + R)), j0 = Math.max(0, Math.floor(fz - R)), j1 = Math.min(nz - 1, Math.floor(fz + R));
+  let best = R * R;
+  for (let j = j0; j <= j1; j++) { const dz = Math.max(j - fz, 0, fz - j - 1), dz2 = dz * dz; if (dz2 >= best) continue;
+    for (let i = i0; i <= i1; i++) if (m[j * nx + i]) { const dx = Math.max(i - fx, 0, fx - i - 1), d2 = dx * dx + dz2; if (d2 < best) best = d2; } }
+  return Math.sqrt(best);
+}
 function ecoWhaleOk(x, z, minDepth) {
-  if (!(gh(x, z) < -minDepth) || !ecoIn('ocean', x, z) || ecoGateArea(x, z)) return false;
-  for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (gh(x + Math.cos(a) * ECO_SHORE, z + Math.sin(a) * ECO_SHORE) > -0.3) return false; }
-  return true;
+  return gh(x, z) < -minDepth && ecoIn('ocean', x, z) && !ecoGateArea(x, z) && ecoShoreDist(x, z, ECO_SHORE) >= ECO_SHORE;
 }
 const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）
@@ -6336,9 +6352,9 @@ class EcoPod {
       const vWant = i === 0 ? (this.chasing > 0 ? this.chaseSpeed : this.speed) : clamp(d * 0.5, 0, this.speed * 1.6);
       w.v = lerp(w.v, vWant, dt * 0.5);
       // 前方水太浅、离岸不足 10 m 或进入水闸口/峡谷/闸内港口（编队位置或两航点之间的直线可能跨过去）：不前进，原地转向；领头的换一个航点（P-017）。
-      // 已经处在禁区里（例如被召唤挪过来时编队展开）的，只要不更靠岸、不进闸内就允许游出来
+      // 已经处在禁区里（例如被召唤挪过来时编队展开）的，只要不变浅、不更靠岸、不进闸内就允许游出来
       { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt, m = this.minFloor * 0.6;
-        const ok = ecoWhaleOk(nx, nz, m) || (!ecoWhaleOk(w.x, w.z, m) && gh(nx, nz) < -m && ecoIn('ocean', nx, nz) && !ecoGateArea(nx, nz) && gh(nx, nz) <= gh(w.x, w.z));
+        const ok = ecoWhaleOk(nx, nz, m) || (!ecoWhaleOk(w.x, w.z, m) && gh(nx, nz) < -m && ecoIn('ocean', nx, nz) && !ecoGateArea(nx, nz) && gh(nx, nz) <= gh(w.x, w.z) && ecoShoreDist(nx, nz, ECO_SHORE + 2) >= ecoShoreDist(w.x, w.z, ECO_SHORE + 2));
         if (ok) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
       // 换气：定时上浮到水面、喷气，再下潜；跃身：加速冲出水面后落回，溅起水花
       w.breath -= dt;
@@ -6503,6 +6519,8 @@ function ecoShiftZone(Z, dx, dz) {
     if (f.anchors) f.anchors = f.anchors.map(a => ({ ...a, x: a.x + dx, z: a.z + dz })); }
   for (const w of Z.whales || []) { for (const a of w.a) { a.x += dx; a.z += dz; } w.home = { ...w.home, x: w.home.x + dx, z: w.home.z + dz }; w.wp = { x: w.wp.x + dx, z: w.wp.z + dz }; w.wt = 0; }
 }
+// 出现点周围 r 米内不碰到水闸口/峡谷/闸内港口（中心加三圈、每圈 16 点）
+function ecoClearOfGate(x, z, r) { if (ecoGateArea(x, z)) return false; for (const q of [r / 3, r * 2 / 3, r]) for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (ecoGateArea(x + Math.cos(a) * q, z + Math.sin(a) * q)) return false; } return true; }
 // 返回提示文字；成功时各外海水域被挪到船边
 function ecoOceanShow(x, z) {
   if (!ECO.built) return '生态尚未就绪';
@@ -6513,10 +6531,12 @@ function ecoOceanShow(x, z) {
   const spots = [];
   for (let k = 0; k < 96 && spots.length < names.length; k++) {
     const a = k * 2.39996, r = 40 + (k % 4) * 10, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
-    if (ecoWhaleOk(px, pz, 20) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
+    if (ecoWhaleOk(px, pz, 20) && ecoShoreDist(px, pz, 36) >= 35 && ecoClearOfGate(px, pz, 36) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
-  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined; });
+  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined;
+    // 鲸群按编队位置在出现点重新集结（整体平移会把离队较远的个体带到岸边或峡谷里；编队最远约 23 m（幼鲸跟在母鲸旁），出现点离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m）
+    for (const w of Z.whales || []) for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : s.x) + sl[0]; a.z = (f ? f.z : s.z) + sl[1]; } });
   ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
@@ -6626,7 +6646,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));

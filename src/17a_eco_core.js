@@ -18,10 +18,26 @@ function ecoZone(x, z) {
 const ECO_CANYON = { hw: 39, z1: 202 };   // 闸外水道峡谷：|x| < 39 m，从水闸（z = gateZ）一直到 z ≈ 202 出海
 const ECO_SHORE = 10;
 const ecoGateArea = (x, z) => (Math.abs(x) < 75 && z > 0 && z < L.gateZ) || (Math.abs(x) < ECO_CANYON.hw + ECO_SHORE && z >= L.gateZ && z < ECO_CANYON.z1 + ECO_SHORE);
+// 陆地格：地形是 1 m 网格双线性插值，格内任一点高程不超过四角最大值；四角任一高于 -0.3 m 就算可能露出水面的陆地格（保守）。首次使用时建一次
+let ECO_LAND = null;
+function ecoLandMask() {
+  if (ECO_LAND) return ECO_LAND;
+  const nx = G.nx - 1, nz = G.nz - 1, node = new Uint8Array(G.nx * G.nz), m = new Uint8Array(nx * nz);
+  for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) node[j * G.nx + i] = gh(G.x0 + i, G.z0 + j) > -0.3 ? 1 : 0;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * G.nx + i; m[j * nx + i] = node[k] | node[k + 1] | node[k + G.nx] | node[k + G.nx + 1]; }
+  return (ECO_LAND = m);
+}
+// 到最近陆地格的精确距离（点到格子方块的最近距离），超过 R 时返回 R。网格外是深海（地形在网格边缘取边值），不会有陆地
+function ecoShoreDist(x, z, R) {
+  const m = ecoLandMask(), nx = G.nx - 1, nz = G.nz - 1, fx = x - G.x0, fz = z - G.z0;
+  const i0 = Math.max(0, Math.floor(fx - R)), i1 = Math.min(nx - 1, Math.floor(fx + R)), j0 = Math.max(0, Math.floor(fz - R)), j1 = Math.min(nz - 1, Math.floor(fz + R));
+  let best = R * R;
+  for (let j = j0; j <= j1; j++) { const dz = Math.max(j - fz, 0, fz - j - 1), dz2 = dz * dz; if (dz2 >= best) continue;
+    for (let i = i0; i <= i1; i++) if (m[j * nx + i]) { const dx = Math.max(i - fx, 0, fx - i - 1), d2 = dx * dx + dz2; if (d2 < best) best = d2; } }
+  return Math.sqrt(best);
+}
 function ecoWhaleOk(x, z, minDepth) {
-  if (!(gh(x, z) < -minDepth) || !ecoIn('ocean', x, z) || ecoGateArea(x, z)) return false;
-  for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (gh(x + Math.cos(a) * ECO_SHORE, z + Math.sin(a) * ECO_SHORE) > -0.3) return false; }
-  return true;
+  return gh(x, z) < -minDepth && ecoIn('ocean', x, z) && !ecoGateArea(x, z) && ecoShoreDist(x, z, ECO_SHORE) >= ECO_SHORE;
 }
 const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）

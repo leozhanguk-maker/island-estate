@@ -24,6 +24,8 @@ function ecoShiftZone(Z, dx, dz) {
     if (f.anchors) f.anchors = f.anchors.map(a => ({ ...a, x: a.x + dx, z: a.z + dz })); }
   for (const w of Z.whales || []) { for (const a of w.a) { a.x += dx; a.z += dz; } w.home = { ...w.home, x: w.home.x + dx, z: w.home.z + dz }; w.wp = { x: w.wp.x + dx, z: w.wp.z + dz }; w.wt = 0; }
 }
+// 出现点周围 r 米内不碰到水闸口/峡谷/闸内港口（中心加三圈、每圈 16 点）
+function ecoClearOfGate(x, z, r) { if (ecoGateArea(x, z)) return false; for (const q of [r / 3, r * 2 / 3, r]) for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (ecoGateArea(x + Math.cos(a) * q, z + Math.sin(a) * q)) return false; } return true; }
 // 返回提示文字；成功时各外海水域被挪到船边
 function ecoOceanShow(x, z) {
   if (!ECO.built) return '生态尚未就绪';
@@ -34,10 +36,12 @@ function ecoOceanShow(x, z) {
   const spots = [];
   for (let k = 0; k < 96 && spots.length < names.length; k++) {
     const a = k * 2.39996, r = 40 + (k % 4) * 10, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
-    if (ecoWhaleOk(px, pz, 20) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
+    if (ecoWhaleOk(px, pz, 20) && ecoShoreDist(px, pz, 36) >= 35 && ecoClearOfGate(px, pz, 36) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
-  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined; });
+  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined;
+    // 鲸群按编队位置在出现点重新集结（整体平移会把离队较远的个体带到岸边或峡谷里；编队最远约 23 m（幼鲸跟在母鲸旁），出现点离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m）
+    for (const w of Z.whales || []) for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : s.x) + sl[0]; a.z = (f ? f.z : s.z) + sl[1]; } });
   ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
