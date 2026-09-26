@@ -212,6 +212,15 @@ function buildGateTower() {
   cyl(I, 0.05, 0.06, 4, M.galv, -1.2, top + 2, -1.2, 6);
   T.position.set(cx, 2.2, cz); return T;
 }
+// 砖墙材质：画布上画 1 m × 0.5 m 的一块顺砖错缝（砖 0.24 × 0.07 m、灰缝 1 cm，砖色逐块浮动），按基座尺寸平铺
+function helipadBrickMat(dep) {
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const g = cv.getContext('2d'), R = mulberry32(5150), bw = 512 / 4.1, bh = 256 / 6.25;
+  g.fillStyle = '#bdb4a6'; g.fillRect(0, 0, 512, 256);
+  for (let r = 0; r * bh < 256; r++) for (let k = -1; k * bw < 512; k++) { const x = k * bw + (r % 2 ? bw / 2 : 0) + 2, yy = r * bh + 2, v = R();
+    g.fillStyle = `rgb(${150 + v * 40 | 0},${72 + v * 22 | 0},${52 + v * 16 | 0})`; g.fillRect(x, yy, bw - 4, bh - 4); }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(24.3, Math.max(1, dep / 0.5)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return std(0xffffff, 0.9, 0, { map: t });
+}
 // ---------------- 机库 + 停机坪 ----------------
 function buildAirfield() {
   const A = new THREE.Group(), y = L.plateau.h;
@@ -255,6 +264,9 @@ function buildAirfield() {
   box(P, 0.7, 0.02, 4.5, M.white, -1.3, 0.235, 0); box(P, 0.7, 0.02, 4.5, M.white, 1.3, 0.235, 0); box(P, 1.9, 0.02, 0.7, M.white, 0, 0.235, 0);
   for (let i = 0; i < 8; i++) { const t = -11 + i * 22 / 7; for (const [a, b] of [[t, -11.6], [t, 11.6], [-11.6, t], [11.6, t]]) box(P, (a === -11.6 || a === 11.6) ? 0.4 : 1.8, 0.02, (a === -11.6 || a === 11.6) ? 1.8 : 0.4, M.white, a, 0.235, b); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; box(P, 0.22, 0.16, 0.22, M.green, Math.cos(a) * 12.4, 0.2, Math.sin(a) * 12.4); }
+  // 砖砌基座：从坪底一直砌到坪下最低地面以下 0.5 m，四周整齐的顺砖错缝砌法，顶部一圈混凝土压顶，与停机坪成为一体（原来坪在平台边缘悬空）
+  { let lo = y; const c = Math.cos(rot), s = Math.sin(rot); for (let a = -12; a <= 12; a += 2) for (let b = -12; b <= 12; b += 2) lo = Math.min(lo, gh(L.helipad.x + a * c + b * s, L.helipad.z - a * s + b * c));
+    const dep = y - lo + 0.5, bm = helipadBrickMat(dep); box(P, 24.3, dep, 24.3, bm, 0, -dep / 2, 0); box(P, 24.5, 0.1, 24.5, M.concrete, 0, -0.04, 0); }
   P.position.set(L.helipad.x, y, L.helipad.z); P.rotation.y = rot; A.add(P);
   COLL.walks.push({ kind: 'rect', x: L.helipad.x, z: L.helipad.z, hw: 12, hd: 12, rot, y: y + 0.22 });
   collC(L.helipad.x + 14, L.helipad.z + 12, 0.15);
