@@ -70,8 +70,11 @@ JS = r'''() => {
         const h = new TH.Raycaster(new TH.Vector3(x, y, D.L.gateZ - 6), new TH.Vector3(0, 0, 1), 0, 12).intersectObjects(G.leaves, true)[0]; if (!h) pass++; }
       if (pass / n < 0.5) fails.push(`水闸门叶在高 ${y} m 处只有 ${Math.round(pass / n * 100)}% 的视线能穿过，应为通透栅栏（≥ 50%）`); }
     G.leaves.forEach((l, i) => { l.position.y = keep[i]; l.updateMatrixWorld(true); });
+    // 新海面（05b_sea）：涌浪经缺口与通透闸门进入闸内港口，港内浪高比例 SHORE.lagoonGain 不得压到静水（< 0.5）；#oldsea 回退时检查原海面着色器
+    const nsea = (__statics.waterMats || []).find(m => m.uniforms && m.uniforms.uShore0);
     const sea = (__statics.waterMats || []).find(m => m.uniforms && m.uniforms.uFresh && m.uniforms.uFresh.value === 0);
-    if (!sea) fails.push('找不到海水材质');
+    if (nsea) { if (!(D.SHORE && D.SHORE.lagoonGain >= 0.5)) fails.push(`闸内港口浪高比例 SHORE.lagoonGain = ${D.SHORE && D.SHORE.lagoonGain}，应 ≥ 0.5（闸门通透，海浪应能冲进港内）`); }
+    else if (!sea) fails.push('找不到海水材质');
     else for (const bad of ['max(calm', '0.35 * calm', '0.85 * calm']) if (sea.fragmentShader.includes(bad)) fails.push(`海水着色器仍按闸内港口静水区压低海浪（含 “${bad}”），闸内外海浪应一致`); }
   // ---- 2f. 栈道：北端桥面落在沙面上、南端与闸口警戒塔塔基顶面（2.6）齐平并伸进塔基；沿线桥面两侧 1.7 m 内地形不高出桥面（岩石不侵入扶手）；塔基可站立 ----
   { const T2 = __fp._test, ws = D.COLL.walks.filter(w => w.kind === 'path'), tw = D.L.gateTower;
