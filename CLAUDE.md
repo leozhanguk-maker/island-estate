@@ -25,6 +25,7 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 | 命令 | 作用 | 输出 |
 |---|---|---|
 | `npm run test:terrain` | 地形关键点高程、道路坡度（纯 node，约 1 秒） | 终端 |
+| `npm run test:shore` | 海岸坐标场（新海面用）：离岸距离、涌浪到达时间、迎浪程度、无 NaN（纯 node） | 终端 |
 | `npm run test:invariants` | 基线不变量：共享几何体未被原地变换、泳池/别墅关键高程、设施与碰撞数量、三角面数 | 终端 |
 | `npm run test:baselines` | 跑 phys/drive/boat/cruise/heli 五个测试并断言基线数值 | 终端 |
 | `npm run test:regression` | 已修复程序缺陷的回归用例（编号对应 ISSUES.md），问题复发即失败 | 终端 |
@@ -42,7 +43,7 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 - playwright 固定为 1.56.0：云端容器预装的是 chromium-1194（`/opt/pw-browsers`），正好对应 1.56.0；更新版本（如 1.63 需要 chromium-1243）会找不到浏览器。**不要运行 `playwright install`**，也不要升级 playwright。
 - 无头浏览器参数：`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`；CDN 请求被路由到 `node_modules/three`。
 - 软件渲染下单次加载约 10–40 秒（旧记录 60–170 秒），测试脚本超时要给足；多个浏览器测试请串行运行。
-- 调试地址参数：`#fp`（直接漫游）、`#still`（渲染 3 帧后停止并暴露 `window.__island / __fp / __dbg / __statics`）、`#q=high|mid|low`、`#noworker`、`#clean`（隐藏界面）。
+- 调试地址参数：`#oldsea`（原海面）、`#seadbg`（海面泡沫通道）、`#fp`（直接漫游）、`#still`（渲染 3 帧后停止并暴露 `window.__island / __fp / __dbg / __statics`）、`#q=high|mid|low`、`#noworker`、`#clean`（隐藏界面）。
 
 ## 铁律
 1. **定稿约束不动**：设施位置、数量、道路走向与坡度、崖壁改造范围、高档画质（见上一节）。改到这些的方案一律先问用户。
@@ -79,8 +80,10 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 | 00_gen | 画质分档、双后台线程调度（失败回退主线程） |
 | 01_util / 02_layout | 工具函数；★全岛布局常量（米制，x 东、z 南、y 上，北为 -z） |
 | 03_terrain | 地形：海岸、盆地、崖壁冲沟与岩架、水道、湖、瀑布（FALL）、水田（PADDY）、沙滩、泳池下沉池体 |
+| 03b_shore | 海岸坐标场（后台线程）：离岸距离/方向、坡度、迎浪程度、涌浪到达时间，供新海面使用 |
 | 04_ground / 04b_detail | 地表颜色画布；细节纹理与材质权重图（后台线程执行，注意 if/else 链与变量初始化顺序） |
 | 05_scene | 渲染器、天空云、地形着色器（含水下焦散）、海/湖水材质（浅水半透明）、瀑布与粒子 |
+| 05b_sea | 新海面：FFT 风浪、涌浪折射、碎浪、崖岸拍浪、沙滩上冲、Beer–Lambert 水体（减配移植自 ShoreBreak，MIT，见 docs/SEA.md）；`#oldsea` 回退原海面 |
 | 06_struct_a | 材质、批处理、碰撞登记（COLL / DYN / INTERACT / SEATS / POTS / HIBISCUS）、家具构件库、别墅（三层+屋顶、推拉门、座位）、泳池、住宅楼等 |
 | 06_struct_b | 瞭望塔（塔内折返楼梯+观察室）、水闸（下沉式通透栅栏闸门，GATE 状态）、机库、风机、光伏、栈桥、沙滩小品 |
 | 07_vehicles | 游艇（可进入的舱室、局部坐标碰撞 YL、座位）、H125、Cybertruck（1:1）、拖拉机 |
