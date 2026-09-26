@@ -3,6 +3,8 @@
 //   东西向楼道 z ∈ [-1.25, 1.25] 贯通全楼；楼道北侧中间为交通核：楼梯间 x ∈ [-4, 0]、两部电梯 x ∈ [0, 4]；南侧中间为楼道采光厅（1 层为入户大堂）
 //   四户分居四角：西北、东北、西南、东南，每户 10.8 × 8.55 m，户型、门窗、内饰完全相同（按楼道与交通核镜像布置）
 //   1 层为大堂与物业用房（不设住户）；2～12 层每层四户；楼梯从 1 层一直通到屋顶（顶层楼道进楼梯间上屋顶）；电梯服务 1～12 层
+// 直升机按整栋楼体避让（窗是透明玻璃、窗洞 3～5 m，按构件逐个检查会从窗洞飞进楼里）：楼身（含阳台）一个实心盒，屋顶以上不限制（可以降落在屋顶）
+const HELI_SOLIDS = [];
 const DORM = { n: 12, fl: 3.0, y0: 0.9, W: 30, D: 20, doors: [], lifts: [], doorIM: null, handleIM: null, landIM: null, built: false };
 const dormY = (f) => DORM.y0 + f * DORM.fl;                       // 第 f 层（0 = 1 层）地面，局部高度
 const DWX = (x) => L.dorm.x + x, DWZ = (z) => L.dorm.z + z, DWY = (y) => 15.0 + y;   // 局部 → 世界
@@ -225,6 +227,7 @@ function buildDorm() {
     planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
     const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
     box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
+  HELI_SOLIDS.push({ x0: DWX(-HW - 0.2), x1: DWX(HW + 0.2), y0: DWY(0), y1: DWY(top + 1.0), z0: DWZ(-HD - 1.6), z1: DWZ(HD + 1.6) });
   DORM.built = true;
   D.position.set(L.dorm.x, 15.0, L.dorm.z); return D;
 }
