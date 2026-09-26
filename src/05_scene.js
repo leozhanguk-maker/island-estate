@@ -211,7 +211,7 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
           vec2 cq = vWP.xz * 0.42;
           float ca = vnoise(cq + vec2(uTime * 0.31, uTime * 0.17)), cb = vnoise(cq * 1.63 - vec2(uTime * 0.23, -uTime * 0.29));
           float caus = pow(clamp(1.0 - abs(ca - cb) * 3.2, 0.0, 1.0), 7.0) + 0.5 * pow(clamp(1.0 - abs(vnoise(cq * 2.7 + uTime * 0.4) - ca) * 3.5, 0.0, 1.0), 9.0);
-          // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；潟湖绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
+          // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；闸内港口绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
           float isLake = step(1.0, lvl), lagW = (1.0 - isLake) * (1.0 - smoothstep(${(L.gateZ - 8).toFixed(1)}, ${(L.gateZ + 40).toFixed(1)}, vWP.z)) * step(18.0, vWP.z) * (1.0 - smoothstep(70.0, 80.0, abs(vWP.x)));
           float oceW = (1.0 - isLake) * (1.0 - lagW);
           vec3 tint = isLake * mix(vec3(0.95, 0.99, 0.95), vec3(0.74, 0.88, 0.82), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
@@ -305,7 +305,7 @@ function makeWaterMaterial(dataTex, opts) {
           return;
         }
         float fade = 1.0 - smoothstep(250.0, 1200.0, dist);
-        // 闸门为通透栅栏，闸内外海浪一致：浪高只在淡水湖减弱（calm 仅用于潟湖水色）
+        // 闸门为通透栅栏，闸内外海浪一致：浪高只在淡水湖减弱（calm 仅用于闸内港口水色）
         float amp = mix(1.0, 0.3, uFresh);
         vec2 gr = waveGrad(vW.xz, uTime, amp, fade);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); gr += normalize(vW.xz - uPlunge + 1e-3) * sin(dp*2.2 - uTime*6.0) * 0.18 * exp(-dp*0.28); }
@@ -324,7 +324,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 sky = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 Rc = reflect(-V, normalize(mix(n, vec3(0.0, 1.0, 0.0), 0.9)));
         if (Rc.y > 0.02) { vec2 cq = vW.xz + Rc.xz / Rc.y * (${CLOUD.h.toFixed(1)} - vW.y); float cd = cloudDen(cq, uTime); sky = mix(sky, vec3(0.9,0.93,0.96), cd * 0.45 * smoothstep(0.05, 0.3, Rc.y)); }
-        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；潟湖（闸内）整体偏绿松石
+        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；闸内港口整体偏绿松石
         vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.2, 0.46, 0.4), uFresh);
         vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.08, 0.3, 0.26), uFresh);
         vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.04, 0.17, 0.15), uFresh);

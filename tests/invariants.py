@@ -64,7 +64,7 @@ JS = r'''() => {
       { const c = px(L_LAKE.x, L_LAKE.z), sum = c[0] + c[1] + c[2]; if (!(sum > 260 && sum < 600 && Math.max(...c) - Math.min(...c) < 60)) fails.push(`湖底 (${L_LAKE.x}, ${L_LAKE.z}) 地表色 ${c}，应为干净的浅色细砂（水族馆式清澈湖底；贴图含盆地环境光遮蔽，湖心约暗三成；原深色淤泥三通道和约 100）`); } }
     if (I.grass) { const fp = __fp; fp.teleport(120, 40, 0); fp._st.on = true; I.grass.update(fp); const n = I.grass.mesh.count; fp._st.on = false; I.grass.update(fp);   // 恢复隐藏，免得计入三角面统计
       if (n < 200) fails.push(`草地 (120, 40) 周围近景草叶只有 ${n} 丛，材质权重图的草地权重可能被清零`); } }
-  // ---- 2e. 水闸为通透栅栏式（铁窗风）：关闭状态下，沿闸门水平方向在水面上下各扫一排视线，大部分能穿过门叶；闸内外海浪一致（水面着色器不再按潟湖静水区压低浪高、浪陡与泡沫） ----
+  // ---- 2e. 水闸为通透栅栏式（铁窗风）：关闭状态下，沿闸门水平方向在水面上下各扫一排视线，大部分能穿过门叶；闸内外海浪一致（水面着色器不再按闸内港口静水区压低浪高、浪陡与泡沫） ----
   { const G = D.GATE, keep = G.leaves.map(l => l.position.y); G.leaves.forEach(l => { l.position.y = -3.0; l.updateMatrixWorld(true); });
     for (const y of [2.5, -1.5]) { let pass = 0, n = 0; for (let x = -34; x <= 34; x += 0.37) { if (Math.abs(x) < 2.6) continue; n++;
         const h = new TH.Raycaster(new TH.Vector3(x, y, D.L.gateZ - 6), new TH.Vector3(0, 0, 1), 0, 12).intersectObjects(G.leaves, true)[0]; if (!h) pass++; }
@@ -72,7 +72,7 @@ JS = r'''() => {
     G.leaves.forEach((l, i) => { l.position.y = keep[i]; l.updateMatrixWorld(true); });
     const sea = (__statics.waterMats || []).find(m => m.uniforms && m.uniforms.uFresh && m.uniforms.uFresh.value === 0);
     if (!sea) fails.push('找不到海水材质');
-    else for (const bad of ['max(calm', '0.35 * calm', '0.85 * calm']) if (sea.fragmentShader.includes(bad)) fails.push(`海水着色器仍按潟湖静水区压低海浪（含 “${bad}”），闸内外海浪应一致`); }
+    else for (const bad of ['max(calm', '0.35 * calm', '0.85 * calm']) if (sea.fragmentShader.includes(bad)) fails.push(`海水着色器仍按闸内港口静水区压低海浪（含 “${bad}”），闸内外海浪应一致`); }
   // ---- 2f. 栈道：北端桥面落在沙面上、南端与闸口警戒塔塔基顶面（2.6）齐平并伸进塔基；沿线桥面两侧 1.7 m 内地形不高出桥面（岩石不侵入扶手）；塔基可站立 ----
   { const T2 = __fp._test, ws = D.COLL.walks.filter(w => w.kind === 'path'), tw = D.L.gateTower;
     if (ws.length !== 2) fails.push(`栈道可行走路径应为 2 条，实际 ${ws.length}`);

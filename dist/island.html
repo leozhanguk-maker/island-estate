@@ -2208,7 +2208,7 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
           vec2 cq = vWP.xz * 0.42;
           float ca = vnoise(cq + vec2(uTime * 0.31, uTime * 0.17)), cb = vnoise(cq * 1.63 - vec2(uTime * 0.23, -uTime * 0.29));
           float caus = pow(clamp(1.0 - abs(ca - cb) * 3.2, 0.0, 1.0), 7.0) + 0.5 * pow(clamp(1.0 - abs(vnoise(cq * 2.7 + uTime * 0.4) - ca) * 3.5, 0.0, 1.0), 9.0);
-          // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；潟湖绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
+          // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；闸内港口绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
           float isLake = step(1.0, lvl), lagW = (1.0 - isLake) * (1.0 - smoothstep(${(L.gateZ - 8).toFixed(1)}, ${(L.gateZ + 40).toFixed(1)}, vWP.z)) * step(18.0, vWP.z) * (1.0 - smoothstep(70.0, 80.0, abs(vWP.x)));
           float oceW = (1.0 - isLake) * (1.0 - lagW);
           vec3 tint = isLake * mix(vec3(0.95, 0.99, 0.95), vec3(0.74, 0.88, 0.82), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
@@ -2302,7 +2302,7 @@ function makeWaterMaterial(dataTex, opts) {
           return;
         }
         float fade = 1.0 - smoothstep(250.0, 1200.0, dist);
-        // 闸门为通透栅栏，闸内外海浪一致：浪高只在淡水湖减弱（calm 仅用于潟湖水色）
+        // 闸门为通透栅栏，闸内外海浪一致：浪高只在淡水湖减弱（calm 仅用于闸内港口水色）
         float amp = mix(1.0, 0.3, uFresh);
         vec2 gr = waveGrad(vW.xz, uTime, amp, fade);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); gr += normalize(vW.xz - uPlunge + 1e-3) * sin(dp*2.2 - uTime*6.0) * 0.18 * exp(-dp*0.28); }
@@ -2321,7 +2321,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 sky = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 Rc = reflect(-V, normalize(mix(n, vec3(0.0, 1.0, 0.0), 0.9)));
         if (Rc.y > 0.02) { vec2 cq = vW.xz + Rc.xz / Rc.y * (${CLOUD.h.toFixed(1)} - vW.y); float cd = cloudDen(cq, uTime); sky = mix(sky, vec3(0.9,0.93,0.96), cd * 0.45 * smoothstep(0.05, 0.3, Rc.y)); }
-        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；潟湖（闸内）整体偏绿松石
+        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；闸内港口整体偏绿松石
         vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.2, 0.46, 0.4), uFresh);
         vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.08, 0.3, 0.26), uFresh);
         vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.04, 0.17, 0.15), uFresh);
@@ -5297,7 +5297,7 @@ function autopilot(dt) {
   }
 }
 
-// ======================= 15 潟湖海豚：两只可互动的宽吻海豚（鱼群见 17_eco） =======================
+// ======================= 15 闸内港口海豚：两只可互动的宽吻海豚（鱼群见 17_eco） =======================
 const MARINE = { schools: [], dolphins: [], pet: null };
 // 鱼：沿 +x 的旋转体身体 + 尾鳍 + 背/臀鳍 + 胸鳍；顶点色做花纹；attribute bend=到头部的距离（用于摆尾）
 function fishGeo(kind) {
@@ -5395,7 +5395,7 @@ let X_SD_W = () => 0;
 function buildMarine(scene, X) {
   X_SD_W = (x, z) => { const k = Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1)); return X.sdW[k]; };
   const R = mulberry32(8080);
-  // 鱼群已迁到 17_eco（三个水域分开、物种符合各自水体：湖里鲫鱼与罗非鱼，潟湖为礁鱼，沙丁鱼与鲹鱼移到外海），这里只保留海豚
+  // 鱼群已迁到 17_eco（三个水域分开、物种符合各自水体：湖里鲫鱼与罗非鱼，闸内港口为礁鱼，沙丁鱼与鲹鱼移到外海），这里只保留海豚
   const SPEC = [];
   for (const [kind, n, size, ok, level, speed, tight] of SPEC) {
     const geo = fishGeo(kind), ph = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('iPh', ph);
@@ -5572,7 +5572,7 @@ function heliAutoToggle() {
 }
 
 // ======================= 17a 水域生态·核心：分区、部件几何、动画材质、分级实例、群集算法 =======================
-// 三个水域：岛内淡水湖（lake）、水闸内浅海潟湖（lagoon）、闸外环岛外海（ocean）。全部为热带物种，淡水与海水物种严格分开。
+// 三个水域：岛内淡水湖（lake）、闸内港口（lagoon，浅海；闸门即使关闭，栅栏通透，海水与外海相连）、闸外环岛外海（ocean）。全部为热带物种，淡水与海水物种严格分开。
 // 渲染约定：静态底质与装饰按水域合并成少数网格；水草海藻合并后用顶点着色器摆动（幅度随水深递减）；
 // 会动的生物每个物种一个实例化网格，按到相机距离分级（近处精细、远处简模、更远隐藏）；鱼群用群集算法（分离、对齐、聚合、躲避捕食者）。
 const ECO = { zones: {}, flocks: [], critters: [], whales: [], lods: [], swayMats: [], rays: null, ink: null, t: 0, cam: null, player: null };
@@ -5581,11 +5581,20 @@ let ECO_RNG = mulberry32(20260924);
 const ECO_R = () => ECO_RNG();
 function ecoSeed(n) { ECO_RNG = mulberry32(n); }
 const ecoRand = (a, b) => a + (b - a) * ECO_R();
-// 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；潟湖为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
+// 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；闸内港口为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
   if (lakeSD(x, z, L.lake, 0.1) > -0.4) return 'lake';
   if (gh(x, z) > 0.05) return null;
   return z < L.gateZ && z > 18 && Math.abs(x) < 75 ? 'lagoon' : 'ocean';
+}
+// 鲸群可去的海域（P-017）：外海、水深足够、离岛岸 ≥ 10 m，且不进闸内港口、水闸口与闸外水道峡谷（闸门通透，闸内外海水相连，须单独排除）
+const ECO_CANYON = { hw: 39, z1: 202 };   // 闸外水道峡谷：|x| < 39 m，从水闸（z = gateZ）一直到 z ≈ 202 出海
+const ECO_SHORE = 10;
+const ecoGateArea = (x, z) => (Math.abs(x) < 75 && z > 0 && z < L.gateZ) || (Math.abs(x) < ECO_CANYON.hw + ECO_SHORE && z >= L.gateZ && z < ECO_CANYON.z1 + ECO_SHORE);
+function ecoWhaleOk(x, z, minDepth) {
+  if (!(gh(x, z) < -minDepth) || !ecoIn('ocean', x, z) || ecoGateArea(x, z)) return false;
+  for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (gh(x + Math.cos(a) * ECO_SHORE, z + Math.sin(a) * ECO_SHORE) > -0.3) return false; }
+  return true;
 }
 const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）
@@ -6049,7 +6058,7 @@ function buildEcoLake(scene) {
     stonesUnder: stones.filter(s => lk.level - gh(s.x, s.z) > 0.02).length, lotus: lotusPts.length, lotusCx: lotusPts.reduce((a, p) => a + p.x, 0) / Math.max(1, lotusPts.length), fish: f1.n + f2.n };
 }
 
-// ======================= 17c 水域生态·水闸内浅海潟湖（热带海水，禁止任何淡水物种） =======================
+// ======================= 17c 水域生态·闸内港口（浅海，闸门通透、与外海相连；热带海水，禁止任何淡水物种） =======================
 // 底质：白色珊瑚砂（地表色见 04_ground），零星礁石与珊瑚丛（鹿角珊瑚、脑珊瑚、桌珊瑚）
 // 海洋植物：海草床（泰来草、海菖蒲）成片带状随潮摆动；海藻（马尾藻带气囊、仙掌藻串珠状）
 // 生物：锦绣龙虾（藏在礁洞只露触角）、锯缘青蟹、真蛸（变色、贴底、喷墨）、蓝绿光鳃鱼、黄高鳍刺尾鱼、蝴蝶鱼、鹦嘴鱼（啃珊瑚）、
@@ -6312,7 +6321,7 @@ function ecoSprayUpdate(dt) {
 // 鲸群：领头个体在分区内按航点巡游，其余按编队槽位跟随；定时上浮换气；座头鲸偶尔跃身击浪；虎鲸定时冲击饵球
 class EcoPod {
   constructor(o) { Object.assign(this, o); this.lead = this.a[0]; this.wp = { x: this.home.x, z: this.home.z }; this.wt = 0; ECO.whales.push(this); }
-  pick() { for (let k = 0; k < 40; k++) { const a = ECO_R() * TAU, r = Math.sqrt(ECO_R()) * this.range, x = this.home.x + Math.cos(a) * r, z = this.home.z + Math.sin(a) * r; if (gh(x, z) < -this.minFloor && ecoIn('ocean', x, z)) return { x, z }; } return { x: this.home.x, z: this.home.z }; }
+  pick() { for (let k = 0; k < 40; k++) { const a = ECO_R() * TAU, r = Math.sqrt(ECO_R()) * this.range, x = this.home.x + Math.cos(a) * r, z = this.home.z + Math.sin(a) * r; if (ecoWhaleOk(x, z, this.minFloor)) return { x, z }; } return { x: this.home.x, z: this.home.z }; }
   update(dt, t) {
     const L0 = this.lead; this.wt -= dt;
     if (this.chaseT !== undefined) { this.chaseT -= dt; if (this.chaseT <= 0 && this.prey) { this.wp = { x: this.prey.cx, z: this.prey.cz, y: this.prey.cy }; this.chasing = 6; this.chaseT = ecoRand(40, 70); } }
@@ -6326,9 +6335,11 @@ class EcoPod {
       let da = ((want - w.yaw + Math.PI * 3) % TAU) - Math.PI; w.yaw += clamp(da, -w.turn * dt, w.turn * dt);
       const vWant = i === 0 ? (this.chasing > 0 ? this.chaseSpeed : this.speed) : clamp(d * 0.5, 0, this.speed * 1.6);
       w.v = lerp(w.v, vWant, dt * 0.5);
-      // 前方水太浅（编队位置或两航点之间的直线可能跨过海岸）：不前进，原地转向；领头的换一个航点。防止鲸群游上岸被抬到地面以上
-      { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt;
-        if (gh(nx, nz) < -this.minFloor * 0.6 && ecoIn('ocean', nx, nz)) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
+      // 前方水太浅、离岸不足 10 m 或进入水闸口/峡谷/闸内港口（编队位置或两航点之间的直线可能跨过去）：不前进，原地转向；领头的换一个航点（P-017）。
+      // 已经处在禁区里（例如被召唤挪过来时编队展开）的，只要不更靠岸、不进闸内就允许游出来
+      { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt, m = this.minFloor * 0.6;
+        const ok = ecoWhaleOk(nx, nz, m) || (!ecoWhaleOk(w.x, w.z, m) && gh(nx, nz) < -m && ecoIn('ocean', nx, nz) && !ecoGateArea(nx, nz) && gh(nx, nz) <= gh(w.x, w.z));
+        if (ok) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
       // 换气：定时上浮到水面、喷气，再下潜；跃身：加速冲出水面后落回，溅起水花
       w.breath -= dt;
       if (w.state === 'cruise') { if (w.breath <= 0) { w.state = 'rise'; } else if (this.breach && !w.follow && ECO_R() < dt / 150) { w.state = 'breach'; w.vy = Math.sqrt(2 * 9.8 * (4 - w.y)); } }
@@ -6412,14 +6423,14 @@ function updateEcology(dt, t, camera, player) {
 }
 
 // ---------------- 三个水域的水下观感：雾色、能见度（指数雾密度）、随深度变暗 ----------------
-// 三个水域都清澈、能见度高（用户要求水族馆级）：淡水湖清澈浅青绿、能见度约 15 m；潟湖绿松石到浅蓝、能见度 30 m 左右；外海深蓝、能见度约 35 m，向下变暗、远处雾化
+// 三个水域都清澈、能见度高（用户要求水族馆级）：淡水湖清澈浅青绿、能见度约 15 m；闸内港口绿松石到浅蓝、能见度 30 m 左右；外海深蓝、能见度约 35 m，向下变暗、远处雾化
 const ECO_LOOK = {
   lake: { top: new THREE.Color(0x9ccab8), deep: new THREE.Color(0x4f8a74), k: 6, dens: 0.055, over: 'radial-gradient(ellipse at 50% 18%,rgba(200,235,220,.08),rgba(20,70,60,.26))' },
   lagoon: { top: new THREE.Color(0x5fd0cc), deep: new THREE.Color(0x2f9cb2), k: 12, dens: 0.032, over: 'radial-gradient(ellipse at 50% 18%,rgba(160,240,235,.10),rgba(10,70,80,.35))' },
   ocean: { top: new THREE.Color(0x2468b0), deep: new THREE.Color(0x05183a), k: 22, dens: 0.026, over: 'radial-gradient(ellipse at 50% 12%,rgba(120,170,230,.10),rgba(2,12,34,.62))' },
 };
 const ecoLookTmp = { c: new THREE.Color(), c2: new THREE.Color() };
-// 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从潟湖渐变到外海
+// 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从闸内港口渐变到外海
 function ecoWaterLook(x, y, z, kind) {
   const T = ecoLookTmp;
   if (kind === 'lake') { const A = ECO_LOOK.lake, d = Math.max(0, L.lake.level - y); T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); return { color: T.c, density: A.dens * (1 + d * 0.08), over: A.over, zone: 'lake' }; }
@@ -6468,7 +6479,7 @@ function ecoUnderwater(camera, under, kind, fog, renderer, uw) {
 
 // ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边 =======================
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
-// 2 分钟后整体挪回原水域。闸内潟湖与淡水湖只提示，不召唤（海水与淡水、潟湖与外海物种不混用）
+// 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
 function ecoHornSound() {
   try {
@@ -6498,11 +6509,11 @@ function ecoOceanShow(x, z) {
   if (ecoZone(x, z) !== 'ocean') return '鸣笛：鲸群和鱼群只在闸外海域出现，开出水闸再试';
   if (ECO_SHOW.moved) { ECO_SHOW.t = 120; return '鸣笛：鲸群和鱼群就在附近'; }
   const names = ['oceanSE', 'oceanSW', 'oceanS', 'oceanN'].filter(n => ECO.zones[n]), moved = [];
-  // 在船周围 40～70 m 找深水点（水深足够、属于外海），每个水域一个，彼此错开方向
+  // 在船周围 40～70 m 找鲸群可去的深水点（水深足够、属于外海、离岸 ≥ 10 m、不在水闸口/峡谷，P-017），每个水域一个，彼此错开方向
   const spots = [];
   for (let k = 0; k < 96 && spots.length < names.length; k++) {
     const a = k * 2.39996, r = 40 + (k % 4) * 10, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
-    if (gh(px, pz) < -20 && ecoIn('ocean', px, pz) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
+    if (ecoWhaleOk(px, pz, 20) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
   names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined; });
@@ -6615,7 +6626,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
