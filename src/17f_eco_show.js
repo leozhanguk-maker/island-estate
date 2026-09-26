@@ -1,6 +1,6 @@
 // ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边 =======================
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
-// 2 分钟后整体挪回原水域。闸内潟湖与淡水湖只提示，不召唤（海水与淡水、潟湖与外海物种不混用）
+// 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
 function ecoHornSound() {
   try {
@@ -30,11 +30,11 @@ function ecoOceanShow(x, z) {
   if (ecoZone(x, z) !== 'ocean') return '鸣笛：鲸群和鱼群只在闸外海域出现，开出水闸再试';
   if (ECO_SHOW.moved) { ECO_SHOW.t = 120; return '鸣笛：鲸群和鱼群就在附近'; }
   const names = ['oceanSE', 'oceanSW', 'oceanS', 'oceanN'].filter(n => ECO.zones[n]), moved = [];
-  // 在船周围 40～70 m 找深水点（水深足够、属于外海），每个水域一个，彼此错开方向
+  // 在船周围 40～70 m 找鲸群可去的深水点（水深足够、属于外海、离岸 ≥ 10 m、不在水闸口/峡谷，P-017），每个水域一个，彼此错开方向
   const spots = [];
   for (let k = 0; k < 96 && spots.length < names.length; k++) {
     const a = k * 2.39996, r = 40 + (k % 4) * 10, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
-    if (gh(px, pz) < -20 && ecoIn('ocean', px, pz) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
+    if (ecoWhaleOk(px, pz, 20) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
   names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined; });

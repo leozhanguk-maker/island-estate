@@ -1,4 +1,4 @@
-// ======================= 15 潟湖海豚：两只可互动的宽吻海豚（鱼群见 17_eco） =======================
+// ======================= 15 闸内港口海豚：两只可互动的宽吻海豚（鱼群见 17_eco） =======================
 const MARINE = { schools: [], dolphins: [], pet: null };
 // 鱼：沿 +x 的旋转体身体 + 尾鳍 + 背/臀鳍 + 胸鳍；顶点色做花纹；attribute bend=到头部的距离（用于摆尾）
 function fishGeo(kind) {
@@ -96,7 +96,7 @@ let X_SD_W = () => 0;
 function buildMarine(scene, X) {
   X_SD_W = (x, z) => { const k = Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1)); return X.sdW[k]; };
   const R = mulberry32(8080);
-  // 鱼群已迁到 17_eco（三个水域分开、物种符合各自水体：湖里鲫鱼与罗非鱼，潟湖为礁鱼，沙丁鱼与鲹鱼移到外海），这里只保留海豚
+  // 鱼群已迁到 17_eco（三个水域分开、物种符合各自水体：湖里鲫鱼与罗非鱼，闸内港口为礁鱼，沙丁鱼与鲹鱼移到外海），这里只保留海豚
   const SPEC = [];
   for (const [kind, n, size, ok, level, speed, tight] of SPEC) {
     const geo = fishGeo(kind), ph = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('iPh', ph);

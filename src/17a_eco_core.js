@@ -1,5 +1,5 @@
 // ======================= 17a 水域生态·核心：分区、部件几何、动画材质、分级实例、群集算法 =======================
-// 三个水域：岛内淡水湖（lake）、水闸内浅海潟湖（lagoon）、闸外环岛外海（ocean）。全部为热带物种，淡水与海水物种严格分开。
+// 三个水域：岛内淡水湖（lake）、闸内港口（lagoon，浅海；闸门即使关闭，栅栏通透，海水与外海相连）、闸外环岛外海（ocean）。全部为热带物种，淡水与海水物种严格分开。
 // 渲染约定：静态底质与装饰按水域合并成少数网格；水草海藻合并后用顶点着色器摆动（幅度随水深递减）；
 // 会动的生物每个物种一个实例化网格，按到相机距离分级（近处精细、远处简模、更远隐藏）；鱼群用群集算法（分离、对齐、聚合、躲避捕食者）。
 const ECO = { zones: {}, flocks: [], critters: [], whales: [], lods: [], swayMats: [], rays: null, ink: null, t: 0, cam: null, player: null };
@@ -8,11 +8,20 @@ let ECO_RNG = mulberry32(20260924);
 const ECO_R = () => ECO_RNG();
 function ecoSeed(n) { ECO_RNG = mulberry32(n); }
 const ecoRand = (a, b) => a + (b - a) * ECO_R();
-// 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；潟湖为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
+// 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；闸内港口为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
   if (lakeSD(x, z, L.lake, 0.1) > -0.4) return 'lake';
   if (gh(x, z) > 0.05) return null;
   return z < L.gateZ && z > 18 && Math.abs(x) < 75 ? 'lagoon' : 'ocean';
+}
+// 鲸群可去的海域（P-017）：外海、水深足够、离岛岸 ≥ 10 m，且不进闸内港口、水闸口与闸外水道峡谷（闸门通透，闸内外海水相连，须单独排除）
+const ECO_CANYON = { hw: 39, z1: 202 };   // 闸外水道峡谷：|x| < 39 m，从水闸（z = gateZ）一直到 z ≈ 202 出海
+const ECO_SHORE = 10;
+const ecoGateArea = (x, z) => (Math.abs(x) < 75 && z > 0 && z < L.gateZ) || (Math.abs(x) < ECO_CANYON.hw + ECO_SHORE && z >= L.gateZ && z < ECO_CANYON.z1 + ECO_SHORE);
+function ecoWhaleOk(x, z, minDepth) {
+  if (!(gh(x, z) < -minDepth) || !ecoIn('ocean', x, z) || ecoGateArea(x, z)) return false;
+  for (let k = 0; k < 16; k++) { const a = k * TAU / 16; if (gh(x + Math.cos(a) * ECO_SHORE, z + Math.sin(a) * ECO_SHORE) > -0.3) return false; }
+  return true;
 }
 const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）

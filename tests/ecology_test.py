@@ -1,6 +1,6 @@
 # 水域生态测试：三个水域的物种数量、淡水/海水不混用、长时间推进后无 NaN、生物不离开各自水域、绘制调用预算
 #   1. 数量：各水域的物种与数量与设计一致（对照下方 EXPECT）
-#   2. 分区：湖里的生物始终在淡水湖内；潟湖生物始终在闸内潟湖（寄居蟹在港口沙滩）；外海生物始终在闸外海水里
+#   2. 分区：湖里的生物始终在淡水湖内；闸内港口生物始终在闸内港口（寄居蟹在港口沙滩）；外海生物始终在闸外海水里
 #   3. 竖向：水中生物不钻进湖底/海底、不飞出水面（鲸跃出水面、海豚除外：鲸允许短时高出水面 6 m 以内）
 #   4. 数值：每个水域推进 30 秒（每步 1/30 s）后所有位置有限，无 NaN
 #   5. 绘制调用：相机分别在三个水域水下时，生态新增的绘制调用不超过预算
@@ -57,12 +57,33 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     if (!(I.weeds >= 80)) fails.push(`湖底沉水草只有 ${I.weeds} 丛，应铺满湖底（≥ 80）`); }
   for (const [k, lim] of [['lake', 0.08], ['lagoon', 0.04], ['ocean', 0.035]]) { const d = D.ECO_LOOK && D.ECO_LOOK[k].dens; if (!(d <= lim)) fails.push(`${k} 水下雾密度 ${d}，应 ≤ ${lim}（能见度高、清澈）`); }
   // P-016：三个水域的随机数各自独立（每个水域建造前重置种子），改动一个水域的内容不会让另外两个水域整体错位
-  { const src = String(window.__dbg.buildEcology || ''); if (!/ecoSeed\(\d+\);\s*buildEcoLagoon/.test(src) || !/ecoSeed\(\d+\);\s*buildEcoOcean/.test(src)) fails.push('潟湖、外海建造前没有各自重置生态随机数种子（P-016）'); }
+  { const src = String(window.__dbg.buildEcology || ''); if (!/ecoSeed\(\d+\);\s*buildEcoLagoon/.test(src) || !/ecoSeed\(\d+\);\s*buildEcoOcean/.test(src)) fails.push('闸内港口、外海建造前没有各自重置生态随机数种子（P-016）'); }
   // 鲸群不会游上岸：把每个鲸群领头的航点设在岛中央陆地上推进 20 秒，所有个体始终在深水里（曾因编队位置跨过海岸被抬到地面以上 16 m）
   for (const w of E.whales || []) { w.wp = { x: 0, z: 0 }; w.wt = 999; let bad = null;
     for (let s = 0; s < 600 && !bad; s++) { w.update(1 / 30, s / 30); for (const a of w.a) if (a.y > 6 || D.gh(a.x, a.z) > -w.minFloor * 0.5) { bad = `(${a.x.toFixed(1)}, ${a.y.toFixed(1)}, ${a.z.toFixed(1)}) 水深 ${(-D.gh(a.x, a.z)).toFixed(1)} m`; break; } }
     if (bad) { fails.push(`鲸群被引向陆地时游进浅水或出水过高：${bad}`); break; } }
-  // 淡水与海水物种不混用：湖区只有淡水生物、潟湖和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
+  // P-017：鲸群不进闸内港口、水闸口与闸外水道峡谷（|x| < 39 m，z 从水闸到约 202 出海，外加 10 m），且始终离岛岸 ≥ 10 m。
+  // 判定独立于被测代码：禁区按实测水道尺寸写死；离岸按半径 9.5 m 一圈 24 个点，任何一点露出水面（地面 > 0）即算靠岸
+  { const gz = D.L.gateZ, forbid = (x, z) => (Math.abs(x) < 75 && z > 0 && z < gz) || (Math.abs(x) < 49 && z >= gz && z < 212);
+    const nearShore = (x, z) => { for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12; if (D.gh(x + Math.cos(a) * 9.5, z + Math.sin(a) * 9.5) > 0) return true; } return false; };
+    const badOf = (w) => { for (const a of w.a) { if (forbid(a.x, a.z)) return `进入水闸口/峡谷/闸内港口 (${a.x.toFixed(1)}, ${a.z.toFixed(1)})`; if (nearShore(a.x, a.z)) return `离岸不足 10 m (${a.x.toFixed(1)}, ${a.z.toFixed(1)})`; } return null; };
+    const run = (secs, t0) => { for (let s = 0; s < secs * 30; s++) for (const w of E.whales) { w.update(1 / 30, t0 + s / 30); if (s % 15 === 0) { const b = badOf(w); if (b) return b; } } return null; };
+    const put = (w, x, z) => { const dx = x - w.a[0].x, dz = z - w.a[0].z; for (const a of w.a) { a.x += dx; a.z += dz; } };
+    let bad = null;
+    const snap = E.whales.map(w => ({ w, a: w.a.map(c => ({ ...c })), wp: { ...w.wp }, wt: w.wt, chaseT: w.chaseT, chasing: w.chasing }));
+    { const b = run(60, 100); if (b) bad = `自由巡游时${b}`; }
+    // 把各鲸群放到峡谷出口外 35 m 的深水里，航点依次设在峡谷中、水闸口、闸内港口，各推进 30 秒
+    for (const [nm, wx, wz] of [['峡谷中', 0, 160], ['水闸口', 0, gz + 2], ['闸内港口', 0, 80]]) { if (bad) break;
+      for (const [i, w] of E.whales.entries()) { put(w, -40 + i * 40, 240); w.wp = { x: wx, z: wz }; w.wt = 999; w.chasing = 0; w.chaseT = 1e9; }
+      const b = run(30, 200); if (b) bad = `航点设在${nm}时${b}`; }
+    // 游艇在峡谷出口外鸣笛：召唤来的鲸群出现的位置与之后 30 秒都不违规
+    if (!bad) { for (const w of E.whales) w.chaseT = 30; const msg = D.ecoOceanShow(0, 222); const b0 = E.whales.map(badOf).find(Boolean); const b = b0 || run(30, 300);
+      if (b) bad = `峡谷出口外鸣笛（${msg}）后${b}`; }
+    // 还原：召唤的水域挪回原处、鲸群回到测试前的状态（不影响后面的绘制调用测量）
+    if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }
+    for (const o of snap) { o.a.forEach((c, i) => Object.assign(o.w.a[i], c)); o.w.wp = o.wp; o.w.wt = o.wt; o.w.chaseT = o.chaseT; o.w.chasing = o.chasing; }
+    if (bad) fails.push(`鲸群${bad}（P-017）`); }
+  // 淡水与海水物种不混用：湖区只有淡水生物、闸内港口和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
   for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'lagoon' ? 'lagoon' : 'ocean';
     for (const f of Z.flocks || []) if (f.zone !== want) fails.push(`${name} 里登记了属于 ${f.zone} 的鱼群`); }
   // 绘制调用：相机在各水域水下时，生态网格新增的绘制调用数
@@ -90,7 +111,7 @@ def main():
                 fails.append(f'{sec}.{k} = {got.get(k)}，设计数量 {v}')
     print('各水域生物数量：', r['stats'])
     print('湖：', r['lakeInfo'])
-    print('潟湖：', r['lagoonInfo'])
+    print('闸内港口：', r['lagoonInfo'])
     print('生态新增绘制调用：', r['draws'])
     if fails:
         print('\n生态测试失败：')
