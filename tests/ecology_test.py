@@ -3,6 +3,7 @@
 #   2. 分区：湖里的生物始终在淡水湖内；闸内港口生物始终在闸内港口（寄居蟹在港口沙滩）；外海生物始终在闸外海水里
 #   3. 竖向：水中生物不钻进湖底/海底、不飞出水面（鲸跃出水面、海豚除外：鲸允许短时高出水面 6 m 以内）
 #   4. 数值：每个水域推进 30 秒（每步 1/30 s）后所有位置有限，无 NaN
+#   6. 小白鹭：落在闸口沙滩西侧水线觅食、飞行不贴地、远处不惊扰、奔跑靠近即惊飞、受惊后一段时间不回来
 #   5. 绘制调用：相机分别在三个水域水下时，生态新增的绘制调用不超过预算
 # 用法：python3 tests/ecology_test.py
 import os, sys
@@ -90,6 +91,30 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }
     for (const o of snap) { o.a.forEach((c, i) => Object.assign(o.w.a[i], c)); o.w.wp = o.wp; o.w.wt = o.wt; o.w.chaseT = o.chaseT; o.w.chasing = o.chasing; }
     if (bad) fails.push(`鲸群${bad}（P-017）`); }
+  // 小白鹭：飞到闸口沙滩西侧的水线觅食；飞行中离地形 3 m 以上；远处静立的玩家不惊扰；奔跑靠近就一起惊飞，之后至少 60 秒不回来
+  { const G = D.EGRET, cam = I.camera; if (!G || !G.birds.length) fails.push('缺少小白鹭');
+    else { G.prevP = null; cam.position.set(-30, 4, 75); cam.updateMatrixWorld(); let clear = 1e9, clearAt = null; const far = { x: -32, z: 78 };
+      const step = (s, p) => { D.updateEgrets(1 / 30, s / 30, p, cam);
+        for (const b of G.birds) if ((b.state === 'arrive' || b.state === 'depart') && b.path && b.path.t > 0) { const left = (1 - Math.min(1, b.path.t / b.path.dur)) * b.path.dur, c = b.y - Math.max(D.gh(b.x, b.z), 0);
+          // 飞来：着陆前 2.5 秒以外；飞走：起飞爬升（约 1.2 秒）之后的整段航线
+          if ((b.state === 'depart' || left > 2.5) && c < clear) { clear = c; clearAt = `(${b.x.toFixed(1)}, ${b.y.toFixed(1)}, ${b.z.toFixed(1)})`; } } };
+      D.egretVisit(3); for (let s = 0; s < 1500; s++) step(s, far);
+      const on = G.birds.filter(b => b.state === 'forage');
+      if (on.length !== 3) fails.push(`小白鹭应有 3 只落地觅食，实际 ${on.length} 只（状态 ${G.birds.map(b => b.state).join('/')}）`);
+      for (const b of on) { const g = D.gh(b.x, b.z);
+        if (!(b.x > -47 && b.x < -17 && b.z > 33 && b.z < 59) || Math.abs(b.y - g) > 0.02 || g < -0.15 || !b.g.visible) { fails.push(`小白鹭不在闸口沙滩西侧的水线上：(${b.x.toFixed(1)}, ${b.y.toFixed(2)}, ${b.z.toFixed(1)}) 地面 ${g.toFixed(2)} 可见 ${b.g.visible}`); break; } }
+      let verts = 0; G.birds[0].g.traverse(o => { if (o.isMesh) verts += o.geometry.attributes.position.count; }); if (verts < 3000) fails.push(`小白鹭模型细节不足（${verts} 个顶点）`);
+      // 远处（约 25 m）慢慢走动：不惊扰
+      const b0 = on[0] || G.birds[0]; let px = b0.x + 25, pz = b0.z + 2; for (let s = 0; s < 150; s++) { px -= 1.2 / 30; step(1500 + s, { x: px, z: pz }); }
+      if (G.state !== 'visit') fails.push(`玩家在 ${Math.hypot(px - b0.x, pz - b0.z).toFixed(1)} m 外慢走，小白鹭不该惊飞（状态 ${G.state}）`);
+      // 奔跑（8 m/s）冲过去：进入 14 m 后应立即惊飞
+      let flushAt = null; for (let s = 0; s < 150 && !flushAt; s++) { px -= 8 / 30; step(1650 + s, { x: px, z: pz }); if (G.state === 'leaving') flushAt = Math.hypot(px - b0.x, pz - b0.z); }
+      if (!flushAt || flushAt < 10) fails.push(`玩家奔跑靠近时小白鹭没有及时惊飞（${flushAt ? '距离 ' + flushAt.toFixed(1) + ' m 才飞' : '一直没飞'}）`);
+      for (let s = 0; s < 900; s++) step(1800 + s, { x: px, z: pz });
+      if (G.state !== 'away' || G.birds.some(b => b.g.visible)) fails.push(`小白鹭惊飞 30 秒后应已飞离并隐藏（状态 ${G.state}）`);
+      if (!(clear > 3)) fails.push(`小白鹭飞行时（飞来或飞走）离地形只有 ${clear.toFixed(1)} m @ ${clearAt}`);
+      if (!(G.next >= 60)) fails.push(`小白鹭受惊后 ${G.next.toFixed(0)} 秒就回来，应至少 60 秒`);
+      stats.egret = { verts, clear: +clear.toFixed(1), flushAt: flushAt && +flushAt.toFixed(1) }; } }
   // 淡水与海水物种不混用：湖区只有淡水生物、闸内港口和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
   for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'lagoon' ? 'lagoon' : 'ocean';
     for (const f of Z.flocks || []) if (f.zone !== want) fails.push(`${name} 里登记了属于 ${f.zone} 的鱼群`); }
