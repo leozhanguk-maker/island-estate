@@ -717,8 +717,8 @@ function makeGround(X, texW = 4096) {
     // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
     { const s1 = lakeSD(x, z, L.lake, 0), s2 = lakeSD(x, z, L.upperLake, 0), lk = -Math.max(s1, s2);
       if (lk < 0.3) {
-        // 淡水湖底按水深分层：湖岸浅水米色砂砾（鹅卵石半埋其中）→ 中部细沙夹淤泥 → 深处深色淤泥；山顶小湖沿用原泥色
-        const dep = L.lake.level - h, mc = s1 >= s2 ? (dep < 1.2 ? mixRGB([172, 160, 132], [124, 112, 86], smoothstep(0.3, 1.2, dep)) : mixRGB([124, 112, 86], [56, 50, 38], smoothstep(1.4, 2.4, dep))) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
+        // 淡水湖底（水族馆式清澈湖）：干净的浅色细砂，随水深略微变暗，上面铺满水草；山顶小湖沿用原泥色
+        const dep = L.lake.level - h, mc = s1 >= s2 ? mixRGB([204, 196, 170], [172, 164, 138], smoothstep(0.3, 2.6, dep)) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
         c = mixRGB(c, mc, clamp(0.3 - lk, 0, 1));
       } }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
@@ -1722,8 +1722,8 @@ function makeGround(X, texW = 4096) {
     // 湖岸与湖底泥色：lakeSD 湖内为正、湖外为负，lk 取离湖岸外侧的距离（湖外为正）。旧写法符号反了，湖外全岛都被涂成泥色（P-013）
     { const s1 = lakeSD(x, z, L.lake, 0), s2 = lakeSD(x, z, L.upperLake, 0), lk = -Math.max(s1, s2);
       if (lk < 0.3) {
-        // 淡水湖底按水深分层：湖岸浅水米色砂砾（鹅卵石半埋其中）→ 中部细沙夹淤泥 → 深处深色淤泥；山顶小湖沿用原泥色
-        const dep = L.lake.level - h, mc = s1 >= s2 ? (dep < 1.2 ? mixRGB([172, 160, 132], [124, 112, 86], smoothstep(0.3, 1.2, dep)) : mixRGB([124, 112, 86], [56, 50, 38], smoothstep(1.4, 2.4, dep))) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
+        // 淡水湖底（水族馆式清澈湖）：干净的浅色细砂，随水深略微变暗，上面铺满水草；山顶小湖沿用原泥色
+        const dep = L.lake.level - h, mc = s1 >= s2 ? mixRGB([204, 196, 170], [172, 164, 138], smoothstep(0.3, 2.6, dep)) : mixRGB([150, 132, 98], [92, 86, 64], smoothstep(0, 4, -lk));
         c = mixRGB(c, mc, clamp(0.3 - lk, 0, 1));
       } }
     if (h > -0.4 && h < 3 && sdc < 10 && sdc > -2) c = mixRGB(c, C.wet, 0.8);
@@ -2207,10 +2207,10 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
           // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；潟湖绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
           float isLake = step(1.0, lvl), lagW = (1.0 - isLake) * (1.0 - smoothstep(${(L.gateZ - 8).toFixed(1)}, ${(L.gateZ + 40).toFixed(1)}, vWP.z)) * step(18.0, vWP.z) * (1.0 - smoothstep(70.0, 80.0, abs(vWP.x)));
           float oceW = (1.0 - isLake) * (1.0 - lagW);
-          vec3 tint = isLake * mix(vec3(0.86, 0.9, 0.62), vec3(0.34, 0.46, 0.26), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
+          vec3 tint = isLake * mix(vec3(0.95, 0.99, 0.95), vec3(0.74, 0.88, 0.82), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
           col *= tint;
-          float causK = isLake * 0.26 * (1.0 - smoothstep(0.3, 2.6, wd)) + lagW * 1.15 * (1.0 - smoothstep(0.3, 9.0, wd)) + oceW * 0.5 * exp(-wd / 7.0);
-          vec3 causC = isLake * vec3(0.62, 0.6, 0.38) + (1.0 - isLake) * vec3(0.55, 0.64, 0.6);
+          float causK = isLake * 0.7 * (1.0 - smoothstep(0.3, 3.5, wd)) + lagW * 1.15 * (1.0 - smoothstep(0.3, 9.0, wd)) + oceW * 0.5 * exp(-wd / 7.0);
+          vec3 causC = isLake * vec3(0.6, 0.66, 0.56) + (1.0 - isLake) * vec3(0.55, 0.64, 0.6);
           col += causC * caus * causK * (1.0 - 0.7 * cloudShadow(vWP, uSunD, uTime));
         }
         float wetband = smoothstep(2.4, 0.2, vWP.y) * step(-0.3, vWP.y) * rm;
@@ -2317,10 +2317,10 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 sky = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 Rc = reflect(-V, normalize(mix(n, vec3(0.0, 1.0, 0.0), 0.9)));
         if (Rc.y > 0.02) { vec2 cq = vW.xz + Rc.xz / Rc.y * (${CLOUD.h.toFixed(1)} - vW.y); float cd = cloudDen(cq, uTime); sky = mix(sky, vec3(0.9,0.93,0.96), cd * 0.45 * smoothstep(0.05, 0.3, Rc.y)); }
-        // 海：浅水青绿 → 深蓝；淡水湖：略带黄绿的清澈淡水，深处墨绿；潟湖（闸内）整体偏绿松石
-        vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.26, 0.40, 0.17), uFresh);
-        vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.09, 0.19, 0.09), uFresh);
-        vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.03, 0.09, 0.05), uFresh);
+        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；潟湖（闸内）整体偏绿松石
+        vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.2, 0.46, 0.4), uFresh);
+        vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.08, 0.3, 0.26), uFresh);
+        vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.04, 0.17, 0.15), uFresh);
         shallow = mix(shallow, vec3(0.09, 0.62, 0.6), calm * 0.6 * (1.0 - uFresh)); mid = mix(mid, vec3(0.04, 0.42, 0.56), calm * 0.6 * (1.0 - uFresh));
         vec3 body = mix(shallow, mid, smoothstep(0.4, mix(7.0, 2.2, uFresh), depth));
         body = mix(body, deep, smoothstep(6.0, 30.0, depth) * (1.0 - uFresh));
@@ -2331,7 +2331,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 col = body * (0.6 + 0.5 * diff) * (1.0 - 0.3 * csh);
         // 浪峰透光（次表面散射近似）：背光一侧浪面泛青绿
         float sss = pow(max(dot(V, -uSun + n * 0.6), 0.0), 3.0) * smoothstep(0.02, 0.12, length(gr));
-        col += mix(vec3(0.05, 0.35, 0.3), vec3(0.08, 0.3, 0.12), uFresh) * sss * 0.35 * (1.0 - csh * 0.6);
+        col += mix(vec3(0.05, 0.35, 0.3), vec3(0.06, 0.32, 0.26), uFresh) * sss * 0.35 * (1.0 - csh * 0.6);
         col = mix(col, sky, fres * 0.85);
         float sd = max(dot(R, uSun), 0.0);
         col += vec3(1.0, 0.95, 0.85) * (pow(sd, 700.0) * 7.0 + pow(sd, 80.0) * 0.18) * (1.0 - 0.85 * csh);
@@ -2350,7 +2350,7 @@ function makeWaterMaterial(dataTex, opts) {
         float ff = 1.0 - exp(-uFogD * uFogD * dist * dist);
         col = mix(col, uFog, ff);
         // 浅水半透明：可见水底（沙、礁石、焦散），深水不透明；掠射角由菲涅尔接管
-        float alpha = mix(mix(0.22, 0.35, uFresh), 1.0, smoothstep(0.15, mix(9.0, 3.5, uFresh), depth));
+        float alpha = mix(mix(0.2, 0.14, uFresh), 1.0, smoothstep(0.15, 14.0, depth));   // 三个水域都清澈：14 m 以内能透过水面看到水底
         alpha = max(alpha, fres * 0.95); alpha = max(alpha, clamp(foam, 0.0, 1.0));
         alpha = mix(alpha, 1.0, ff);
         gl_FragColor = vec4(col, alpha);
@@ -5310,19 +5310,43 @@ function fishMaterial(freq) {
   };
   return m;
 }
-// 海豚：宽吻海豚（长约 2.6 米）：纺锤体 + 喙 + 额隆 + 背鳍 + 胸鳍 + 水平尾叶；背深灰腹浅灰
+// 海豚：宽吻海豚（长约 2.6 米）。按真实外形分段放样：短而分明的喙（下颌略长）→ 喙基折线 → 圆隆的额隆 → 纺锤形躯干 → 侧扁的尾柄 → 中间带缺刻的水平尾叶；
+// 背部深灰、体侧浅灰、腹部近白；嘴角线向眼睛方向上扬（“微笑”），黑色眼睛与头顶新月形呼吸孔；镰刀形背鳍、胸鳍。头部放样截面加密，细节更清楚
 function dolphinGeo() {
-  const pos = [], col = [], bend = [], idx = [], SEG = 28, RING = 14, L = 2.6, top = new THREE.Color(0x4f5a63), belly = new THREE.Color(0xd6dde0);
-  const r = (t) => t < 0.1 ? 0.05 + t * 0.8 : t < 0.2 ? 0.13 + (t - 0.1) * 1.6 : 0.29 * Math.pow(Math.sin(Math.PI * Math.min(1, (t - 0.12) / 0.95)), 0.7) * (1 - 0.6 * t * t) + 0.02;
+  const pos = [], col = [], bend = [], idx = [], L = 2.6, SEG = 46, RING = 22;
+  const cTop = new THREE.Color(0x4c5862), cSide = new THREE.Color(0x87939b), cBelly = new THREE.Color(0xe4e9ea), cLine = new THREE.Color(0x262b30), cEye = new THREE.Color(0x0b0c0e);
+  // [距吻端 s, 背线高, 腹线深（取正值）, 半宽]
+  const K = [[0, 0.012, 0.018, 0.02], [0.05, 0.034, 0.046, 0.044], [0.12, 0.047, 0.064, 0.062], [0.18, 0.057, 0.078, 0.076], [0.22, 0.118, 0.098, 0.097],
+    [0.3, 0.188, 0.132, 0.14], [0.42, 0.236, 0.182, 0.19], [0.6, 0.272, 0.24, 0.238], [0.9, 0.3, 0.29, 0.268], [1.2, 0.282, 0.28, 0.25], [1.5, 0.222, 0.212, 0.18],
+    [1.8, 0.142, 0.132, 0.098], [2.1, 0.086, 0.076, 0.05], [2.35, 0.05, 0.045, 0.03], [2.45, 0.03, 0.03, 0.022], [2.6, 0.01, 0.01, 0.01]];
+  const prof = (s) => { let i = 0; while (i < K.length - 2 && K[i + 1][0] < s) i++; const a = K[i], b = K[i + 1], t = clamp((s - a[0]) / (b[0] - a[0]), 0, 1), u = t * t * (3 - 2 * t);
+    return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; };
   for (let i = 0; i <= SEG; i++) {
-    const t = i / SEG, x = L / 2 - t * L, rr = r(t), ry = rr * (t < 0.2 ? 0.9 : 1.05), rz = rr * 0.9 * (t > 0.8 ? 0.6 : 1);
-    for (let k = 0; k < RING; k++) { const a = k / RING * TAU; pos.push(x, Math.sin(a) * ry + (t > 0.12 && t < 0.2 ? 0.03 : 0), Math.cos(a) * rz); bend.push(t); const c = top.clone().lerp(belly, clamp(-Math.sin(a) * 1.4 + 0.3, 0, 1)); if (t < 0.17 && t > 0.14 && Math.abs(Math.sin(a)) < 0.3 && Math.cos(a) > 0.5) c.set(0x111111); col.push(c.r, c.g, c.b); }
+    const s = L * Math.pow(i / SEG, 1.55), x = L / 2 - s, [top, bot, w] = prof(s), t = s / L;
+    // 嘴角线：从吻端下方沿下颌向后、到眼前上扬
+    const mouthY = s < 0.34 ? -0.012 + 0.05 * smoothstep(0.12, 0.34, s) - 0.004 * (1 - s / 0.34) : null;
+    for (let k = 0; k < RING; k++) {
+      const a = k / RING * TAU, sa = Math.sin(a), ca = Math.cos(a), y = sa >= 0 ? top * sa : bot * sa, z = w * ca * (t > 0.7 ? 0.75 : 1);
+      pos.push(x, y, z); bend.push(t);
+      const c = cTop.clone().lerp(cSide, clamp(1 - sa * 1.6, 0, 1)).lerp(cBelly, clamp(-sa * 1.5 - 0.1, 0, 1));
+      if (mouthY !== null && Math.abs(y - mouthY) < 0.011 && Math.abs(ca) > 0.35) c.copy(cLine);
+      if (s > 0.52 && s < 0.6 && sa > 0.93 && Math.abs(ca) < 0.3) c.copy(cLine);   // 呼吸孔（头顶新月形）
+      col.push(c.r, c.g, c.b);
+    }
     if (i < SEG) for (let k = 0; k < RING; k++) { const a = i * RING + k, b = a + RING, a1 = i * RING + (k + 1) % RING, b1 = a1 + RING; idx.push(a, b, a1, a1, b, b1); }
   }
-  const fin = (pts, bnd) => { const b = pos.length / 3; for (const p of pts) { pos.push(...p); col.push(top.r, top.g, top.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
-  fin([[0.05, 0.26, 0], [-0.25, 0.62, 0], [-0.32, 0.6, 0], [-0.4, 0.25, 0]], p => 0.5 - p[0] / L);
-  for (const s of [-1, 1]) fin([[0.55, -0.12, s * 0.2], [0.25, -0.28, s * 0.55], [0.18, -0.24, s * 0.52], [0.35, -0.1, s * 0.2]], () => 0.3);
-  fin([[-1.2, 0, 0], [-1.52, 0, 0.42], [-1.6, 0, 0.36], [-1.45, 0, 0], [-1.6, 0, -0.36], [-1.52, 0, -0.42]], p => 1 + (-1.2 - p[0]));
+  // 眼睛：嘴角线末端上方，略凸出体表的小黑球
+  const sph = (cx, cy, cz, r, c, bnd) => { const b = pos.length / 3, NU = 8, NV = 6; for (let v = 0; v <= NV; v++) for (let u = 0; u <= NU; u++) { const th = v / NV * Math.PI, ph = u / NU * TAU; pos.push(cx + r * Math.sin(th) * Math.cos(ph), cy + r * Math.cos(th), cz + r * Math.sin(th) * Math.sin(ph)); col.push(c.r, c.g, c.b); bend.push(bnd); }
+    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) { const a = b + v * (NU + 1) + u, d = a + NU + 1; idx.push(a, d, a + 1, a + 1, d, d + 1); } };
+  { const s = 0.37, [, , w] = prof(s); for (const sd of [-1, 1]) sph(L / 2 - s, 0.045, sd * (w * 0.93), 0.016, cEye, s / L); }
+  const fin = (pts, bnd, c = cTop) => { const b = pos.length / 3; for (const p of pts) { pos.push(...p); col.push(c.r, c.g, c.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
+  const bx = (s) => L / 2 - s;
+  // 镰刀形背鳍（后缘内凹）
+  fin([[bx(1.02), 0.29, 0], [bx(1.1), 0.44, 0], [bx(1.26), 0.58, 0], [bx(1.44), 0.63, 0], [bx(1.4), 0.52, 0], [bx(1.42), 0.4, 0], [bx(1.52), 0.24, 0]], p => (L / 2 - p[0]) / L);
+  // 胸鳍：体侧下方向后下方伸出
+  for (const s of [-1, 1]) fin([[bx(0.58), -0.1, s * 0.2], [bx(0.72), -0.22, s * 0.42], [bx(0.9), -0.3, s * 0.52], [bx(0.86), -0.24, s * 0.44], [bx(0.76), -0.12, s * 0.22]], () => 0.3, cSide);
+  // 水平尾叶：左右两叶，后缘中间有缺刻
+  fin([[bx(2.36), 0, 0], [bx(2.5), 0, 0.2], [bx(2.66), 0, 0.42], [bx(2.72), 0, 0.4], [bx(2.62), 0, 0.14], [bx(2.6), 0, 0], [bx(2.62), 0, -0.14], [bx(2.72), 0, -0.4], [bx(2.66), 0, -0.42], [bx(2.5), 0, -0.2]], p => 1 + Math.max(0, (L / 2 - p[0]) - L) / L);
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('bend', new THREE.Float32BufferAttribute(bend, 1)); g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
@@ -5523,7 +5547,10 @@ function heliAutoToggle() {
 // 渲染约定：静态底质与装饰按水域合并成少数网格；水草海藻合并后用顶点着色器摆动（幅度随水深递减）；
 // 会动的生物每个物种一个实例化网格，按到相机距离分级（近处精细、远处简模、更远隐藏）；鱼群用群集算法（分离、对齐、聚合、躲避捕食者）。
 const ECO = { zones: {}, flocks: [], critters: [], whales: [], lods: [], swayMats: [], rays: null, ink: null, t: 0, cam: null, player: null };
-const ECO_R = mulberry32(20260924);
+// 生态随机数：每个水域建造前用各自固定的种子重置（ecoSeed），改动一个水域的内容不会让另外两个水域的布置整体错位
+let ECO_RNG = mulberry32(20260924);
+const ECO_R = () => ECO_RNG();
+function ecoSeed(n) { ECO_RNG = mulberry32(n); }
 const ecoRand = (a, b) => a + (b - a) * ECO_R();
 // 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；潟湖为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
@@ -5846,8 +5873,9 @@ function buildEcoLake(scene) {
   // ---------------- 静态底质与装饰（合并为一个网格） ----------------
   const deco = [], stones = [];
   const pebbleCols = [0x8c8b85, 0x9a948a, 0xa67a4a, 0x8f6a44, 0xd9ceb4, 0xc9bda0, 0x6f6e6a];
-  for (let i = 0; i < 420; i++) {
-    const p = ecoLakePoint([-0.35, 2.2], [-0.3, 1.0]); if (!p) continue;
+  // 卵石只铺在岸边水线以上（水族馆式清澈湖底：水下不放石头）
+  for (let i = 0; i < 160; i++) {
+    const p = ecoLakePoint([-0.35, 0.8], [-0.3, -0.03]); if (!p) continue;
     const s = Math.pow(ECO_R(), 1.8) * 0.2 + 0.035, g = new THREE.IcosahedronGeometry(1, 1), P = g.attributes.position;
     const sq = ecoRand(0.45, 0.75), el = ecoRand(0.8, 1.35);
     for (let k = 0; k < P.count; k++) { const x = P.getX(k), y = P.getY(k), z = P.getZ(k), n = 1 + 0.12 * SNoise(x * 2 + i, z * 2 - i); P.setXYZ(k, x * n * el, y * n * sq, z * n); }
@@ -5855,33 +5883,12 @@ function buildEcoLake(scene) {
     deco.push(ecoPart(g, (x, y) => base.clone().multiplyScalar(0.88 + 0.12 * Math.sign(y)), 0, ecoM4(p.x, p.y - s * sq * ecoRand(0.25, 0.6), p.z, 0, ECO_R() * TAU, 0, s)));
     stones.push({ x: p.x, z: p.z, y: p.y, s });
   }
-  // 沉木：半埋在中部淤泥里，枝上附着少量绿藻（上表面偏绿）
-  const logs = [];
-  for (let i = 0; i < 6; i++) {
-    const p = ecoLakePoint([2.5, 99], [1.1, 2.4]); if (!p) continue;
-    const r = ecoRand(0.06, 0.13), len = ecoRand(1.4, 2.8), yaw = ECO_R() * TAU, tilt = ecoRand(-0.08, 0.08);
-    const bark = (x, y) => ecoMix(0x3b2b1c, 0x4f6a2a, (y - p.y) / (r * 1.6) * 0.8 - 0.25).multiplyScalar(0.85 + 0.25 * Math.sin(x * 40 + y * 30));
-    const g = new THREE.CylinderGeometry(r * 0.85, r, len, 9, 4); deco.push(ecoPart(g, bark, 0, ecoM4(p.x, p.y + r * 0.45, p.z, tilt, yaw, Math.PI / 2)));
-    for (let b = 0; b < 3; b++) { const t = ecoRand(-0.4, 0.4) * len, bx = p.x + Math.cos(-yaw) * t, bz = p.z + Math.sin(-yaw) * t, a = yaw + ecoRand(-1, 1) * 1.2 + Math.PI / 2; deco.push(ecoRod(V3(bx, p.y + r, bz), V3(bx + Math.cos(a) * 0.35, p.y + r + ecoRand(0.05, 0.3), bz + Math.sin(a) * 0.35), r * 0.35, r * 0.12, bark, 0, 5)); }
-    logs.push(p);
-  }
-  // 腐烂落叶：集中在沉木周围与中部
-  const leafCols = [0x5a4022, 0x74562a, 0x3d2c19, 0x6b5a2e, 0x4a3a20];
-  for (let i = 0; i < 260; i++) {
-    const near = logs.length && ECO_R() < 0.6 ? logs[Math.floor(ECO_R() * logs.length)] : null;
-    const p = near ? { x: near.x + ecoRand(-1.5, 1.5), z: near.z + ecoRand(-1.5, 1.5) } : ecoLakePoint([1.5, 99], [0.8, 2.6]); if (!p || lakeSD(p.x, p.z, lk, 0.1) < 1) continue;
-    const g = new THREE.PlaneGeometry(ecoRand(0.05, 0.1), ecoRand(0.03, 0.05)); deco.push(ecoPart(g, leafCols[Math.floor(ECO_R() * leafCols.length)], 0, ecoM4(p.x, gh(p.x, p.z) + 0.012, p.z, -Math.PI / 2 + ecoRand(-0.2, 0.2), ECO_R() * TAU, 0)));
-  }
-  // 田螺：附在卵石上或半埋于泥中（螺旋纹锥形壳）
+  const logs = [];   // 水族馆式湖底：不放沉木与腐叶
+  // 田螺：散在湖底水草间（螺旋纹锥形壳）
   for (let i = 0; i < 38; i++) {
-    const st = stones.length && ECO_R() < 0.6 ? stones[Math.floor(ECO_R() * stones.length)] : null; const p = st ? { x: st.x + ecoRand(-0.1, 0.1), z: st.z + ecoRand(-0.1, 0.1), y: st.y + st.s * 0.35 } : ecoLakePoint([0.5, 99], [0.3, 2.2]); if (!p) continue;
+    const p = ecoLakePoint([0.5, 99], [0.3, 2.2]); if (!p) continue;
     const pts = []; for (let k = 0; k <= 8; k++) { const t = k / 8; pts.push(new THREE.Vector2(0.018 * Math.sin(Math.PI * Math.min(1, t * 1.1)) * (1 - 0.6 * t) + 0.002, t * 0.035)); }
     const g = new THREE.LatheGeometry(pts, 8); deco.push(ecoPart(g, (x, y) => ecoMix(0x4b4a32, 0x2f2c1e, Math.sin(y * 520) * 0.5 + 0.5), 0, ecoM4(p.x, p.y ?? gh(p.x, p.z), p.z, ecoRand(0.6, 1.2), ECO_R() * TAU, 0)));
-  }
-  // 河蚌：两片椭圆壳，斜插半埋于泥中
-  for (let i = 0; i < 26; i++) {
-    const p = ecoLakePoint([1.2, 99], [0.6, 2.9]); if (!p) continue;
-    for (const sd of [-1, 1]) { const g = new THREE.SphereGeometry(1, 8, 5, 0, TAU, 0, Math.PI / 2); deco.push(ecoPart(g, (x, y) => ecoMix(0x2f3222, 0x5a5236, y * 30), 0, ecoM4(p.x, p.y + 0.01, p.z, sd * Math.PI / 2 + ecoRand(-0.3, 0.3) + Math.PI / 2, ECO_R() * TAU, ecoRand(0.3, 0.7), 0.075, 0.018, 0.04))); }
   }
   const decoMesh = new THREE.Mesh(ecoMerge(deco), ecoMat('static', { rough: 0.85 })); decoMesh.receiveShadow = true; scene.add(decoMesh); Z.meshes.push(decoMesh);
 
@@ -5907,37 +5914,67 @@ function buildEcoLake(scene) {
       }
     }
   }
-  // 浮叶：睡莲（叶浮在水面带缺口，背面偏红；茎垂到湖底；少量粉白色花）
-  for (let i = 0; i < 46; i++) {
-    const p = ecoLakePoint([0.8, 99], [0.45, 1.9]); if (!p) continue;
-    const r = ecoRand(0.12, 0.26), a0 = ECO_R() * TAU, y = lk.level + 0.012;
-    const pad = new THREE.CircleGeometry(r, 14, a0, TAU - 0.35); add([ecoPart(pad, (x, yy, z) => ecoMix(0x2f5a22, 0x4f7a32, 0.5 + 0.5 * Math.sin((x + z) * 30)), 0.12, ecoM4(p.x, y, p.z, -Math.PI / 2, 0, 0))], 0);
-    add([ecoRod(V3(p.x + ecoRand(-0.1, 0.1), p.y, p.z + ecoRand(-0.1, 0.1)), V3(p.x, y - 0.01, p.z), 0.004, 0.004, 0x5a6a3a, (px, py) => clamp((py - p.y) / (y - p.y) * 0.4, 0, 0.4), 3)], p.d);
-    if (i % 5 === 0) { const fl = []; for (let k = 0; k < 10; k++) { const a = k / 10 * TAU, g = new THREE.ConeGeometry(0.02, 0.07, 4); fl.push(ecoPart(g, k % 2 ? 0xf2c4d0 : 0xf7eef0, 0.1, ecoM4(p.x + Math.cos(a) * 0.035, y + 0.035, p.z + Math.sin(a) * 0.035, Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9))); } const c = new THREE.SphereGeometry(0.018, 6, 4); fl.push(ecoPart(c, 0xf2c23a, 0.1, ecoM4(p.x, y + 0.03, p.z))); add(fl, 0); }
+  // 荷花：集中长在靠瀑布一侧（湖东部），避开瀑布落水冲击区；立叶（荷叶高出水面、叶面微凹、叶脉放射）＋浮叶＋粉色荷花与莲蓬，叶柄垂到湖底
+  const plunge = FALL.plunge, lotusPts = [];
+  for (let i = 0; i < 400 && lotusPts.length < 34; i++) { const p = ecoLakePoint([0.8, 99], [0.35, 2.0]); if (!p || p.x < lk.x + 3 || Math.hypot(p.x - plunge.x, p.z - plunge.z) < 4.5) continue; lotusPts.push(p); }
+  const leafUp = (x, y, z, r, cup) => { const g = new THREE.CircleGeometry(r, 18), P = g.attributes.position; for (let k = 0; k < P.count; k++) { const lx = P.getX(k), ly = P.getY(k), d = Math.hypot(lx, ly) / r; P.setZ(k, cup * r * d * d); } g.computeVertexNormals();
+    return ecoPart(g, (px, py, pz) => { const d = Math.hypot(px - x, pz - z) / r, ang = Math.atan2(pz - z, px - x); return ecoMix(0x5f8f3a, 0x3f7028, d).multiplyScalar(0.92 + 0.08 * Math.cos(ang * 22)); }, 0.12, ecoM4(x, y, z, -Math.PI / 2, 0, 0)); };
+  for (const [i, p] of lotusPts.entries()) {
+    const y0 = lk.level;
+    for (let k = 0; k < 3; k++) {                                              // 立叶：叶柄从湖底伸出水面 0.2～0.8 m
+      const x = p.x + ecoRand(-0.5, 0.5), z = p.z + ecoRand(-0.5, 0.5), yb = gh(x, z), h = y0 + ecoRand(0.2, 0.8), r = ecoRand(0.18, 0.32);
+      if (lakeSD(x, z, lk, 0.1) < 0.5) continue;
+      add([ecoRod(V3(x, yb, z), V3(x + ecoRand(-0.05, 0.05), h, z + ecoRand(-0.05, 0.05)), 0.008, 0.007, 0x5f7a3a, (px, py) => clamp((py - y0) / 0.8, 0, 1) * 0.6, 3), leafUp(x, h, z, r, 0.22)], Math.max(0, y0 - yb));
+    }
+    { const x = p.x + ecoRand(-0.6, 0.6), z = p.z + ecoRand(-0.6, 0.6), r = ecoRand(0.12, 0.2); if (lakeSD(x, z, lk, 0.1) > 0.5) add([leafUp(x, y0 + 0.012, z, r, 0.02)], 0); }   // 浮叶
+    if (i % 2 === 0) {                                                       // 荷花：两层粉色花瓣，中间黄色莲蓬
+      const x = p.x + ecoRand(-0.3, 0.3), z = p.z + ecoRand(-0.3, 0.3), yb = gh(x, z), h = y0 + ecoRand(0.5, 1.0), fl = [ecoRod(V3(x, yb, z), V3(x, h, z), 0.007, 0.006, 0x5f7a3a, (px, py) => clamp((py - y0) / 1.0, 0, 1) * 0.6, 3)];
+      for (let k = 0; k < 16; k++) { const inner = k >= 8, a = (k % 8) / 8 * TAU + (inner ? 0.4 : 0), g = new THREE.SphereGeometry(1, 6, 4, 0, Math.PI, 0, Math.PI);
+        fl.push(ecoPart(g, (px, py) => ecoMix(0xf7e4ea, 0xe0608a, clamp((py - h) / 0.12, 0, 1)), 0.9, ecoM4(x + Math.cos(a) * (inner ? 0.03 : 0.05), h + 0.05, z + Math.sin(a) * (inner ? 0.03 : 0.05), inner ? 0.35 : 0.7, -a + Math.PI / 2, 0, 0.045, 0.1, 0.02))); }
+      fl.push(ecoPart(new THREE.CylinderGeometry(0.03, 0.022, 0.035, 10), 0xe8c850, 0.9, ecoM4(x, h + 0.04, z))); add(fl, Math.max(0, y0 - yb));
+    } else if (i % 3 === 0) {                                               // 莲蓬
+      const x = p.x + ecoRand(-0.3, 0.3), z = p.z + ecoRand(-0.3, 0.3), yb = gh(x, z), h = y0 + ecoRand(0.4, 0.8);
+      add([ecoRod(V3(x, yb, z), V3(x, h, z), 0.007, 0.006, 0x5f7a3a, (px, py) => clamp((py - y0) / 1.0, 0, 1) * 0.6, 3), ecoPart(new THREE.CylinderGeometry(0.05, 0.025, 0.06, 12), 0x7a8a3a, 0.9, ecoM4(x, h + 0.03, z))], Math.max(0, y0 - yb));
+    }
   }
   // 沉水：苦草（丝带状长叶）、金鱼藻（细密轮生羽状叶）、黑藻（轮生小披针叶）、狐尾藻（羽状叶，近水面叶尖泛红）——各成斑块
+  // 近景水草（沉水草与前景草坪）单独一个网格：相机离湖心 35 m 以内（湖长半轴 15 m ＋ 20 m）才显示（远处、水面以上看不清湖底水草），控制面数
+  const plantsNear = [], addN = (list, d) => { for (const g of list) plantsNear.push(ecoDepAttr(g, Math.max(0, d))); };
+  // 水族馆式：110 丛沉水草几乎铺满湖底（荷花区外），丛间再铺一层低矮的前景草坪（矮慈姑、牛毛毡一类的短叶）
   const weedKinds = ['vall', 'vall', 'horn', 'hydr', 'myri', 'vall', 'horn', 'myri', 'hydr', 'vall'];
-  for (let c = 0; c < weedKinds.length; c++) {
-    const kind = weedKinds[c], p = ecoLakePoint([1.2, 99], kind === 'vall' ? [0.5, 2.4] : [0.6, 2.2]); if (!p) continue;
-    const rad = ecoRand(0.6, 1.5), cnt = kind === 'vall' ? 22 : 16; weedSpots.push({ x: p.x, y: p.y + Math.min(p.d, 1) * 0.5, z: p.z, r: rad, kind });
+  for (let c = 0; c < 110; c++) {
+    const kind = weedKinds[c % weedKinds.length], p = ecoLakePoint([1.0, 99], kind === 'vall' ? [0.45, 2.9] : [0.5, 2.9]); if (!p) continue;
+    // 轮生叶水草面数高，每丛 6 株；苦草面数低，每丛 30 株
+    const rad = ecoRand(0.8, 1.8), cnt = kind === 'vall' ? 30 : 6; weedSpots.push({ x: p.x, y: p.y + Math.min(p.d, 1) * 0.5, z: p.z, r: rad, kind });
     for (let k = 0; k < cnt; k++) {
       const a = ECO_R() * TAU, rr = Math.sqrt(ECO_R()) * rad, x = p.x + Math.cos(a) * rr, z = p.z + Math.sin(a) * rr, y = gh(x, z), d = lk.level - y; if (d < 0.35 || lakeSD(x, z, lk, 0.1) < 0.6) continue;
       const hmax = Math.max(0.2, d - 0.08);
-      if (kind === 'vall') { const list = []; for (let l = 0; l < 6; l++) list.push(ecoRibbon(x, y, z, Math.min(hmax, ecoRand(0.5, 1.3)), 0.012, ECO_R() * TAU, 0.35, ecoMix(0x4f8a2a, 0x7aa84a, ECO_R()), 6)); add(list, d); }
-      else if (kind === 'horn') add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.8)), 7, 8, 0.05, 0.0025, 0x2f4a1e, 0x2a4f1c, null, true), d);
-      else if (kind === 'hydr') add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.7)), 8, 5, 0.022, 0.004, 0x3a5a22, 0x4f8a2e, null, false), d);
-      else add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.35, 0.9)), 7, 5, 0.045, 0.0022, 0x4a5a26, 0x4a7a2e, 0x8a3a2a, true), d);
+      if (kind === 'vall') { const list = []; for (let l = 0; l < 6; l++) list.push(ecoRibbon(x, y, z, Math.min(hmax, ecoRand(0.5, 1.3)), 0.012, ECO_R() * TAU, 0.35, ecoMix(0x4f8a2a, 0x7aa84a, ECO_R()), 6)); addN(list, d); }
+      else if (kind === 'horn') addN(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.8)), 7, 8, 0.05, 0.0025, 0x2f4a1e, 0x2a4f1c, null, true), d);
+      else if (kind === 'hydr') addN(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.7)), 8, 5, 0.022, 0.004, 0x3a5a22, 0x4f8a2e, null, false), d);
+      else addN(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.35, 0.9)), 7, 5, 0.045, 0.0022, 0x4a5a26, 0x4a7a2e, 0x8a3a2a, true), d);
     }
   }
+  for (let i = 0; i < 5000; i++) {                                           // 前景草坪
+    const p = ecoLakePoint([0.7, 99], [0.3, 2.9], 8); if (!p) continue; const n = 3 + Math.floor(ECO_R() * 3), list = [];
+    for (let k = 0; k < n; k++) list.push(ecoRibbon(p.x + ecoRand(-0.04, 0.04), p.y, p.z + ecoRand(-0.04, 0.04), ecoRand(0.05, 0.13), 0.006, ECO_R() * TAU, 0.5, ecoMix(0x4f9a30, 0x86c050, ECO_R()), 2));
+    addN(list, p.d);
+  }
+  // 轮生叶水草丛之间补种苦草，让湖底看起来连成一片
+  for (const w of weedSpots) if (w.kind !== 'vall') for (let k = 0; k < 16; k++) { const a = ECO_R() * TAU, rr = Math.sqrt(ECO_R()) * w.r * 1.2, x = w.x + Math.cos(a) * rr, z = w.z + Math.sin(a) * rr, y = gh(x, z), d = lk.level - y; if (d < 0.35 || lakeSD(x, z, lk, 0.1) < 0.6) continue;
+    const list = []; for (let l = 0; l < 5; l++) list.push(ecoRibbon(x, y, z, Math.min(Math.max(0.2, d - 0.08), ecoRand(0.35, 1.0)), 0.011, ECO_R() * TAU, 0.35, ecoMix(0x4f8a2a, 0x7aa84a, ECO_R()), 5)); addN(list, d); }
   const plantMat = ecoMat('sway', { freq: 1.1, amp: 0.1, depthFade: 0.6, rough: 0.7, side: THREE.DoubleSide });
   const plantMesh = new THREE.Mesh(ecoMerge(plants), plantMat); plantMesh.frustumCulled = true; scene.add(plantMesh); Z.meshes.push(plantMesh);
+  const nearMesh = new THREE.Mesh(ecoMerge(plantsNear), plantMat); nearMesh.frustumCulled = true; nearMesh.visible = false; scene.add(nearMesh);
+  Z.update = () => { const c = ECO.cam; nearMesh.visible = !!c && Math.hypot(c.x - lk.x, c.z - lk.z) < 35; };
+  ECO.lakeNear = nearMesh;
 
   // ---------------- 生物 ----------------
   const inLake = (x, z, d0 = 0.15) => lakeSD(x, z, lk, 0.1) > 0.25 && lk.level - gh(x, z) > d0;
   // 小龙虾（克氏原螯虾）：暗红色，多在石缝与水草根部；受惊时尾部猛弹向后倒退
   const cray = ecoCrustGeo.bind(null, { len: 0.11, c1: 0x6a1a12, c2: 0x9a2a18, claw: { arm: 0.28, r: 0.035, palm: 0.16, col: 0x7a1c12 }, antenna: 1.3, h: 0.12, w: 0.14, band: 0x3a0e08 });
   const crayLod = new EcoLod(scene, [cray(false), cray(true)], ecoMat('crawl', { freq: 9, amp: 0.004, rough: 0.5 }), 14, 10, 45);
-  const homes = stones.filter(s => s.s > 0.09).concat(weedSpots.map(w => ({ x: w.x, z: w.z, y: w.y, s: 0.2 })));
+  const homes = weedSpots.map(w => ({ x: w.x, z: w.z, y: w.y, s: 0.2 }));   // 小龙虾在水草根部安家
   const crays = []; for (let i = 0; i < 80 && crays.length < 14; i++) { const h = homes[Math.floor(ECO_R() * homes.length)] || { x: lk.x, z: lk.z }; const x = h.x + ecoRand(-0.2, 0.2), z = h.z + ecoRand(-0.2, 0.2); if (!inLake(x, z)) continue; crays.push({ x, z, y: gh(x, z), yaw: ECO_R() * TAU, s: ecoRand(0.8, 1.2), ph: ECO_R(), state: 'idle', tm: ecoRand(0, 8), home: h, flee: 0 }); }
   new EcoCritters(crayLod, crays, (c, dt) => {
     if (c.flee > 0) { c.flee -= dt; const sp = 2.4 * c.flee / 0.35; c.x -= Math.cos(c.yaw) * sp * dt; c.z += Math.sin(c.yaw) * sp * dt; c.pitch = 0.5 * Math.sin(Math.PI * c.flee / 0.35); if (!inLake(c.x, c.z)) { c.x += Math.cos(c.yaw) * sp * dt; c.z -= Math.sin(c.yaw) * sp * dt; } c.y = gh(c.x, c.z) + 0.02 * Math.sin(Math.PI * c.flee / 0.35); if (c.flee <= 0) { c.pitch = 0; c.state = 'idle'; c.tm = ecoRand(3, 8); } return; }
@@ -5960,10 +5997,10 @@ function buildEcoLake(scene) {
     });
     prawns.push(...list);
   }
-  // 溪蟹：褐色，躲在鹅卵石下（只露出前半身），偶尔横向爬到另一块石头
+  // 溪蟹：褐色，躲在水草根部（只露出前半身），偶尔横向爬到另一丛水草
   const crab = (lo) => ecoCrabGeo({ w: 0.065, c1: 0x5a3a22, c2: 0x7a5232, cc: 0x6a4428, tip: 0x2a1a10 }, lo);
   const crabLod = new EcoLod(scene, [crab(false), crab(true)], ecoMat('crawl', { freq: 12, amp: 0.004, rough: 0.55 }), 8, 8, 40);
-  const bigStones = stones.filter(s => s.s > 0.1 && inLake(s.x, s.z, 0.2)), crabs = [];   // 只用水下的大卵石（岸边水线以上的卵石不能当溪蟹的窝）
+  const bigStones = weedSpots.map(w => ({ x: w.x, z: w.z, y: gh(w.x, w.z), s: 0.2 })).filter(w => inLake(w.x, w.z)), crabs = [];
   for (let i = 0; i < 8 && bigStones.length; i++) { const st = bigStones[Math.floor(ECO_R() * bigStones.length)]; crabs.push({ x: st.x, z: st.z, y: st.y, yaw: ECO_R() * TAU, s: ecoRand(0.8, 1.2), ph: ECO_R(), state: 'idle', tm: ecoRand(4, 20), st, sideDir: 1 }); }
   new EcoCritters(crabLod, crabs, (c, dt) => {
     const moving = ecoCrawl(c, dt, 0.09, (cc) => { const st = bigStones[Math.floor(ECO_R() * bigStones.length)]; if (Math.hypot(st.x - cc.x, st.z - cc.z) > 2.5) return null; cc.st = st; cc.sideDir = ECO_R() < 0.5 ? 1 : -1; return { x: st.x, z: st.z }; }, true);
@@ -5975,11 +6012,12 @@ function buildEcoLake(scene) {
   const tilapia = { len: 0.22, h: 0.085, w: 0.035, c1: 0x5a6250, c2: 0xb9b8a0, fin: 0x5a5a4a, tail: 'round', dorsal: 0.45, pat: (t, a, c) => { if (Math.sin(t * 18) > 0.75 && Math.sin(a) > -0.4) c.multiplyScalar(0.72); } };
   const predL = () => { const p = ECO.player; return p && p.under ? [{ x: p.x, y: p.y, z: p.z, r: 2.2 }] : []; };
   const fishAnchors = weedSpots.map(w => ({ x: w.x, y: Math.min(w.y + 0.3, lk.level - 0.5), z: w.z }));
-  const f1 = new EcoFlock({ zone: 'lake', n: 12, lod: ecoFishLod(scene, crucian, 12, 12, 45), mode: fishAnchors.length ? 'reef' : 'school', anchors: fishAnchors.length ? fishAnchors : null, home: { x: lk.x, y: lk.level - 1, z: lk.z }, range: 9, rangeZ: 0.6, spawn: 0.8, speed: 0.35, maxSpeed: 1.2, per: 0.5, flee: 2.2, minDepth: 0.5, floorGap: 0.15, ceilGap: 0.25, predators: predL, size: 1 });
-  const f2 = new EcoFlock({ zone: 'lake', n: 12, lod: ecoFishLod(scene, tilapia, 12, 12, 45), mode: 'school', home: { x: lk.x - 2, y: lk.level - 1.2, z: lk.z }, range: 9, rangeZ: 0.6, spawn: 1.2, speed: 0.45, maxSpeed: 1.4, per: 0.6, minDepth: 0.7, floorGap: 0.2, ceilGap: 0.3, predators: predL, size: 1, band: 0.45 });
+  const f1 = new EcoFlock({ zone: 'lake', n: 24, lod: ecoFishLod(scene, crucian, 24, 12, 45), mode: fishAnchors.length ? 'reef' : 'school', anchors: fishAnchors.length ? fishAnchors : null, home: { x: lk.x, y: lk.level - 1, z: lk.z }, range: 9, rangeZ: 0.6, spawn: 0.8, speed: 0.35, maxSpeed: 1.2, per: 0.5, flee: 2.2, minDepth: 0.5, floorGap: 0.15, ceilGap: 0.25, predators: predL, size: 1 });
+  const f2 = new EcoFlock({ zone: 'lake', n: 24, lod: ecoFishLod(scene, tilapia, 24, 12, 45), mode: 'school', home: { x: lk.x - 2, y: lk.level - 1.2, z: lk.z }, range: 9, rangeZ: 0.6, spawn: 1.2, speed: 0.45, maxSpeed: 1.4, per: 0.6, minDepth: 0.7, floorGap: 0.2, ceilGap: 0.3, predators: predL, size: 1, band: 0.45 });
   Z.flocks = [f1, f2]; Z.critters = ECO.critters.slice(c0);
   ECO.zones.lake = Z;
-  ECO.lakeInfo = { stones: stones.length, logs: logs.length, crays: crays.length, prawns: prawns.length, crabs: crabs.length, weeds: weedSpots.length, weedSpots, logPts: logs, crabHomes: bigStones };
+  ECO.lakeInfo = { stones: stones.length, logs: logs.length, crays: crays.length, prawns: prawns.length, crabs: crabs.length, weeds: weedSpots.length, weedSpots, logPts: logs, crabHomes: bigStones,
+    stonesUnder: stones.filter(s => lk.level - gh(s.x, s.z) > 0.02).length, lotus: lotusPts.length, lotusCx: lotusPts.reduce((a, p) => a + p.x, 0) / Math.max(1, lotusPts.length), fish: f1.n + f2.n };
 }
 
 // ======================= 17c 水域生态·水闸内浅海潟湖（热带海水，禁止任何淡水物种） =======================
@@ -6258,7 +6296,10 @@ class EcoPod {
       const dx = tx - w.x, dz = tz - w.z, d = Math.hypot(dx, dz), want = Math.atan2(-dz, dx);
       let da = ((want - w.yaw + Math.PI * 3) % TAU) - Math.PI; w.yaw += clamp(da, -w.turn * dt, w.turn * dt);
       const vWant = i === 0 ? (this.chasing > 0 ? this.chaseSpeed : this.speed) : clamp(d * 0.5, 0, this.speed * 1.6);
-      w.v = lerp(w.v, vWant, dt * 0.5); w.x += Math.cos(w.yaw) * w.v * dt; w.z -= Math.sin(w.yaw) * w.v * dt;
+      w.v = lerp(w.v, vWant, dt * 0.5);
+      // 前方水太浅（编队位置或两航点之间的直线可能跨过海岸）：不前进，原地转向；领头的换一个航点。防止鲸群游上岸被抬到地面以上
+      { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt;
+        if (gh(nx, nz) < -this.minFloor * 0.6 && ecoIn('ocean', nx, nz)) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
       // 换气：定时上浮到水面、喷气，再下潜；跃身：加速冲出水面后落回，溅起水花
       w.breath -= dt;
       if (w.state === 'cruise') { if (w.breath <= 0) { w.state = 'rise'; } else if (this.breach && !w.follow && ECO_R() < dt / 150) { w.state = 'breach'; w.vy = Math.sqrt(2 * 9.8 * (4 - w.y)); } }
@@ -6317,9 +6358,9 @@ function buildEcoOcean(scene) {
 
 // ======================= 17e 水域生态·编排与每帧更新 =======================
 function buildEcology(scene) {
-  ECO.scene = scene; ecoRaysInit(scene); buildEcoLake(scene);
-  if (typeof buildEcoLagoon === 'function') buildEcoLagoon(scene);
-  if (typeof buildEcoOcean === 'function') buildEcoOcean(scene);
+  ECO.scene = scene; ecoRaysInit(scene); ecoSeed(1001); buildEcoLake(scene);
+  if (typeof buildEcoLagoon === 'function') { ecoSeed(2002); buildEcoLagoon(scene); }
+  if (typeof buildEcoOcean === 'function') { ecoSeed(3003); buildEcoOcean(scene); }
   ECO.built = true;
 }
 // 每帧：只推进相机附近水域的生物（远处水域整体隐藏、不计算）；player 为漫游中的玩家（潜水时作为鱼群的“捕食者”）
@@ -6342,11 +6383,11 @@ function updateEcology(dt, t, camera, player) {
 }
 
 // ---------------- 三个水域的水下观感：雾色、能见度（指数雾密度）、随深度变暗 ----------------
-// 淡水湖：略带黄绿、能见度 3～5 m，深处墨绿；潟湖：绿松石到浅蓝、能见度 15 m 以上；外海：深蓝，向下迅速变暗、远处雾化
+// 三个水域都清澈、能见度高（用户要求水族馆级）：淡水湖清澈浅青绿、能见度约 15 m；潟湖绿松石到浅蓝、能见度 30 m 左右；外海深蓝、能见度约 35 m，向下变暗、远处雾化
 const ECO_LOOK = {
-  lake: { top: new THREE.Color(0x6f8440), deep: new THREE.Color(0x1d3620), k: 2.2, dens: 0.25, over: 'radial-gradient(ellipse at 50% 18%,rgba(170,190,110,.16),rgba(24,44,20,.62))' },
-  lagoon: { top: new THREE.Color(0x52c9c8), deep: new THREE.Color(0x2a92ac), k: 9, dens: 0.068, over: 'radial-gradient(ellipse at 50% 18%,rgba(160,240,235,.10),rgba(10,70,80,.35))' },
-  ocean: { top: new THREE.Color(0x1f5ea6), deep: new THREE.Color(0x03122a), k: 16, dens: 0.05, over: 'radial-gradient(ellipse at 50% 12%,rgba(120,170,230,.10),rgba(2,12,34,.62))' },
+  lake: { top: new THREE.Color(0x9ccab8), deep: new THREE.Color(0x4f8a74), k: 6, dens: 0.055, over: 'radial-gradient(ellipse at 50% 18%,rgba(200,235,220,.08),rgba(20,70,60,.26))' },
+  lagoon: { top: new THREE.Color(0x5fd0cc), deep: new THREE.Color(0x2f9cb2), k: 12, dens: 0.032, over: 'radial-gradient(ellipse at 50% 18%,rgba(160,240,235,.10),rgba(10,70,80,.35))' },
+  ocean: { top: new THREE.Color(0x2468b0), deep: new THREE.Color(0x05183a), k: 22, dens: 0.026, over: 'radial-gradient(ellipse at 50% 12%,rgba(120,170,230,.10),rgba(2,12,34,.62))' },
 };
 const ecoLookTmp = { c: new THREE.Color(), c2: new THREE.Color() };
 // 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从潟湖渐变到外海
@@ -6494,7 +6535,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, updateEcology, ecoZone, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, buildEcology, updateEcology, ecoZone, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));

@@ -1,8 +1,8 @@
 // ======================= 17e 水域生态·编排与每帧更新 =======================
 function buildEcology(scene) {
-  ECO.scene = scene; ecoRaysInit(scene); buildEcoLake(scene);
-  if (typeof buildEcoLagoon === 'function') buildEcoLagoon(scene);
-  if (typeof buildEcoOcean === 'function') buildEcoOcean(scene);
+  ECO.scene = scene; ecoRaysInit(scene); ecoSeed(1001); buildEcoLake(scene);
+  if (typeof buildEcoLagoon === 'function') { ecoSeed(2002); buildEcoLagoon(scene); }
+  if (typeof buildEcoOcean === 'function') { ecoSeed(3003); buildEcoOcean(scene); }
   ECO.built = true;
 }
 // 每帧：只推进相机附近水域的生物（远处水域整体隐藏、不计算）；player 为漫游中的玩家（潜水时作为鱼群的“捕食者”）
@@ -25,11 +25,11 @@ function updateEcology(dt, t, camera, player) {
 }
 
 // ---------------- 三个水域的水下观感：雾色、能见度（指数雾密度）、随深度变暗 ----------------
-// 淡水湖：略带黄绿、能见度 3～5 m，深处墨绿；潟湖：绿松石到浅蓝、能见度 15 m 以上；外海：深蓝，向下迅速变暗、远处雾化
+// 三个水域都清澈、能见度高（用户要求水族馆级）：淡水湖清澈浅青绿、能见度约 15 m；潟湖绿松石到浅蓝、能见度 30 m 左右；外海深蓝、能见度约 35 m，向下变暗、远处雾化
 const ECO_LOOK = {
-  lake: { top: new THREE.Color(0x6f8440), deep: new THREE.Color(0x1d3620), k: 2.2, dens: 0.25, over: 'radial-gradient(ellipse at 50% 18%,rgba(170,190,110,.16),rgba(24,44,20,.62))' },
-  lagoon: { top: new THREE.Color(0x52c9c8), deep: new THREE.Color(0x2a92ac), k: 9, dens: 0.068, over: 'radial-gradient(ellipse at 50% 18%,rgba(160,240,235,.10),rgba(10,70,80,.35))' },
-  ocean: { top: new THREE.Color(0x1f5ea6), deep: new THREE.Color(0x03122a), k: 16, dens: 0.05, over: 'radial-gradient(ellipse at 50% 12%,rgba(120,170,230,.10),rgba(2,12,34,.62))' },
+  lake: { top: new THREE.Color(0x9ccab8), deep: new THREE.Color(0x4f8a74), k: 6, dens: 0.055, over: 'radial-gradient(ellipse at 50% 18%,rgba(200,235,220,.08),rgba(20,70,60,.26))' },
+  lagoon: { top: new THREE.Color(0x5fd0cc), deep: new THREE.Color(0x2f9cb2), k: 12, dens: 0.032, over: 'radial-gradient(ellipse at 50% 18%,rgba(160,240,235,.10),rgba(10,70,80,.35))' },
+  ocean: { top: new THREE.Color(0x2468b0), deep: new THREE.Color(0x05183a), k: 22, dens: 0.026, over: 'radial-gradient(ellipse at 50% 12%,rgba(120,170,230,.10),rgba(2,12,34,.62))' },
 };
 const ecoLookTmp = { c: new THREE.Color(), c2: new THREE.Color() };
 // 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从潟湖渐变到外海

@@ -64,7 +64,10 @@ class EcoPod {
       const dx = tx - w.x, dz = tz - w.z, d = Math.hypot(dx, dz), want = Math.atan2(-dz, dx);
       let da = ((want - w.yaw + Math.PI * 3) % TAU) - Math.PI; w.yaw += clamp(da, -w.turn * dt, w.turn * dt);
       const vWant = i === 0 ? (this.chasing > 0 ? this.chaseSpeed : this.speed) : clamp(d * 0.5, 0, this.speed * 1.6);
-      w.v = lerp(w.v, vWant, dt * 0.5); w.x += Math.cos(w.yaw) * w.v * dt; w.z -= Math.sin(w.yaw) * w.v * dt;
+      w.v = lerp(w.v, vWant, dt * 0.5);
+      // 前方水太浅（编队位置或两航点之间的直线可能跨过海岸）：不前进，原地转向；领头的换一个航点。防止鲸群游上岸被抬到地面以上
+      { const nx = w.x + Math.cos(w.yaw) * w.v * dt, nz = w.z - Math.sin(w.yaw) * w.v * dt;
+        if (gh(nx, nz) < -this.minFloor * 0.6 && ecoIn('ocean', nx, nz)) { w.x = nx; w.z = nz; } else { w.yaw += w.turn * dt * 3; w.v *= 0.9; if (i === 0) this.wt = 0; } }
       // 换气：定时上浮到水面、喷气，再下潜；跃身：加速冲出水面后落回，溅起水花
       w.breath -= dt;
       if (w.state === 'cruise') { if (w.breath <= 0) { w.state = 'rise'; } else if (this.breach && !w.follow && ECO_R() < dt / 150) { w.state = 'breach'; w.vy = Math.sqrt(2 * 9.8 * (4 - w.y)); } }

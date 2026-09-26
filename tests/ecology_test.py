@@ -12,7 +12,7 @@ from harness import Session
 
 # 各水域的设计数量（改动须同步更新并说明原因）
 EXPECT = {
-    'lakeInfo': {'crays': 14, 'prawns': 10, 'crabs': 8, 'logs': 6},
+    'lakeInfo': {'crays': 14, 'prawns': 10, 'crabs': 8, 'logs': 0, 'stonesUnder': 0, 'fish': 48},   # 水族馆式清澈湖：无沉木、水下无石头，鱼类加倍
     'lagoonInfo': {'octopus': 2, 'anemones': 4},
 }
 DRAW_BUDGET = 60   # 单个水域水下时，生态网格新增的绘制调用上限
@@ -52,6 +52,16 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
   // 溪蟹在大卵石之间横行：所有可选的窝都必须在水下（曾把岸边水线以上的卵石当作窝，溪蟹会爬出水面）
   if (!(E.lakeInfo && E.lakeInfo.crabHomes && E.lakeInfo.crabHomes.length)) fails.push('ECO.lakeInfo.crabHomes 未登记（无法检查溪蟹的窝）');
   for (const h of (E.lakeInfo && E.lakeInfo.crabHomes) || []) if (!(D.ecoZone(h.x, h.z) === 'lake' && D.L.lake.level - D.gh(h.x, h.z) > 0.15)) { fails.push(`溪蟹的窝 (${h.x.toFixed(1)}, ${h.z.toFixed(1)}) 不在水下（水深 ${(D.L.lake.level - D.gh(h.x, h.z)).toFixed(2)} m）`); break; }
+  // 水族馆式湖泊：荷花集中在靠瀑布一侧（湖东部）、沉水草铺满湖底；三个水域都清澈（水下雾密度上限）
+  { const I = E.lakeInfo || {}; if (!(I.lotus >= 20 && I.lotusCx > D.L.lake.x + 3)) fails.push(`荷花应集中在靠瀑布一侧：${I.lotus} 丛，重心 x=${(I.lotusCx || 0).toFixed(1)}（湖心 ${D.L.lake.x}）`);
+    if (!(I.weeds >= 80)) fails.push(`湖底沉水草只有 ${I.weeds} 丛，应铺满湖底（≥ 80）`); }
+  for (const [k, lim] of [['lake', 0.08], ['lagoon', 0.04], ['ocean', 0.035]]) { const d = D.ECO_LOOK && D.ECO_LOOK[k].dens; if (!(d <= lim)) fails.push(`${k} 水下雾密度 ${d}，应 ≤ ${lim}（能见度高、清澈）`); }
+  // P-016：三个水域的随机数各自独立（每个水域建造前重置种子），改动一个水域的内容不会让另外两个水域整体错位
+  { const src = String(window.__dbg.buildEcology || ''); if (!/ecoSeed\(\d+\);\s*buildEcoLagoon/.test(src) || !/ecoSeed\(\d+\);\s*buildEcoOcean/.test(src)) fails.push('潟湖、外海建造前没有各自重置生态随机数种子（P-016）'); }
+  // 鲸群不会游上岸：把每个鲸群领头的航点设在岛中央陆地上推进 20 秒，所有个体始终在深水里（曾因编队位置跨过海岸被抬到地面以上 16 m）
+  for (const w of E.whales || []) { w.wp = { x: 0, z: 0 }; w.wt = 999; let bad = null;
+    for (let s = 0; s < 600 && !bad; s++) { w.update(1 / 30, s / 30); for (const a of w.a) if (a.y > 6 || D.gh(a.x, a.z) > -w.minFloor * 0.5) { bad = `(${a.x.toFixed(1)}, ${a.y.toFixed(1)}, ${a.z.toFixed(1)}) 水深 ${(-D.gh(a.x, a.z)).toFixed(1)} m`; break; } }
+    if (bad) { fails.push(`鲸群被引向陆地时游进浅水或出水过高：${bad}`); break; } }
   // 淡水与海水物种不混用：湖区只有淡水生物、潟湖和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
   for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'lagoon' ? 'lagoon' : 'ocean';
     for (const f of Z.flocks || []) if (f.zone !== want) fails.push(`${name} 里登记了属于 ${f.zone} 的鱼群`); }
@@ -62,7 +72,7 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     for (let s = 0; s < 3; s++) { D.updateEcology(1 / 30, s / 30, cam, null); I.underwaterCheck(); }
     R.info.autoReset = false; R.info.reset(); R.render(I.scene, cam); const on = R.info.render.calls;
     const vis = []; for (const Z of Object.values(E.zones)) if (Z) for (const m of Z.meshes) vis.push([m, m.visible]);
-    for (const l of E.lods) for (const m of l.ims) vis.push([m, m.visible]); if (E.rays) vis.push([E.rays.im, E.rays.im.visible]); if (E.uwBack) vis.push([E.uwBack, E.uwBack.visible]);
+    for (const l of E.lods) for (const m of l.ims) vis.push([m, m.visible]); if (E.rays) vis.push([E.rays.im, E.rays.im.visible]); if (E.uwBack) vis.push([E.uwBack, E.uwBack.visible]); if (E.lakeNear) vis.push([E.lakeNear, E.lakeNear.visible]);
     for (const [m] of vis) m.visible = false; R.info.reset(); R.render(I.scene, cam); const off = R.info.render.calls; for (const [m, v] of vis) m.visible = v; R.info.autoReset = true;
     draws[name] = on - off; if (on - off > BUDGET) fails.push(`${name} 水下时生态新增绘制调用 ${on - off} 次，超过预算 ${BUDGET}`); }
   return { fails, stats, draws, lakeInfo: E.lakeInfo && Object.fromEntries(Object.entries(E.lakeInfo).filter(([k, v]) => typeof v === 'number')), lagoonInfo: E.lagoonInfo }; }'''

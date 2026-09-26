@@ -214,10 +214,10 @@ function buildTerrainMesh(X, groundTex, maskTex, step = 1, D = null, QS = {}) {
           // 三个水域的水体染色与焦散强度各不相同：淡水湖黄绿、焦散弱、深处墨绿；潟湖绿松石、焦散最强；外海深蓝、焦散弱且随深度迅速消失并变暗
           float isLake = step(1.0, lvl), lagW = (1.0 - isLake) * (1.0 - smoothstep(${(L.gateZ - 8).toFixed(1)}, ${(L.gateZ + 40).toFixed(1)}, vWP.z)) * step(18.0, vWP.z) * (1.0 - smoothstep(70.0, 80.0, abs(vWP.x)));
           float oceW = (1.0 - isLake) * (1.0 - lagW);
-          vec3 tint = isLake * mix(vec3(0.86, 0.9, 0.62), vec3(0.34, 0.46, 0.26), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
+          vec3 tint = isLake * mix(vec3(0.95, 0.99, 0.95), vec3(0.74, 0.88, 0.82), smoothstep(0.5, 2.8, wd)) + lagW * mix(vec3(0.82, 0.97, 0.96), vec3(0.62, 0.86, 0.9), smoothstep(1.0, 8.0, wd)) + oceW * mix(vec3(0.7, 0.84, 0.98), vec3(0.16, 0.26, 0.45), smoothstep(3.0, 28.0, wd));
           col *= tint;
-          float causK = isLake * 0.26 * (1.0 - smoothstep(0.3, 2.6, wd)) + lagW * 1.15 * (1.0 - smoothstep(0.3, 9.0, wd)) + oceW * 0.5 * exp(-wd / 7.0);
-          vec3 causC = isLake * vec3(0.62, 0.6, 0.38) + (1.0 - isLake) * vec3(0.55, 0.64, 0.6);
+          float causK = isLake * 0.7 * (1.0 - smoothstep(0.3, 3.5, wd)) + lagW * 1.15 * (1.0 - smoothstep(0.3, 9.0, wd)) + oceW * 0.5 * exp(-wd / 7.0);
+          vec3 causC = isLake * vec3(0.6, 0.66, 0.56) + (1.0 - isLake) * vec3(0.55, 0.64, 0.6);
           col += causC * caus * causK * (1.0 - 0.7 * cloudShadow(vWP, uSunD, uTime));
         }
         float wetband = smoothstep(2.4, 0.2, vWP.y) * step(-0.3, vWP.y) * rm;
@@ -324,10 +324,10 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 sky = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 Rc = reflect(-V, normalize(mix(n, vec3(0.0, 1.0, 0.0), 0.9)));
         if (Rc.y > 0.02) { vec2 cq = vW.xz + Rc.xz / Rc.y * (${CLOUD.h.toFixed(1)} - vW.y); float cd = cloudDen(cq, uTime); sky = mix(sky, vec3(0.9,0.93,0.96), cd * 0.45 * smoothstep(0.05, 0.3, Rc.y)); }
-        // 海：浅水青绿 → 深蓝；淡水湖：略带黄绿的清澈淡水，深处墨绿；潟湖（闸内）整体偏绿松石
-        vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.26, 0.40, 0.17), uFresh);
-        vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.09, 0.19, 0.09), uFresh);
-        vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.03, 0.09, 0.05), uFresh);
+        // 海：浅水青绿 → 深蓝；淡水湖：清澈见底的浅青绿；潟湖（闸内）整体偏绿松石
+        vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.2, 0.46, 0.4), uFresh);
+        vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.08, 0.3, 0.26), uFresh);
+        vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.04, 0.17, 0.15), uFresh);
         shallow = mix(shallow, vec3(0.09, 0.62, 0.6), calm * 0.6 * (1.0 - uFresh)); mid = mix(mid, vec3(0.04, 0.42, 0.56), calm * 0.6 * (1.0 - uFresh));
         vec3 body = mix(shallow, mid, smoothstep(0.4, mix(7.0, 2.2, uFresh), depth));
         body = mix(body, deep, smoothstep(6.0, 30.0, depth) * (1.0 - uFresh));
@@ -338,7 +338,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 col = body * (0.6 + 0.5 * diff) * (1.0 - 0.3 * csh);
         // 浪峰透光（次表面散射近似）：背光一侧浪面泛青绿
         float sss = pow(max(dot(V, -uSun + n * 0.6), 0.0), 3.0) * smoothstep(0.02, 0.12, length(gr));
-        col += mix(vec3(0.05, 0.35, 0.3), vec3(0.08, 0.3, 0.12), uFresh) * sss * 0.35 * (1.0 - csh * 0.6);
+        col += mix(vec3(0.05, 0.35, 0.3), vec3(0.06, 0.32, 0.26), uFresh) * sss * 0.35 * (1.0 - csh * 0.6);
         col = mix(col, sky, fres * 0.85);
         float sd = max(dot(R, uSun), 0.0);
         col += vec3(1.0, 0.95, 0.85) * (pow(sd, 700.0) * 7.0 + pow(sd, 80.0) * 0.18) * (1.0 - 0.85 * csh);
@@ -357,7 +357,7 @@ function makeWaterMaterial(dataTex, opts) {
         float ff = 1.0 - exp(-uFogD * uFogD * dist * dist);
         col = mix(col, uFog, ff);
         // 浅水半透明：可见水底（沙、礁石、焦散），深水不透明；掠射角由菲涅尔接管
-        float alpha = mix(mix(0.22, 0.35, uFresh), 1.0, smoothstep(0.15, mix(9.0, 3.5, uFresh), depth));
+        float alpha = mix(mix(0.2, 0.14, uFresh), 1.0, smoothstep(0.15, 14.0, depth));   // 三个水域都清澈：14 m 以内能透过水面看到水底
         alpha = max(alpha, fres * 0.95); alpha = max(alpha, clamp(foam, 0.0, 1.0));
         alpha = mix(alpha, 1.0, ff);
         gl_FragColor = vec4(col, alpha);

@@ -54,14 +54,14 @@ JS = r'''() => {
   { const Y = D.BOAT.g; Y.updateMatrixWorld(true); const o = new TH.Vector3(-32, 1.95, 0).applyMatrix4(Y.matrixWorld), d = new TH.Vector3(1, 0, 0).transformDirection(Y.matrixWorld);
     const h = new TH.Raycaster(o, d, 0, 30).intersectObject(Y, true)[0], lx = h ? Y.worldToLocal(h.point.clone()).x : null;
     if (lx === null || Math.abs(lx + 24.9) > 0.3) fails.push(`游艇尾封板有缺口：从船尾中线高 1.95 m 处看进去，第一个命中点在船体局部 x=${lx === null ? '无' : r3(lx)}，应为 -24.9 左右`); }
-  // ---- 2d. 地表底色与近景草叶（P-013）：沙滩为银白细沙、草地为绿色、湖底为深色泥；草地上长出近景草叶 ----
+  // ---- 2d. 地表底色与近景草叶（P-013）：沙滩为银白细沙、草地为绿色、湖底为干净浅色细砂（用户 2026-09-25 要求水族馆式湖泊，原为深色泥）；草地上长出近景草叶 ----
   { let terr = null; I.scene.traverse(o => { if (!terr && o.isMesh && o.geometry.attributes.ao && o.material.map && o.material.map.image && o.material.map.image.data) terr = o; });
     if (!terr) fails.push('找不到地形网格的地表贴图');
     else { const img = terr.material.map.image, TX = { x0: -360, z0: -210, w: 720, h: 420 };
       const px = (x, z) => { const o = (Math.floor((z - TX.z0) / TX.h * img.height) * img.width + Math.floor((x - TX.x0) / TX.w * img.width)) * 4; return [img.data[o], img.data[o + 1], img.data[o + 2]]; };
       for (const [x, z] of [[0, 25], [-20, 30]]) { const c = px(x, z); if (Math.min(...c) < 200) fails.push(`港口沙滩 (${x}, ${z}) 地表色 ${c}，应为银白细沙（三通道都不低于 200）`); }
       for (const [x, z] of [[-100, -60], [120, 40]]) { const c = px(x, z); if (!(c[1] > c[0] + 15 && c[1] > c[2] + 30)) fails.push(`草地 (${x}, ${z}) 地表色 ${c}，应为绿色`); }
-      { const c = px(L_LAKE.x, L_LAKE.z); if (c[0] + c[1] + c[2] > 270) fails.push(`湖底 (${L_LAKE.x}, ${L_LAKE.z}) 地表色 ${c}，应为深色泥`); } }
+      { const c = px(L_LAKE.x, L_LAKE.z), sum = c[0] + c[1] + c[2]; if (!(sum > 260 && sum < 600 && Math.max(...c) - Math.min(...c) < 60)) fails.push(`湖底 (${L_LAKE.x}, ${L_LAKE.z}) 地表色 ${c}，应为干净的浅色细砂（水族馆式清澈湖底；贴图含盆地环境光遮蔽，湖心约暗三成；原深色淤泥三通道和约 100）`); } }
     if (I.grass) { const fp = __fp; fp.teleport(120, 40, 0); fp._st.on = true; I.grass.update(fp); const n = I.grass.mesh.count; fp._st.on = false; I.grass.update(fp);   // 恢复隐藏，免得计入三角面统计
       if (n < 200) fails.push(`草地 (120, 40) 周围近景草叶只有 ${n} 丛，材质权重图的草地权重可能被清零`); } }
   // ---- 2e. 水闸为通透栅栏式（铁窗风）：关闭状态下，沿闸门水平方向在水面上下各扫一排视线，大部分能穿过门叶；闸内外海浪一致（水面着色器不再按潟湖静水区压低浪高、浪陡与泡沫） ----

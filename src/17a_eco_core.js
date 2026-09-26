@@ -3,7 +3,10 @@
 // 渲染约定：静态底质与装饰按水域合并成少数网格；水草海藻合并后用顶点着色器摆动（幅度随水深递减）；
 // 会动的生物每个物种一个实例化网格，按到相机距离分级（近处精细、远处简模、更远隐藏）；鱼群用群集算法（分离、对齐、聚合、躲避捕食者）。
 const ECO = { zones: {}, flocks: [], critters: [], whales: [], lods: [], swayMats: [], rays: null, ink: null, t: 0, cam: null, player: null };
-const ECO_R = mulberry32(20260924);
+// 生态随机数：每个水域建造前用各自固定的种子重置（ecoSeed），改动一个水域的内容不会让另外两个水域的布置整体错位
+let ECO_RNG = mulberry32(20260924);
+const ECO_R = () => ECO_RNG();
+function ecoSeed(n) { ECO_RNG = mulberry32(n); }
 const ecoRand = (a, b) => a + (b - a) * ECO_R();
 // 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；潟湖为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
