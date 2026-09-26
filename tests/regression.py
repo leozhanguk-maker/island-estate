@@ -2,6 +2,7 @@
 #   P-001 陡坡礁石吞人、P-002 潜水嵌入海底：用巡逻的精确复现计划严格重放
 #   P-008 直升机高空穿楼：页面内脚本，直升机在 25 m 高度朝住宅楼平飞
 #   P-007 离开舵位后船继续开/打转：页面内脚本，全速左满舵时按 E 离开舵位
+#   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
@@ -34,12 +35,20 @@ BOAT_JS = r'''() => { const D = __dbg, B = D.BOAT, cam = __island.camera;
   return { before, thr: +B.thr.toFixed(3), rud: +B.rud.toFixed(3), v: +B.v.toFixed(3), turn: +Math.abs(B.yaw - yaw0).toFixed(3), driving: D.DRIVE.active === B }; }'''
 
 
+TP_JS = r'''() => { const fp = __fp, st = fp._st, T = fp._test, out = []; document.body.classList.add('fp'); let t = 1e6;
+  for (const b of document.querySelectorAll('#fptp button')) {
+    b.click(); st.on = true; for (let i = 0; i < 3; i++) fp.update(1 / 60); fp.mapTick(t += 1);
+    const floor = T.floorAt(st.pos.x, st.pos.z, st.feet + 0.3), txt = document.getElementById('fpxyz').textContent;
+    const want = `X ${st.pos.x.toFixed(1)}  Y ${st.feet.toFixed(2)}  Z ${st.pos.z.toFixed(1)}`;
+    out.push({ name: b.textContent, mode: st.mode, pos: [+st.pos.x.toFixed(1), +st.feet.toFixed(2), +st.pos.z.toFixed(1)], gap: +Math.abs(st.feet - floor).toFixed(2), nan: [st.pos.x, st.pos.z, st.feet, st.yaw].some(v => !isFinite(v)), xyzOk: txt.startsWith(want), txt }); }
+  return out; }'''
 READY = "document.getElementById('loading').classList.contains('done')"
-FALLBACK_JS = r'''async () => { const fp = __fp; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
-  const p0 = [fp._st.pos.x, fp._st.pos.z]; await new Promise(r => setTimeout(r, 3000));
-  // 主循环仍在运行：按住 W 前进后位置应改变（主循环因报错停止时位移恰为 0；软件渲染帧率低，只要求有位移）
-  fp._st.keys.add('KeyW'); await new Promise(r => setTimeout(r, 5000)); fp._st.keys.delete('KeyW');
-  return { moved: +Math.hypot(fp._st.pos.x - p0[0], fp._st.pos.z - p0[1]).toFixed(2), pos: [+fp._st.pos.x.toFixed(1), +fp._st.pos.z.toFixed(1)] }; }'''
+FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
+  // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
+  let err = null; try { I.grass.update(fp); } catch (e) { err = String(e); }
+  // 主循环仍在运行：渲染帧计数继续增加（主循环因报错停止时计数不再变化；不依赖帧率快慢）
+  const f0 = I.renderer.info.render.frame; await new Promise(r => setTimeout(r, 4000));
+  return { err, frames: I.renderer.info.render.frame - f0 }; }'''
 
 
 def main():
@@ -61,11 +70,16 @@ def main():
     ok = r['before']['thr'] > 0.5 and r['before']['rud'] > 0.5 and not r['driving'] and r['thr'] == 0 and r['rud'] == 0 and abs(r['v']) < 0.3 and r['turn'] < 0.5
     print(f"  {'✓' if ok else '✗'} P-007 离开舵位后油门、舵角归零：离开前 {r['before']}，离开后 thr={r['thr']} rud={r['rud']}，20 s 后航速 {r['v']} m/s、转角 {r['turn']} rad")
     failed += 0 if ok else 1
+    with Session('#fp,still,q=low') as s:
+        tps = s.js(TP_JS)
+    bad = [t for t in tps if t['mode'] != 'walk' or t['gap'] > 0.3 or t['nan'] or not t['xyzOk']]
+    print(f"  {'✓' if not bad else '✗'} 传送点 {len(tps)} 个：全部落在可站立地面、坐标栏与程序坐标一致" + ('' if not bad else '；异常：' + '；'.join(f"{t['name']} {t['mode']} 离地 {t['gap']} 坐标栏「{t['txt']}」" for t in bad)))
+    failed += 0 if not bad else 1
     with Session('#q=high,debug,noworker', size=(640, 360), ready=READY) as s:
         r = s.js(FALLBACK_JS)
-        errs = list(s.errors)
-    ok = not errs and r['moved'] > 0.1
-    print(f"  {'✓' if ok else '✗'} P-012 主线程生成（无后台线程）时漫游正常：报错 {errs[:1] or '无'}，按 W 前进 {r['moved']} m")
+        errs = list(s.errors) + ([r['err']] if r['err'] else [])
+    ok = not errs and r['frames'] > 0
+    print(f"  {'✓' if ok else '✗'} P-012 主线程生成（无后台线程）时漫游正常：报错 {errs[:1] or '无'}，4 秒内主循环渲染 {r['frames']} 帧")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)

@@ -53,6 +53,7 @@ body.fp #fpui{display:block}
 #fpgate button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #fpprompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);padding:6px 12px;border-radius:8px;background:rgba(12,28,36,.6);color:#e8efec;font-size:13px;opacity:0;transition:opacity .2s}
 #minimap{position:absolute;right:16px;top:calc(80px + env(safe-area-inset-top,0px));width:180px;height:180px}
+#fpxyz{position:absolute;right:16px;top:calc(264px + env(safe-area-inset-top,0px));width:180px;text-align:center;font:10.5px/1.45 ui-monospace,Menlo,Consolas,monospace;color:#e8efec;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:pre}
 #uw{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at 50% 20%,rgba(120,200,210,.12),rgba(6,34,40,.55));mix-blend-mode:normal}
 @keyframes caus{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-4%,3%) rotate(8deg)}}
 body.under #uw{opacity:1}
@@ -77,8 +78,8 @@ body.under #uw{opacity:1}
 <div id="tools" class="ui"><span id="qsel" aria-label="画质"><span class="ql">画质</span></span><span id="hint">拖动旋转，右键平移，滚轮缩放</span><button id="hideui" type="button">隐藏界面</button></div>
 <button id="showui" type="button">显示界面</button>
 <div id="uw"></div>
-<div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas></div>
-<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅北门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
+<div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas><div id="fpxyz"></div></div>
+<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <!--GENSRC-->
 <script type="module">
