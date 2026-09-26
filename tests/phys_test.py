@@ -54,6 +54,8 @@ JS = r'''
   const lab = () => document.getElementById('fpprompt').textContent;
   const { GATE, L } = window.__dbg;
   const walkTo = (x, z, maxT = 8, fast = false) => { let t = 0; while (t < maxT) { const dx = x - st.pos.x, dz = z - st.pos.z; if (Math.hypot(dx, dz) < 0.25) break; st.yaw = Math.atan2(-dx, -dz); st.keys = new Set(fast ? ['KeyW', 'ShiftLeft'] : ['KeyW']); fp.update(1 / 60); t += 1 / 60; } st.keys = new Set(); for (let i = 0; i < 10; i++) fp.update(1 / 60); return { x: +st.pos.x.toFixed(2), z: +st.pos.z.toFixed(2), feet: +st.feet.toFixed(2) }; };
+  // ---- 别墅正门（南立面雨篷下，双开外开门，门洞 x 180.2～182.9）：从雨篷下笔直走进首层大堂，门洞两侧与门内不被操作台挡住 ----
+  out.v_entry = []; for (const x of [180.6, 181.55, 182.5]) { setp(x, -34.5); run([], 0.1); const r = walkTo(x, -42.5, 8); out.v_entry.push(+r.z.toFixed(2), r.feet); }
   // ---- 别墅：楼梯逐层上到屋顶 ----
   setp(171.4, -39.4); run([], 0.1); out.v_gf = walkTo(171.4, -39.6);
   out.v_1f = walkTo(171.4, -46.9); out.v_1fdoorApproach = walkTo(180, -50.5); out.v_balcony = walkTo(180, -55.2);
