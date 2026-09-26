@@ -174,7 +174,7 @@ try {
     requestAnimationFrame(loop);
   }
   if (DEBUG) window.__sea = W.sea;
-  if (DEBUG) window.__island = { scene, camera, controls, renderer, X, veg, goView, QS, grass, shadowFollow, underwaterCheck }; if (location.hash.includes('still')) { let tri = 0; scene.traverse(o => { if (o.isMesh) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tri += n * (o.isInstancedMesh ? o.count : 1); } }); console.log('veg', JSON.stringify(veg), 'tris', Math.round(tri / 1000) + 'k'); }
+  if (DEBUG) window.__island = { scene, camera, controls, renderer, X, veg, goView, QS, grass, shadowFollow, underwaterCheck, get frames() { return frames; } };   // frames：主循环帧数（海面 FFT 等离屏渲染不计） if (location.hash.includes('still')) { let tri = 0; scene.traverse(o => { if (o.isMesh) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tri += n * (o.isInstancedMesh ? o.count : 1); } }); console.log('veg', JSON.stringify(veg), 'tris', Math.round(tri / 1000) + 'k'); }
   await stage(1, '');
   loop();
 } catch (err) {

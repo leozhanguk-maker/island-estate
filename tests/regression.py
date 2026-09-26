@@ -58,9 +58,12 @@ READY = "document.getElementById('loading').classList.contains('done')"
 FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
   // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
   let err = null; try { I.grass.update(fp); } catch (e) { err = String(e); }
-  // 主循环仍在运行：渲染帧计数继续增加（主循环因报错停止时计数不再变化；不依赖帧率快慢）
-  const f0 = I.renderer.info.render.frame; await new Promise(r => setTimeout(r, 4000));
-  return { err, frames: I.renderer.info.render.frame - f0 }; }'''
+  // 主循环仍在运行：渲染帧计数继续增加（主循环因报错停止时计数不再变化）。
+  // 软件渲染下高档一帧约 9 秒，固定 4 秒窗口可能一帧都等不到：改为等到计数至少增加 2 次，最多等 90 秒，与帧率快慢无关
+  // 按主循环自身的帧数计（渲染调用计数会被海面 FFT 等离屏渲染抬高，主循环中途报错停下时仍会增加）
+  const n = () => I.frames, f0 = n(), t0 = performance.now();
+  while (n() - f0 < 2 && performance.now() - t0 < 90000) await new Promise(r => setTimeout(r, 500));
+  return { err, frames: n() - f0, secs: Math.round((performance.now() - t0) / 1000) }; }'''
 
 
 def main():
@@ -101,7 +104,7 @@ def main():
         r = s.js(FALLBACK_JS)
         errs = list(s.errors) + ([r['err']] if r['err'] else [])
     ok = not errs and r['frames'] > 0
-    print(f"  {'✓' if ok else '✗'} P-012 主线程生成（无后台线程）时漫游正常：报错 {errs[:1] or '无'}，4 秒内主循环渲染 {r['frames']} 帧")
+    print(f"  {'✓' if ok else '✗'} P-012 主线程生成（无后台线程）时漫游正常：报错 {errs[:1] or '无'}，{r['secs']} 秒内主循环渲染 {r['frames']} 帧")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)

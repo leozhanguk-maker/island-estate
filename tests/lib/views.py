@@ -32,6 +32,8 @@ RENDER_JS = r'''([px, py, pz, tx, ty, tz]) => { const fp = __fp, st = fp._st, I 
   for (const u of __statics.TIME_U || []) u.value = 0; for (const m of __statics.waterMats || []) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = 0;
   st.pos.x = px; st.pos.z = pz; st.feet = py - 1.6; st.third = false; fp.update(1 / 60);
   const c = I.camera; c.position.set(px, py, pz); c.lookAt(tx, ty, tz); c.updateMatrixWorld();
+  // 新海面（05b_sea）的 FFT 风浪与浪列由 __sea.update 推进：同样固定在时刻 0，并按当前机位设置海面网格中心
+  if (window.__sea) window.__sea.update(I.renderer, c, 0);
   if (I.grass) I.grass.update(fp); I.shadowFollow(1); I.renderer.render(I.scene, c);
   const g = __dbg.gh(px, pz); return { camBelowGround: py < g + 0.2, ground: g }; }'''
 
