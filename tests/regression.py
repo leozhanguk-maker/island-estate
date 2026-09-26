@@ -3,6 +3,7 @@
 #   P-008 直升机高空穿楼：页面内脚本，直升机在 25 m 高度朝住宅楼平飞
 #   P-007 离开舵位后船继续开/打转：页面内脚本，全速左满舵时按 E 离开舵位
 #   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致；宿舍楼传送点按用户指定位置 (14.7, 13.91, -132.0) 朝向 180°
+#   P-014 植被随机数按位置独立：把一小块林地挖成海，只有附近的树和灌木变化，12 m 以外的撒点完全不变
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
@@ -42,6 +43,17 @@ TP_JS = r'''() => { const fp = __fp, st = fp._st, T = fp._test, out = []; docume
     const want = `X ${st.pos.x.toFixed(1)}  Y ${st.feet.toFixed(2)}  Z ${st.pos.z.toFixed(1)}`;
     out.push({ name: b.textContent, mode: st.mode, pos: [+st.pos.x.toFixed(1), +st.feet.toFixed(2), +st.pos.z.toFixed(1)], gap: +Math.abs(st.feet - floor).toFixed(2), nan: [st.pos.x, st.pos.z, st.feet, st.yaw].some(v => !isFinite(v)), xyzOk: txt.startsWith(want), txt }); }
   return out; }'''
+VEG_JS = r'''() => { const D = __dbg, X = __island.X, G = D.G;
+  if (typeof D.vegScatter !== 'function') return { err: '__dbg.vegScatter 不存在' };
+  const a = D.vegScatter(X, X.H, X.normals, D.QS);
+  // 取一棵林中的树为中心，把半径 6 m 内的地形挖到海平面以下（撒点在这里提前跳过、少用随机数）
+  const c = a.trees[Math.floor(a.trees.length / 2)], H2 = Float32Array.from(X.H), r = 6;
+  for (let z = Math.floor(c[2] - r); z <= c[2] + r; z++) for (let x = Math.floor(c[0] - r); x <= c[0] + r; x++) if (Math.hypot(x - c[0], z - c[2]) <= r) H2[(z - G.z0) * G.nx + (x - G.x0)] = -2;
+  const b = D.vegScatter(X, H2, X.normals, D.QS);
+  const far = (l) => l.filter(p => Math.hypot(p[0] - c[0], p[2] - c[2]) > 12).map(p => p.slice(0, 3).map(v => v.toFixed(3)).join(',')).sort().join(';');
+  const near = (l) => l.filter(p => Math.hypot(p[0] - c[0], p[2] - c[2]) < 6).length;
+  return { c: [+c[0].toFixed(1), +c[2].toFixed(1)], trees: [a.trees.length, b.trees.length], shrubs: [a.shrubs.length, b.shrubs.length],
+    sameTrees: far(a.trees) === far(b.trees), sameShrubs: far(a.shrubs) === far(b.shrubs), nearA: near(a.trees) + near(a.shrubs), nearB: near(b.trees) + near(b.shrubs) }; }'''
 READY = "document.getElementById('loading').classList.contains('done')"
 FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
   // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
@@ -78,6 +90,12 @@ def main():
     dorm = next((t for t in tps if t['name'] == '宿舍楼'), None)
     ok = dorm is not None and dorm['pos'] == [14.7, 13.91, -132.0] and '朝向 180°' in dorm['txt']
     print(f"  {'✓' if ok else '✗'} 宿舍楼传送点在 (14.7, 13.91, -132.0) 朝向 180°：实际 {dorm and dorm['pos']}「{dorm and dorm['txt']}」")
+    failed += 0 if ok else 1
+    with Session('#fp,still,q=high') as s:
+        r = s.js(VEG_JS)
+    ok = 'err' not in r and r['sameTrees'] and r['sameShrubs'] and r['nearA'] > r['nearB']
+    print(f"  {'✓' if ok else '✗'} P-014 局部地形改动只影响附近植被：在 {r.get('c')} 挖出半径 6 m 的水坑，附近撒点 {r.get('nearA')} → {r.get('nearB')}，"
+          f"12 m 外树木{'不变' if r.get('sameTrees') else '整体错位'}、灌木{'不变' if r.get('sameShrubs') else '整体错位'}（树 {r.get('trees')}，灌木 {r.get('shrubs')}）" + (f"：{r['err']}" if 'err' in r else ''))
     failed += 0 if ok else 1
     with Session('#q=high,debug,noworker', size=(640, 360), ready=READY) as s:
         r = s.js(FALLBACK_JS)

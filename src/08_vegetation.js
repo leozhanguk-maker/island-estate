@@ -47,9 +47,15 @@ function foliageMaterial() {
   };
   return m;
 }
-function buildVegetation(X, scene, QS) {
-  const H = X.H, NR = X.normals;
-  const R = mulberry32(4242);
+// 植被随机数按位置取种子（P-014）：每个撒点格、每棵树、每块岩石各用自己坐标算出的独立随机数，
+// 局部地形或道路改动只影响附近的植被，不再让全岛植被整体错位
+function vegCell(x, z, salt) {
+  let h = (Math.round(x * 16) * 73856093) ^ (Math.round(z * 16) * 19349663) ^ (salt * 83492791);
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); h ^= h >>> 16;
+  return mulberry32(h >>> 0);
+}
+// 树与灌木的撒点（纯函数，便于测试：只读地形 H、法线 NR 与地形数据 X，返回撒点列表）
+function vegScatter(X, H, NR, QS) {
   const cell = (x, z) => Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1));
   // 排除区（山体上的设施、净空）
   const excl = [
@@ -68,6 +74,7 @@ function buildVegetation(X, scene, QS) {
   const trees = [], shrubs = [];
   const step = 4.2 / Math.sqrt(QS ? QS.density : 1);
   for (let z = G.z0 + 2; z < G.z0 + G.nz - 2; z += step) for (let x = G.x0 + 2; x < G.x0 + G.nx - 2; x += step) {
+    const R = vegCell(x, z, 1);
     const px = x + (R() - 0.5) * step * 0.9, pz = z + (R() - 0.5) * step * 0.9, k = cell(px, pz);
     const h = sampleGrid(H, px, pz), ny = NR[k * 3 + 1], sdb = X.sdB[k], sdc = X.sdC[k];
     if (h < 1.5 || sdc < 1.2) continue;
@@ -91,6 +98,12 @@ function buildVegetation(X, scene, QS) {
       if (R() < p * 0.06) trees.push([px, h, pz, 1, 'small']);
     }
   }
+  return { trees, shrubs, excl };
+}
+function buildVegetation(X, scene, QS) {
+  const H = X.H, NR = X.normals;
+  const cell = (x, z) => Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1));
+  const { trees, shrubs, excl } = vegScatter(X, H, NR, QS);
   // ---------------- 分层雨林：突出层 / 主冠层 / 下层 + 灌木 + 林下蕨类 ----------------
   const atlas = leafAtlas(); VEG_ATLAS = atlas;
   const leafMat = leafMaterial(atlas), coreMat = foliageMaterial(); coreMat.color.setHex(0x3c6a30);
@@ -111,6 +124,7 @@ function buildVegetation(X, scene, QS) {
   const lists = { palm: [[], [], [], []], banyan: [[], []], ficusRound: [[]], ficusWeep: [[]], shrub: [[]] }, wood = { banyan: [[], []], ficus: [[]] };
   const palmColl = [], treeColl = [];
   for (const t of trees) {
+    const R = vegCell(t[0], t[2], 2);
     const small = t[4] === 'small', u = R();
     if (!small && u < 0.33) {                                          // 椰子树（高）
       const H0 = 13 + R() * 9, v = Math.floor(R() * 4);
@@ -125,7 +139,7 @@ function buildVegetation(X, scene, QS) {
     lists[kind][v].push({ x: t[0], y: t[1], z: t[2], sx: Rc, sy: Rc * (0.92 + R() * 0.16), rot, tint });    // 整株：地面为原点，均匀缩放
     treeColl.push([t[0], t[2], 0.1 * Rc + 0.08]);
   }
-  for (const t of shrubs) { const r = (1.1 + R() * 1.6) * t[3]; lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
+  for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3]; lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
   const out = [];
   for (const k in lists) lists[k].forEach((L_, vi) => {
     if (!L_.length) return;
@@ -142,13 +156,14 @@ function buildVegetation(X, scene, QS) {
   // 别墅北门扶桑（开红花）
   if (typeof HIBISCUS !== 'undefined' && HIBISCUS.length) {
     const hm = new THREE.InstancedMesh(crownCardsGeo(9.9, { lobes: 2, detail: 0, flat: 0.85, cards: 12, cell: 9, cardSize: 1.1 }), mats, HIBISCUS.length);
-    HIBISCUS.forEach((p, i) => { const r = 0.55 + R() * 0.15; eu.set(0, R() * TAU, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] + r * 0.9, p[2]), q, sc.set(r, r * 1.15, r)); hm.setMatrixAt(i, m4); hm.setColorAt(i, col.setRGB(1, 1, 1)); });
+    HIBISCUS.forEach((p, i) => { const R = vegCell(p[0], p[2], 4); const r = 0.55 + R() * 0.15; eu.set(0, R() * TAU, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] + r * 0.9, p[2]), q, sc.set(r, r * 1.15, r)); hm.setMatrixAt(i, m4); hm.setColorAt(i, col.setRGB(1, 1, 1)); });
     hm.castShadow = true; hm.receiveShadow = true; scene.add(hm);
   }
   const trunksN = [], trunksE = [];
   // 林下蕨类（漫游可见；鸟瞰被树冠遮挡）
   const ferns = [];
   if (!QS || QS.density >= 0.7) for (const t of trees) for (let k = 0; k < 1; k++) {
+    const R = vegCell(t[0], t[2], 5);
     if (R() < 0.3) continue;
     const a = R() * TAU, d = 1.5 + R() * 3.5, x = t[0] + Math.cos(a) * d, z = t[2] + Math.sin(a) * d, cc = cell(x, z);
     if (NR[cc * 3 + 1] < 0.6 || X.roads.dist[cc] < 2) continue;
@@ -156,7 +171,7 @@ function buildVegetation(X, scene, QS) {
   }
   if (ferns.length) {
     const fm = new THREE.InstancedMesh(frondGeo(6, 1.5, 3, 0.55), leafMat, ferns.length);
-    ferns.forEach((f, i) => { const s = 0.7 + R() * 0.6; eu.set(0, R() * TAU, 0); q.setFromEuler(eu); m4.compose(ps.set(f[0], f[1] - 0.05, f[2]), q, sc.set(s, s, s)); fm.setMatrixAt(i, m4); col.setRGB(0.85 + R() * 0.2, 0.95 + R() * 0.1, 0.8); fm.setColorAt(i, col); });
+    ferns.forEach((f, i) => { const R = vegCell(f[0], f[2], 6); const s = 0.7 + R() * 0.6; eu.set(0, R() * TAU, 0); q.setFromEuler(eu); m4.compose(ps.set(f[0], f[1] - 0.05, f[2]), q, sc.set(s, s, s)); fm.setMatrixAt(i, m4); col.setRGB(0.85 + R() * 0.2, 0.95 + R() * 0.1, 0.8); fm.setColorAt(i, col); });
     fm.castShadow = false; fm.receiveShadow = true; scene.add(fm);
   }
   for (const c of [...palmColl, ...treeColl]) collC(c[0], c[1], c[2]);
@@ -165,6 +180,7 @@ function buildVegetation(X, scene, QS) {
   const rocks = [];
   const steepAt = (x, z) => NR[cell(x, z) * 3 + 1] < 0.55;
   for (let z = G.z0 + 3; z < G.z0 + G.nz - 3; z += 2.2) for (let x = G.x0 + 3; x < G.x0 + G.nx - 3; x += 2.2) {
+    const R = vegCell(x, z, 7);
     const px = x + (R() - 0.5) * 2, pz = z + (R() - 0.5) * 2, k = cell(px, pz), h = sampleGrid(H, px, pz);
     if (h < 1.2 || NR[k * 3 + 1] < 0.72 || X.roads.dist[k] < 2.5 || X.sdC[k] < 2) continue;
     if (X.sdB[k] >= 0 && !basinFree(px, pz) && lakeSD(px, pz, L.lake, 0.1) < -3) continue;
@@ -175,6 +191,7 @@ function buildVegetation(X, scene, QS) {
   }
   // 崖脚海岸崩落岩块（部分没入水中）
   for (let z = G.z0 + 3; z < G.z0 + G.nz - 3; z += 2.6) for (let x = G.x0 + 3; x < G.x0 + G.nx - 3; x += 2.6) {
+    const R = vegCell(x, z, 8);
     const px = x + (R() - 0.5) * 2.4, pz = z + (R() - 0.5) * 2.4, k = cell(px, pz), sc_ = X.sdC[k];
     if (sc_ < -3.5 || sc_ > 2.5 || (Math.abs(px) < 60 && pz > 100)) continue;
     const h = sampleGrid(H, px, pz); if (h > 4 || h < -6 || R() > 0.42) continue;
@@ -182,7 +199,7 @@ function buildVegetation(X, scene, QS) {
   }
   const rg = (() => { let g = new THREE.DodecahedronGeometry(1, 0); g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = THREE.BufferGeometryUtils.mergeVertices(g); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const f = 0.8 + 0.35 * Math.abs(SNoise(p.getX(i) * 2.1, p.getZ(i) * 2.1 + p.getY(i))); p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.7, p.getZ(i) * f); } g.computeVertexNormals(); return g; })();
   const rm = new THREE.InstancedMesh(rg, std(0xffffff, 0.92), rocks.length);
-  rocks.forEach((r, i) => { m4.compose(ps.set(r[0], r[1] + r[3] * 0.15, r[2]), q.setFromEuler(new THREE.Euler(R() * 0.5, R() * TAU, R() * 0.5)), sc.set(r[3], r[3] * (0.7 + R() * 0.5), r[3] * (0.8 + R() * 0.4))); rm.setMatrixAt(i, m4); rm.setColorAt(i, col.setHex(0x6e675c).lerp(new THREE.Color(0x9a9282), R())); });
+  rocks.forEach((r, i) => { const R = vegCell(r[0], r[2], 9); m4.compose(ps.set(r[0], r[1] + r[3] * 0.15, r[2]), q.setFromEuler(new THREE.Euler(R() * 0.5, R() * TAU, R() * 0.5)), sc.set(r[3], r[3] * (0.7 + R() * 0.5), r[3] * (0.8 + R() * 0.4))); rm.setMatrixAt(i, m4); rm.setColorAt(i, col.setHex(0x6e675c).lerp(new THREE.Color(0x9a9282), R())); });
   rm.castShadow = true; rm.receiveShadow = true; scene.add(rm);
   for (const r of rocks) if (r[3] > 0.7) collC(r[0], r[2], r[3] * 0.85);
   return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, rocks: rocks.length, ferns: ferns.length };
