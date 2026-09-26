@@ -30,7 +30,7 @@ try {
   await stage(0.6, '建筑与设施');
   const statics = [buildVilla(), buildDorm(), buildTennis(), buildParking(), buildBarn(), buildPens(), buildGreenhouses(),
     buildEastTower(), buildWestTower(), buildGate(), buildGateTower(), buildAirfield(), buildSolar(),
-    buildPowerwalls(L.pwEast.x, L.pwEast.z, Math.PI / 2 + 0.0), buildPowerwalls(L.pwWest.x, L.pwWest.z, -0.35),
+    buildPowerwalls(L.pwEast.x, L.pwEast.z, Math.PI / 2 + 0.0), buildPowerwalls(L.pwWest.x, L.pwWest.z, L.pwWest.rot),
     buildBoardwalk(), buildBeachSets(), buildGolfFlags(), buildVineyard(), buildDuckArea(),
     fenceLoop(L.pasture, 1.3, M.galv, M.galv, 3.2)];
   for (const t of L.turbines) buildTurbine(t[0], t[1], scene);

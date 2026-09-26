@@ -164,7 +164,7 @@ const PADS = [
   { cx: L.chicken.x, cz: L.chicken.z, hw: 13, hd: 11, rot: 0, h: 4.4, blend: 3 },
   { cx: L.gateTower.x, cz: L.gateTower.z, hw: 5.2, hd: 5.2, rot: 0, h: 2.2, blend: 1.2 },
   { cx: L.duck.x, cz: L.duck.z, hw: 12, hd: 4.5, rot: 0, h: 10.9, blend: 3 },
-  { cx: L.pwWest.x, cz: L.pwWest.z, hw: 5, hd: 3, rot: -0.35, h: null, blend: 3 },
+  { cx: L.pwWest.x, cz: L.pwWest.z, hw: 5, hd: 3, rot: L.pwWest.rot, h: null, blend: 3 },
 ];
 
 function buildTerrain(progress) {

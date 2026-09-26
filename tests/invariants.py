@@ -1,6 +1,6 @@
 # 基线不变量：页面内断言“不应改变的东西”
 #   1. 共享几何体未被原地变换（BOXG 事故的防线）
-#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致；栈道两端贴合、沿线无岩石侵入；游艇主甲板室内地板可见（V-015）
+#   2. 关键构件高程（泳池池壁/池底、别墅首层墙体）；H125 真实外形尺寸（V-009）；游艇尾封板完整（V-014）；地表底色与草叶（P-013）；水闸为通透栅栏、闸内外海浪一致；栈道两端贴合、沿线无岩石侵入；游艇主甲板室内地板可见（V-015）；机场道路绕行、停机坪砖基、储能贴机库
 #   3. 设施与交互数量、碰撞登记数量、三角面数（对照 tests/baseline/invariants.json）
 # 用法：python3 tests/invariants.py [--update]   # --update 重写数量基线（须单独提交并说明原因）
 import os, sys, json
@@ -88,6 +88,19 @@ JS = r'''() => {
     for (const [lx, lz] of [[-4, 1.5], [2, -1.5], [8, 0.5], [11.5, -2]]) { const o = new TH.Vector3(lx, 4.5, lz).applyMatrix4(Y.matrixWorld), d = new TH.Vector3(0, -1, 0);
       const h = new TH.Raycaster(o, d, 0, 5).intersectObject(Y, true)[0], ly = h ? h.point.clone().applyMatrix4(inv).y : null;
       if (ly === null || Math.abs(ly - 2.45) > 0.06) { fails.push(`游艇主甲板室 (${lx}, ${lz}) 向下第一个命中高度 ${ly === null ? '无' : r3(ly)}，应为室内地板 2.45（外甲板面把室内地板盖住了）`); break; } } }
+  // ---- 2h. 机场：道路绕过机场（任何道路点都不在停机坪 24 m 方坪外扩 2 m 以内，R1 末端接上 R2 起点）；停机坪砖砌基座落到坪下最低地面以下；西侧储能紧贴机库、不挡路 ----
+  { const X = I.X, Lh = D.L.helipad, hg = D.L.hangar, rot = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), c = Math.cos(rot), sn = Math.sin(rot);
+    const loc = (x, z) => { const dx = x - Lh.x, dz = z - Lh.z; return [dx * c - dz * sn, dx * sn + dz * c]; };
+    for (const r of X.roads) { const bad = r.pts.find(p => { const [a, b] = loc(p[0], p[1]); return Math.abs(a) < 14 && Math.abs(b) < 14; }); if (bad) { fails.push(`道路 ${r.id} 穿过停机坪：(${r3(bad[0])}, ${r3(bad[1])})`); break; } }
+    const R1 = X.roads.find(r => r.id === 'R1'), R2 = X.roads.find(r => r.id === 'R2'), e = R1.pts.at(-1), b0 = R2.pts[0];
+    if (Math.hypot(e[0] - b0[0], e[1] - b0[1]) > 1.5) fails.push(`R1 末端 (${r3(e[0])}, ${r3(e[1])}) 没有接上 R2 起点 (${r3(b0[0])}, ${r3(b0[1])})`);
+    let lo = 1e9; for (let a = -12; a <= 12; a += 1) for (let b = -12; b <= 12; b += 1) lo = Math.min(lo, D.gh(Lh.x + a * c + b * sn, Lh.z - a * sn + b * c));
+    let base = null; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh && o.material.map && o.material.map.image && o.material.map.image.width === 512 && o.material.map.image.height === 256) { const bb = new TH.Box3().setFromObject(o); if (Math.abs((bb.min.x + bb.max.x) / 2 - Lh.x) < 3 && Math.abs((bb.min.z + bb.max.z) / 2 - Lh.z) < 3) base = bb; } }));
+    if (!base) fails.push('找不到停机坪砖砌基座'); else if (base.min.y > lo - 0.2) fails.push(`停机坪砖砌基座底面 ${r3(base.min.y)}，没落到坪下最低地面 ${r3(lo)} 以下`);
+    const pw = D.L.pwWest; let dRoad = 1e9; for (const r of X.roads) for (const p of r.pts) dRoad = Math.min(dRoad, Math.hypot(p[0] - pw.x, p[1] - pw.z) - r.w / 2);
+    if (dRoad < 4) fails.push(`西侧储能离道路边只有 ${r3(dRoad)} m，挡路`);
+    const hc = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), hx = (pw.x - hg.x) * Math.cos(hc) - (pw.z - hg.z) * Math.sin(hc);
+    if (!(Math.abs(Math.abs(hx) - 10.5) < 1.5)) fails.push(`西侧储能离机库侧墙 ${r3(Math.abs(hx) - 10.1)} m，应紧贴机库`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

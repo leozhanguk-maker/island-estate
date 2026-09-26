@@ -71,7 +71,7 @@ function setupFP(ctx) {
   for (const pen of [L.pig, L.chicken]) R_(pen.x, pen.z, pen.w / 2 + 0.1, pen.d / 2 + 0.1);
   for (const t of L.turbines) circles.push({ x: t[0], z: t[1], r: 1.0 });
   const tw = 16 * 1.134; for (let r = 0; r < 6; r++) for (let c = 0; c < 2; c++) R_(251 + c * (tw + 1.4) + tw / 2, L.solar.z0 + 4 + r * 6.6, tw / 2, 2.3);
-  R_(L.pwEast.x, L.pwEast.z, 0.5, 3.6, 0); R_(L.pwWest.x, L.pwWest.z, 3.6, 0.5, -0.35);
+  R_(L.pwEast.x, L.pwEast.z, 0.5, 3.6, 0); R_(L.pwWest.x, L.pwWest.z, 3.6, 0.5, L.pwWest.rot);
   // 空间哈希
   const CELL = 8, hash = new Map();
   const key = (i, j) => i * 100003 + j;
