@@ -33,9 +33,12 @@ JS = r'''() => {
   out.leg1 = steerTo(-33, 87, 60, 0.3); out.leg2 = steerTo(-19, 108, 80, 0.25); out.leg3 = steerTo(-19, 150, 80, 0.35); out.leg4 = steerTo(-19, 300, 80, 0.8);
   out.carried = { px: +st.pos.x.toFixed(1), pz: +st.pos.z.toFixed(1), pfeet: +st.feet.toFixed(2), onBoat: !!st.onBoat };
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); out.exited = D.DRIVE.active === null;
-  // 停船后下到下甲板
+  // 停船后：鸣笛召唤（外海）；下到主甲板走过下层船舱舱盖（已封闭，不会掉下去）；上甲板后部经楼梯上日光甲板
   B.v = 0; B.thr = 0; B.rud = 0;
-  walkTo(...toW(5.9, 1.6)); out.downMain = walkTo(...toW(0.9, 1.6)); walkTo(...toW(0.5, -1.7)); walkTo(...toW(6.25, -1.8)); out.toStairDn = walkTo(...toW(6.25, -2.9)); out.lower = walkTo(...toW(1.6, -2.9)); out.corridor = walkTo(...toW(-9, 0)); out.cabin = walkTo(...toW(-8.5, 1.8));
+  out.horn = D.boatHorn(); out.showNear = D.ECO_SHOW.moved ? D.ECO_SHOW.moved.length : 0;
+  walkTo(...toW(5.9, 1.6)); out.downMain = walkTo(...toW(0.9, 1.6)); walkTo(...toW(0.5, -1.7)); walkTo(...toW(4.4, -2.0)); out.hatch = walkTo(...toW(5.3, -2.9));
+  walkTo(...toW(0.5, -1.7)); walkTo(...toW(0.8, 1.6)); walkTo(...toW(5.9, 1.6)); walkTo(...toW(3, 0)); walkTo(...toW(-9, 0)); walkTo(...toW(-13, 0)); walkTo(...toW(-15.2, 3.3)); out.sunStairFoot = walkTo(...toW(-15.6, 3.3));
+  out.sunDeck = walkTo(...toW(-21.2, 3.3)); out.sunDeckIn = walkTo(...toW(-22.2, 1.5));
   return out;
 }'''
 with sync_playwright() as p:

@@ -35,7 +35,9 @@ function buildYacht() {
   const hull = new THREE.Mesh(hg, M.yachtWhite); Y.add(hull);
   // 甲板面
   const dpts = []; for (let s = 0; s <= NS; s++) dpts.push([sec[s].x, -sec[s].pts[4][0] + 0.12]); for (let s = NS; s >= 0; s--) dpts.push([sec[s].x, sec[s].pts[4][0] - 0.12]);
-  const dshape = planShape(dpts); const dgeo = new THREE.ShapeGeometry(dshape); dgeo.rotateX(-Math.PI / 2);
+  // 主甲板室的平面范围从甲板面上挖掉：甲板面沿舷弧由船尾 2.26 升到船首约 3.7，原先整块铺过舱室，把室内前半部 2.45 的地板（楼梯厅、厨房、船东套房）埋在下面
+  const dshape = planShape(dpts); { const hp = new THREE.Path(); offsetPlan(housePlan(-19, 13.5, 3.85, 0.3), -0.02).forEach((p, i) => i ? hp.lineTo(p[0], -p[1]) : hp.moveTo(p[0], -p[1])); dshape.holes.push(hp); }
+  const dgeo = new THREE.ShapeGeometry(dshape); dgeo.rotateX(-Math.PI / 2);
   const dp = dgeo.attributes.position; for (let i = 0; i < dp.count; i++) { const u = clamp((dp.getX(i) + LOA / 2) / LOA, 0, 1); dp.setY(i, deck(u) + 0.02); } dgeo.computeVertexNormals();
   Y.add(new THREE.Mesh(dgeo, M.teak));
   // 舷墙
@@ -68,11 +70,14 @@ function buildYacht() {
   };
   const rectPts = (x0, x1, z0, z1) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
   const mainH = housePlan(-19, 13.5, 3.85, 0.3), upH = housePlan(-12.5, 9.5, 3.55, 0.36);
-  const HOLE_UP = rectPts(1.5, 5.6, 1.15, 2.05), HOLE_DN = rectPts(2.2, 5.9, -3.35, -2.45), HOLE_SUN = rectPts(-20.5, -16.0, 2.85, 3.75);
+  const HOLE_UP = rectPts(1.5, 5.6, 1.15, 2.05), HOLE_SUN = rectPts(-20.5, -16.0, 2.85, 3.75);
   // 主甲板室：地板、天花、外壳（后墙居中门）
-  flat(offsetPlan(mainH, -0.05), 2.45, M.teak, [HOLE_DN]);
+  flat(offsetPlan(mainH, -0.05), 2.45, M.teak, []);                                // 主甲板地板（原通往下甲板的楼梯口封闭，改为舱盖）
+  // 下层船舱舱盖：主甲板楼梯厅地板上一块平嵌的柚木盖板（不锈钢边框、下沉式拉环），下层为船员区不开放
+  box(Y, 1.2, 0.03, 0.9, std(0x8a5a32, 0.55), 5.2, 2.465, -2.9); for (const [w, d, x, z] of [[1.26, 0.03, 5.2, -3.36], [1.26, 0.03, 5.2, -2.44], [0.03, 0.9, 4.58, -2.9], [0.03, 0.9, 5.82, -2.9]]) box(Y, w, 0.02, d, M.alu, x, 2.47, z);
+  { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.008, 6, 16), M.alu); ring.rotation.x = -Math.PI / 2; ring.position.set(5.6, 2.48, -2.9); Y.add(ring); }
   flat(mainH, 5.12, M.ceiling, [HOLE_UP], false);
-  shell(mainH, 2.45, 2.7, [0.85, 2.1], 1.1);
+  shell(mainH, 2.45, 2.7, [0.85, 2.55], 1.1);   // 主甲板室：落地大窗做到吊顶下 0.15 m（原窗上 0.6 m 白墙在室内看像一块悬着的白木板）
   // 上甲板：主甲板室屋顶即上甲板地面（含室外后甲板）；上层甲板室外壳
   flat(mainH, 5.15, M.teak, [HOLE_UP]);
   flat(upH, 7.62, M.ceiling, [], false);
@@ -80,7 +85,9 @@ function buildYacht() {
   flat(upH, 7.65, M.teak, [], true);                                               // 日光甲板
   // 上甲板后部遮阳顶（兼作日光甲板后段），楼梯处开洞
   for (const [x0, x1, z0, z1] of [[-23, -8, -4.3, 2.85], [-23, -8, 3.75, 4.3], [-23, -20.5, 2.85, 3.75], [-16.0, -8, 2.85, 3.75]]) { box(Y, x1 - x0, 0.25, z1 - z0, M.yachtWhite, (x0 + x1) / 2, 7.75, (z0 + z1) / 2); YL.walks.push({ kind: 'poly', pts: rectPts(x0, x1, z0, z1), y: 7.88 }); }
-  for (const z of [-3.9, 3.9]) for (const x of [-21.5, -17]) box(Y, 0.12, 2.3, 0.12, M.yachtWhite, x, 6.5, z);
+  // 遮阳顶支柱：前一对立在上甲板（5.15）上，后一对在上甲板后沿之外，一直落到主甲板后甲板（2.26），都顶到遮阳顶底面（7.65）
+  for (const z of [-3.9, 3.9]) { box(Y, 0.12, 7.65 - 5.15, 0.12, M.yachtWhite, -17, (7.65 + 5.15) / 2, z); box(Y, 0.12, 7.65 - 2.26, 0.12, M.yachtWhite, -21.5, (7.65 + 2.26) / 2, z);
+    YL.rects.push({ x: -17, z, hw: 0.08, hd: 0.08, rot: 0, bottom: 4.9, top: 7.7 }, { x: -21.5, z, hw: 0.08, hd: 0.08, rot: 0, bottom: 2.0, top: 7.7 }); }
   const sunH = housePlan(-5.5, 6.5, 3.2, 0.45);
   extrudePlan(sunH, 1.5, M.yachtWhite, 7.65, Y); extrudePlan(offsetPlan(sunH, 0.04), 0.7, M.yachtGlass, 8.05, Y);
   YL.rects.push({ x: 0.5, z: 0, hw: 6.1, hd: 3.2, rot: 0, bottom: 7.3, top: 9 });
@@ -92,7 +99,7 @@ function buildYacht() {
   for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); }
   // 日光甲板按摩池
   cyl(Y, 1.25, 1.3, 0.55, M.white, -9.5, 7.93, 0, 24); cyl(Y, 1.1, 1.1, 0.05, M.pool, -9.5, 8.2, 0, 24); YL.rects.push({ x: -9.5, z: 0, hw: 1.3, hd: 1.3, rot: 0, bottom: 7.3, top: 9 });
-  // ---- 楼梯：主甲板 → 上甲板、主甲板 → 下甲板、上甲板后部 → 日光甲板；船尾游泳平台 → 后甲板 ----
+  // ---- 楼梯：主甲板 → 上甲板、上甲板后部 → 日光甲板；船尾游泳平台 → 后甲板（下甲板已改为舱盖） ----
   const yStairs = (x0, z, x1, y0, y1, w, rails = true) => {
     const n = Math.round(Math.abs(y1 - y0) / 0.19), run = (x1 - x0) / n, rise = (y1 - y0) / n;
     for (let i = 0; i < n; i++) box(Y, Math.abs(run) + 0.02, 0.05, w, M.teak, x0 + run * (i + 0.5), y0 + rise * (i + 1) - 0.025, z);
@@ -101,23 +108,8 @@ function buildYacht() {
     const b0 = Math.min(y0, y1) - 0.3, b1 = Math.max(y0, y1) - 0.4; ySeg(x0, z - w / 2 - 0.05, x1, z - w / 2 - 0.05, b0, b1); ySeg(x0, z + w / 2 + 0.05, x1, z + w / 2 + 0.05, b0, b1);
   };
   yStairs(1.5, 1.6, 5.6, 2.45, 5.15, 0.9);
-  yStairs(5.9, -2.9, 2.2, 2.45, 0.3, 0.9);
-  yStairs(-20.5, 3.3, -16.0, 5.15, 7.88, 0.9);
+  yStairs(-16.0, 3.3, -20.5, 5.15, 7.88, 0.9);   // 上甲板 → 日光甲板：从上甲板（x -16）起步向船尾爬升（上甲板后沿在 x≈-19，原先从 -20.5 起步，第一级悬在半空、无法上梯）
   for (const z of [-3.2, 3.2]) yStairs(-25.3, z, -23.0, 0.9, 2.26, 0.9, false);
-  // ---- 下甲板：走廊 + 4 间客舱（床、床头柜、灯） ----
-  box(Y, 18.4, 0.3, 6.8, M.floorWood, -2.9, 0.15, 0); YL.walks.push({ kind: 'poly', pts: rectPts(-12, 6.2, -3.4, 3.4), y: 0.3 });
-  for (const [x0, x1, z0, z1] of [[-12, 6.2, -3.4, -3.4], [-12, 6.2, 3.4, 3.4], [-12, -12, -3.4, 3.4], [6.2, 6.2, -3.4, 3.4]]) { wallQuad(Y, [x0, z0], [x1, z1], 0.1, 2.4, M.yachtWhite); ySeg(x0, z0, x1, z1, -0.3, 2.0); }
-  for (const sz of [-1, 1]) {
-    for (const [x0, x1] of [[-12, -7], [-7, -2]]) {
-      const zc = sz * 0.75; wallQuad(Y, [x0, zc], [x1 - 1.3, zc], 0.1, 2.4, M.wallLight); wallQuad(Y, [x1 - 0.3, zc], [x1, zc], 0.1, 2.4, M.wallLight); wallQuad(Y, [x1 - 1.3, zc], [x1 - 0.3, zc], 2.1, 2.4, M.wallLight);
-      ySeg(x0, zc, x1 - 1.3, zc, -0.3, 2.0); ySeg(x1 - 0.3, zc, x1, zc, -0.3, 2.0);
-      wallQuad(Y, [x1, zc], [x1, sz * 3.4], 0.1, 2.4, M.wallLight); ySeg(x1, zc, x1, sz * 3.4, -0.3, 2.0);
-      const bx = (x0 + x1) / 2 - 0.6, bz = sz * 2.2; bedF(Y, bx, 0.3, bz, Math.PI / 2, 1.5, 2.0, sz > 0 ? 0xe9e4da : 0xdfe6ea); ySeat(bx + 0.2, 0.3 + 0.62, bz, -Math.PI / 2, 'lie');
-      YL.rects.push({ x: bx, z: bz, hw: 1.05, hd: 0.8, rot: 0, bottom: -0.5, top: 1.5 }); box(Y, 0.8, 0.03, 0.2, M.lamp, bx, 2.36, bz);
-    }
-  }
-  for (let i = 0; i < 4; i++) box(Y, 1.2, 0.03, 0.2, M.lamp, -10 + i * 4, 2.36, 0);
-  box(Y, 18.4, 0.04, 6.8, M.ceiling, -2.9, 2.38, 0);
   // ---- 主甲板室内：主沙龙、餐区、厨房/楼梯厅、船东套房 ----
   // 主沙龙：两组沙发相对、茶几、地毯、酒吧台（高脚凳）、电视柜
   box(Y, 5, 0.02, 3.4, M.rug, -14, 2.47, 0);
@@ -145,12 +137,14 @@ function buildYacht() {
   { const wh = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.03, 8, 24), M.woodDark); wh.position.set(6.95, 6.1, 0); wh.rotation.y = Math.PI / 2; wh.rotation.x = 0.35; Y.add(wh); }
   box(Y, 0.7, 0.5, 0.7, M.cushionDark, 6.0, 5.45, 0); box(Y, 0.12, 0.8, 0.7, M.cushionDark, 5.65, 5.95, 0);
   YL.rects.push({ x: 7.6, z: 0, hw: 0.5, hd: 1.5, rot: 0, bottom: 4.8, top: 6.8 });
+  // 喇叭按钮：操控台台面上一个红色蘑菇头按钮（按下鸣笛，闸外海域可召唤鲸群与鱼群）
+  cyl(Y, 0.07, 0.08, 0.03, M.alu, 7.25, 6.065, -0.6, 16); cyl(Y, 0.055, 0.05, 0.04, std(0xc8201c, 0.35), 7.25, 6.1, -0.6, 16);
   YL.interact.push({ x: 6.4, z: 0.9, r: 1.4, y: 5.15, label: '驾驶游艇（舵位）', boatHelm: true });
   for (const [x, z] of [[-9, 0], [-3, 0], [4, 0]]) box(Y, 1.4, 0.03, 0.25, M.lamp, x, 7.58, z);
   // ---- 甲板边界：舷墙/栏杆（按高度带） ----
-  railing(Y, [new THREE.Vector3(-19, 5.15, -3.85), new THREE.Vector3(-19, 5.15, 3.85)], 1.0, M.alu, 1.2, 0.025);
+  railing(Y, [new THREE.Vector3(-19, 5.15, -3.85), new THREE.Vector3(-19, 5.15, 2.8)], 1.0, M.alu, 1.2, 0.025);   // 上甲板后沿栏杆：右舷 z 2.8～3.85 留给上日光甲板的楼梯
   for (const sz of [-1, 1]) { railing(Y, [new THREE.Vector3(-19, 5.15, sz * 3.85), new THREE.Vector3(-12.5, 5.15, sz * 3.85)], 1.0, M.alu, 1.2, 0.025); railing(Y, [new THREE.Vector3(-23, 7.88, sz * 4.3), new THREE.Vector3(9.5, 7.88, sz * 4.3)], 1.0, M.alu, 1.5, 0.025); }
-  ySeg(-19, -3.85, -19, 3.85, 4.8, 7); ySeg(-19, -3.85, -12.5, -3.85, 4.8, 7); ySeg(-19, 3.85, -12.5, 3.85, 4.8, 7);
+  ySeg(-19, -3.85, -19, 2.8, 4.8, 7); ySeg(-19, -3.85, -12.5, -3.85, 4.8, 7); ySeg(-19, 3.85, -12.5, 3.85, 4.8, 7);
   for (const sz of [-1, 1]) { ySeg(-12.5, sz * 3.6, 9.5, sz * 3.6, 7.3, 9.5); ySeg(-23, sz * 4.3, -12.5, sz * 4.3, 7.5, 9.5); }
   ySeg(-23, -4.3, -23, 4.3, 7.5, 9.5); ySeg(9.5, -3.6, 9.5, 3.6, 7.3, 9.5);
   // 主甲板：后甲板、两舷通道、前甲板；外侧舷墙

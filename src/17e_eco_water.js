@@ -19,7 +19,7 @@ function updateEcology(dt, t, camera, player) {
     for (const k of Z.critters || []) { k.update(dt, t); k.draw(); }
     if (Z.update) Z.update(dt, t);
   }
-  ecoSprayUpdate(dt);
+  ecoSprayUpdate(dt); ecoShowUpdate(dt);
   // 章鱼墨汁：扩散变大、逐渐变淡，约 4 秒后消失
   if (ECO.ink && ECO.ink.t < 4) { const k = (ECO.ink.t += dt) / 4; ECO.ink.m.scale.setScalar(0.2 + 1.3 * Math.sqrt(k)); ECO.ink.m.material.opacity = 0.8 * (1 - k); ECO.ink.m.visible = k < 1; }
 }
