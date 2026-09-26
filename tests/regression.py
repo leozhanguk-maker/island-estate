@@ -55,13 +55,13 @@ VEG_JS = r'''() => { const D = __dbg, X = __island.X, G = D.G;
   const near = (l) => l.filter(p => Math.hypot(p[0] - c[0], p[2] - c[2]) < 6).length;
   return { c: [+c[0].toFixed(1), +c[2].toFixed(1)], trees: [a.trees.length, b.trees.length], shrubs: [a.shrubs.length, b.shrubs.length],
     sameTrees: far(a.trees) === far(b.trees), sameShrubs: far(a.shrubs) === far(b.shrubs), nearA: near(a.trees) + near(a.shrubs), nearB: near(b.trees) + near(b.shrubs) }; }'''
-HORN_JS = r\'\'\'() => { const D = __dbg, fp = __fp, out = {}; fp._st.on = true;
+HORN_JS = r'''() => { const D = __dbg, fp = __fp, out = {}; fp._st.on = true;
   const press = () => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyH' })); };
   const car = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'car'), tr = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'tractor');
   for (const [name, v] of [['car', car], ['tractor', tr], ['heli', D.HELI], ['boat', D.BOAT]]) { D.HORN.last = null; D.DRIVE.active = v || null; press(); out[name] = D.HORN.last && D.HORN.last.kind; }
   D.DRIVE.active = null; D.HORN.last = null; press(); out.walk = D.HORN.last && D.HORN.last.kind;
   out.esc = [...document.querySelectorAll('#fpgate dt')].some(dt => dt.textContent.trim() === 'H' && /鸣笛/.test(dt.nextElementSibling.textContent));
-  return out; }\'\'\'
+  return out; }'''
 READY = "document.getElementById('loading').classList.contains('done')"
 FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
   // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
