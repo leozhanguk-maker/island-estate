@@ -258,6 +258,7 @@ function buildTerrain(progress) {
   // ---- 道路 ----
   X.roads = buildRoads(H);
   carveRoads(H, X.roads);
+  carveBoardwalk(H);
   if (progress) progress(0.7);
   return X;
 }
@@ -302,6 +303,25 @@ function buildRoads(H) {
     out.push({ id: r.id, w: r.w, pts, widths, len });
   }
   return out;
+}
+// 栈道走廊：桥面两侧 2.2 m 内把高出桥面的地形（岩石、坡脚）削平到栈道中线地面附近，4 m 外恢复原地形；只削低不垫高。
+// 每个格点按最近的栈道中线点取削平高度 max(中线地面 + 0.05, 0.5)（桥面 ≈ max(中线地面 + 0.55, 0.9)），岩石不再侵入桥面与扶手；
+// 栈道两端之外、闸口警戒塔塔基范围内不削
+function carveBoardwalk(H) {
+  const H0 = H.slice(), core = 2.2, R = 4.0, tw = L.gateTower;
+  for (const pts of [BOARDWALK.south, BOARDWALK.east]) {
+    const P = smoothOpen(pts, 0.5), caps = P.map(([x, z]) => Math.max(sampleGrid(H0, x, z) + 0.05, 0.5));
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    const i0 = Math.max(0, Math.floor(x0 - R - G.x0)), i1 = Math.min(G.nx - 1, Math.ceil(x1 + R - G.x0));
+    const j0 = Math.max(0, Math.floor(z0 - R - G.z0)), j1 = Math.min(G.nz - 1, Math.ceil(z1 + R - G.z0));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = G.x0 + i, z = G.z0 + j; if (Math.abs(x - tw.x) < 5.5 && Math.abs(z - tw.z) < 5.5) continue;
+      let bi = -1, bd = R; for (let n = 0; n < P.length; n++) { const d = Math.hypot(x - P[n][0], z - P[n][1]); if (d < bd) { bd = d; bi = n; } }
+      if (bi <= 0 || bi >= P.length - 1) continue;                       // 最近点是端点：格点在栈道两端之外
+      const k = j * G.nx + i; if (H[k] <= caps[bi]) continue;
+      H[k] = Math.min(H[k], lerp(caps[bi], H0[k], smoothstep(core, R, bd)));
+    }
+  }
 }
 function carveRoads(H, roads) {
   const infl = new Float32Array(GN), sw = new Float32Array(GN), sh = new Float32Array(GN);

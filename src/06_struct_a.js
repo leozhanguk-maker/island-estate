@@ -1,7 +1,7 @@
 // ======================= 06a 材质 / 批处理 / 盆地建筑 =======================
 const std = (color, rough = 0.8, metal = 0, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: rough, metalness: metal }, extra));
 const M = {
-  concrete: std(0xd2cfc7, 0.88), concreteDark: std(0xa7a49c, 0.9), concreteWarm: std(0xcfc6b8, 0.85),
+  deckWhite: std(0xf1f0eb, 0.62), concrete: std(0xd2cfc7, 0.88), concreteDark: std(0xa7a49c, 0.9), concreteWarm: std(0xcfc6b8, 0.85),
   wallWarm: std(0xeee9e0, 0.72), wallGray: std(0xcdcdc8, 0.78), wallLight: std(0xe4e3de, 0.75),
   metalDark: std(0x3a3f45, 0.45, 0.6), metalMid: std(0x6c737a, 0.42, 0.65), galv: std(0xb3babf, 0.36, 0.85),
   // aluWhite：白色烤漆铝合金（游艇舷梯等）

@@ -305,17 +305,18 @@ function makeWaterMaterial(dataTex, opts) {
           return;
         }
         float fade = 1.0 - smoothstep(250.0, 1200.0, dist);
-        float amp = mix(1.0, 0.3, max(calm, uFresh));
+        // 闸门为通透栅栏，闸内外海浪一致：浪高只在淡水湖减弱（calm 仅用于潟湖水色）
+        float amp = mix(1.0, 0.3, uFresh);
         vec2 gr = waveGrad(vW.xz, uTime, amp, fade);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); gr += normalize(vW.xz - uPlunge + 1e-3) * sin(dp*2.2 - uTime*6.0) * 0.18 * exp(-dp*0.28); }
-        // 近岸涌浪：沿离岸距离场的梯度（指向外海）朝岸推进，水越浅浪越陡，港内静水区减弱
+        // 近岸涌浪：沿离岸距离场的梯度（指向外海）朝岸推进，水越浅浪越陡（闸内同样涌进来）
         vec2 cellUV = 1.0 / (uGrid.zw + 1.0);
         vec2 sg = vec2(texture2D(uData, clamp(uv + vec2(cellUV.x, 0.0), 0.0, 1.0)).g - texture2D(uData, clamp(uv - vec2(cellUV.x, 0.0), 0.0, 1.0)).g,
                        texture2D(uData, clamp(uv + vec2(0.0, cellUV.y), 0.0, 1.0)).g - texture2D(uData, clamp(uv - vec2(0.0, cellUV.y), 0.0, 1.0)).g);
         vec2 toSea = length(sg) > 1e-4 ? normalize(sg) : vec2(0.0);
         float surfZone = smoothstep(28.0, 3.0, shore) * smoothstep(0.0, 1.2, shore) * inside * (1.0 - uFresh) * fade;
         float swPh = shore * 0.85 + uTime * 1.5 + vnoise(vW.xz * 0.05) * 4.0;
-        float steep = mix(0.12, 0.32, smoothstep(12.0, 2.0, shore)) * (1.0 - 0.35 * calm);
+        float steep = mix(0.12, 0.32, smoothstep(12.0, 2.0, shore));
         gr += toSea * cos(swPh) * steep * surfZone;
         vec3 n = normalize(vec3(-gr.x, 1.0, -gr.y));
         float fres = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
@@ -323,7 +324,7 @@ function makeWaterMaterial(dataTex, opts) {
         vec3 sky = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 Rc = reflect(-V, normalize(mix(n, vec3(0.0, 1.0, 0.0), 0.9)));
         if (Rc.y > 0.02) { vec2 cq = vW.xz + Rc.xz / Rc.y * (${CLOUD.h.toFixed(1)} - vW.y); float cd = cloudDen(cq, uTime); sky = mix(sky, vec3(0.9,0.93,0.96), cd * 0.45 * smoothstep(0.05, 0.3, Rc.y)); }
-        // 海：浅水青绿 → 深蓝；淡水湖：略带黄绿的清澈淡水，深处墨绿；潟湖（闸内静水区）整体偏绿松石
+        // 海：浅水青绿 → 深蓝；淡水湖：略带黄绿的清澈淡水，深处墨绿；潟湖（闸内）整体偏绿松石
         vec3 shallow = mix(vec3(0.051, 0.445, 0.402), vec3(0.26, 0.40, 0.17), uFresh);
         vec3 mid = mix(vec3(0.013, 0.188, 0.305), vec3(0.09, 0.19, 0.09), uFresh);
         vec3 deep = mix(vec3(0.006, 0.058, 0.165), vec3(0.03, 0.09, 0.05), uFresh);
@@ -347,10 +348,9 @@ function makeWaterMaterial(dataTex, opts) {
         float edge = smoothstep(2.6, 0.2, shore + (nz1 - 0.5) * 2.5);
         // 浪带朝岸推进（相位随时间增加、浪峰向离岸距离减小的方向移动）；近岸涌浪浪峰处卷起白沫
         float bands = pow(0.5 + 0.5 * sin(shore * 1.15 + uTime * 1.4 + nz1 * 5.0), 7.0) * smoothstep(12.0, 2.0, shore);
-        // 浪只在浅滩上破碎：浪峰白沫随水深渐隐（码头墙、深水岸边不起沫）；港内静水区只在 2 m 以内的浅滩（沙滩前沿）保留泡沫
-        float shoal = smoothstep(2.0, 0.25, depth);
+        // 浪只在浅滩上破碎：浪峰白沫随水深渐隐（码头墙、深水岸边不起沫）
         float crest = pow(0.5 + 0.5 * sin(swPh + 1.2), 6.0) * smoothstep(10.0, 1.2, shore) * surfZone * smoothstep(2.5, 0.3, depth);
-        float foam = (edge * 0.8 + bands * 0.55) * smoothstep(0.25, 0.65, nz2 + edge * 0.4) * (1.0 - 0.85 * calm * (1.0 - shoal));
+        float foam = (edge * 0.8 + bands * 0.55) * smoothstep(0.25, 0.65, nz2 + edge * 0.4);
         foam += crest * smoothstep(0.2, 0.6, nz2 * 0.7 + nz1 * 0.5);
         if (uFresh > 0.5) { float dp = length(vW.xz - uPlunge); foam = smoothstep(4.5, 0.5, dp + (nz2-0.5)*2.5) * 0.9 + smoothstep(0.35, 0.0, depth) * 0.25; }
         col = mix(col, vec3(0.9, 0.94, 0.95), clamp(foam, 0.0, 0.9));

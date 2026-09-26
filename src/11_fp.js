@@ -233,14 +233,14 @@ function setupFP(ctx) {
     // 闸口警戒塔在出海峡谷东岸，“岛心→塔”方向正对峡谷东坡，改为朝峡谷出海口 (0, 300) 看出去
     return [['东峰瞭望塔', L.eastTower, -0.38, 2.2, L.summitPad.h + 20.725], ['西部瞭望塔', L.westTower, 0.3, 1.7, 32.625], ['闸口警戒塔', L.gateTower, 0, 1.8, 13.325, { x: 0, z: 300 }]].map(([name, c, rot, hw, y, sea]) => {
       const ex = sea ? sea.x - c.x : c.x, ez = sea ? sea.z - c.z : c.z, d = Math.hypot(ex, ez), dx = ex / d, dz = ez / d, co = Math.cos(rot), si = Math.sin(rot);
-      const ux = dx * co - dz * si, uz = dx * si + dz * co, r = hw + 0.375;     // 外海方向换到塔的局部坐标，选主轴所在的一面
+      const ux = dx * co - dz * si, uz = dx * si + dz * co, r = hw + TOWER_RING / 2;     // 外海方向换到塔的局部坐标，选主轴所在的一面；站在外圈走道中线
       const lx = Math.abs(ux) >= Math.abs(uz) ? Math.sign(ux) * r : 0, lz = Math.abs(ux) >= Math.abs(uz) ? 0 : Math.sign(uz) * r;
       return [name, c.x + lx * co + lz * si, c.z - lx * si + lz * co, Math.atan2(-dx, -dz), y];
     });
   }
   const TP = [
     ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
-    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['住宅楼', 0, -128, 0],
+    ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['宿舍楼', 14.7, -132.0, Math.PI, 13.91],
   ];
   const tpBox = document.getElementById('fptp');
   for (const t of TP) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t[0]; b.onclick = (e) => { e.stopPropagation(); teleport(t[1], t[2], t[3], t[4]); startRoam(); }; tpBox.appendChild(b); }
