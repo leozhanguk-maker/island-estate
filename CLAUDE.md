@@ -28,6 +28,7 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 | `npm run test:invariants` | 基线不变量：共享几何体未被原地变换、泳池/别墅关键高程、设施与碰撞数量、三角面数 | 终端 |
 | `npm run test:baselines` | 跑 phys/drive/boat/cruise/heli 五个测试并断言基线数值 | 终端 |
 | `npm run test:regression` | 已修复程序缺陷的回归用例（编号对应 ISSUES.md），问题复发即失败 | 终端 |
+| `npm run test:ecology` | 水域生态：各水域物种数量、淡水/海水不混用、生物不离开所属水域、不钻底不出水、推进 30 秒无 NaN、生态绘制调用预算 | 终端 |
 | `npm run test:visual` | 视觉回归：10 个固定机位与 `tests/baseline/visual/` 逐像素比对（阈值 1%，截图前固定动画时刻） | `reports/visual/` |
 | `npm run patrol` | 巡逻机器人：自动漫游、游泳、开车、开船、开直升机，检测报错、NaN、穿地、越界、卡住、穿墙、掉帧（按日期取种子，约 2 分钟） | `reports/patrol/report.md` |
 | `npm run patrol:quick` | 快速巡逻，固定种子 1，发现新问题即失败（门禁用；"掉帧"只报告不判失败） | 同上 |
@@ -90,8 +91,9 @@ npm run check                    # 合并前门禁：构建 + 以下全部快速
 | 12_grass | 近景草叶 |
 | 13_drive | 地面车辆驾驶 |
 | 14_boat | 游艇移动平台（DYN 每帧换算）、驾驶、自动巡航、登离船 |
-| 15_marine | 鱼群（Boids）与两只可互动海豚 |
+| 15_marine | 两只可互动海豚（鱼群已移到 17_eco） |
 | 16_heli | 直升机手动飞行与停机坪⇄别墅屋顶超低空自动飞行 |
+| 17a～17e_eco | 三水域生态：分区与几何/材质/LOD/群集框架（a）、淡水湖（b）、闸内潟湖与沙滩（c）、外海鲸群鱼群（d）、各水域水下雾色能见度焦散与丁达尔光（e） |
 
 ## 关键机制
 - 碰撞体都带高度带 `bottom/top`（`inBand`）；可行走面有 `rect / ramp / poly` 三种，`cond` 可按状态开关（如闸门关闭时）。
