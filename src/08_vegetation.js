@@ -178,10 +178,20 @@ function buildVegetation(X, scene, QS) {
     tm.castShadow = true; tm.receiveShadow = true; scene.add(tm);
   });
   // 野草莓：每株一丛三出复叶 + 垂在叶下的红果（成熟）与青白果、几朵白花
+  // 按 32 m 网格分块，每块一对实例网格；每次渲染前只显示离相机 90 m 以内的块（草莓高约 0.3 m，90 m 外已不足一个像素），全岛近 8000 株不必每帧全画
   if (straw.length) {
-    const sg = strawberryPlantGeo(), lm = new THREE.InstancedMesh(sg.leaves, leafMat, straw.length), fm = new THREE.InstancedMesh(sg.fruit, sg.fruitMat, straw.length);
-    straw.forEach((p, i) => { const s = 0.9 + p[3] * 0.45; eu.set(0, p[3] * 40, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] - 0.01, p[2]), q, sc.set(s, s, s)); lm.setMatrixAt(i, m4); fm.setMatrixAt(i, m4); lm.setColorAt(i, col.setRGB(0.8 + p[3] * 0.2, 1.0, 0.75)); });
-    lm.castShadow = false; lm.receiveShadow = true; fm.receiveShadow = true; scene.add(lm); scene.add(fm); VEG_STRAW = { n: straw.length, leaves: lm, fruit: fm };
+    const sg = strawberryPlantGeo(), cells = new Map(), CS = 32;
+    for (const p of straw) { const k = Math.floor(p[0] / CS) + ',' + Math.floor(p[2] / CS); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(p); }
+    VEG_STRAW = { n: straw.length, chunks: [], range: 90 };
+    for (const [k, arr] of cells) {
+      const lm = new THREE.InstancedMesh(sg.leaves, leafMat, arr.length), fm = new THREE.InstancedMesh(sg.fruit, sg.fruitMat, arr.length); let cx = 0, cz = 0;
+      arr.forEach((p, i) => { const s = 0.9 + p[3] * 0.45; eu.set(0, p[3] * 40, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] - 0.01, p[2]), q, sc.set(s, s, s)); lm.setMatrixAt(i, m4); fm.setMatrixAt(i, m4); lm.setColorAt(i, col.setRGB(0.8 + p[3] * 0.2, 1.0, 0.75)); cx += p[0]; cz += p[2]; });
+      lm.castShadow = false; lm.receiveShadow = true; fm.receiveShadow = true; lm.computeBoundingSphere(); fm.computeBoundingSphere(); scene.add(lm); scene.add(fm);
+      VEG_STRAW.chunks.push({ x: cx / arr.length, z: cz / arr.length, leaves: lm, fruit: fm, n: arr.length });
+    }
+    const prev = scene.onBeforeRender;
+    scene.onBeforeRender = function (r, sc_, cam, rt) { prev.call(this, r, sc_, cam, rt); if (rt) return;   // 离屏渲染（海面 FFT 等）不改
+      const R2 = (VEG_STRAW.range + CS * 0.72) ** 2, c = cam.position; for (const ch of VEG_STRAW.chunks) { const v = (ch.x - c.x) ** 2 + (ch.z - c.z) ** 2 < R2; ch.leaves.visible = ch.fruit.visible = v; } };
   }
   // 别墅北门扶桑（开红花）
   if (typeof HIBISCUS !== 'undefined' && HIBISCUS.length) {
