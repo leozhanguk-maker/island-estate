@@ -412,23 +412,11 @@ function buildGolfFlags() {
   }
   return F;
 }
+// 葡萄园：只登记每行的碰撞；立柱、铁丝、葡萄藤、叶幕、果穗在 08_vegetation 的 buildVineyardPlants() 里按实例绘制
+function vineRows() { const vy = L.vineyard, out = []; for (let x = vy.x0 + 1.4; x < vy.x1 - 0.8; x += 2.6) out.push(x); return { xs: out, z0: vy.z0 + 1.8, z1: vy.z1 - 1.8 }; }
 function buildVineyard() {
-  const V = new THREE.Group(), vy = L.vineyard;
-  const vc = document.createElement('canvas'); vc.width = vc.height = 256; const g = vc.getContext('2d'); g.fillStyle = '#3c5e28'; g.fillRect(0, 0, 256, 256);
-  const R = mulberry32(333);
-  for (let i = 0; i < 420; i++) { const x = R() * 256, y = R() * 256, s = 7 + R() * 9, a = R() * TAU; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.save(); g.translate(x + dx, y + dy); g.rotate(a); g.fillStyle = `hsl(${85 + R() * 20},${40 + R() * 15}%,${30 + R() * 22}%)`; for (const d of [-0.9, 0, 0.9]) { g.save(); g.rotate(d); g.beginPath(); g.ellipse(s * 0.5, 0, s * 0.55, s * 0.28, 0, 0, TAU); g.fill(); g.restore(); } g.restore(); } }
-  for (let i = 0; i < 30; i++) { const x = R() * 256, y = R() * 256; g.fillStyle = 'rgba(70,40,70,0.85)'; for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(x + (k % 3) * 4, y + Math.floor(k / 3) * 4 + (k % 3), 2.4, 0, TAU); g.fill(); } }
-  const vt = new THREE.CanvasTexture(vc); vt.colorSpace = THREE.SRGBColorSpace; vt.wrapS = vt.wrapT = THREE.RepeatWrapping; vt.repeat.set(5, 1); vt.anisotropy = 8;
-  const mat = std(0xffffff, 0.85, 0, { map: vt }), matL = std(0xdfe8cf, 0.85, 0, { map: vt });
-  for (let x = vy.x0 + 1.4, i = 0; x < vy.x1 - 0.8; x += 2.6, i++) {
-    const z0 = vy.z0 + 1.8, z1 = vy.z1 - 1.8, n = 8;
-    collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1);
-    for (let s = 0; s < n; s++) {
-      const za = lerp(z0, z1, s / n), zb = lerp(z0, z1, (s + 1) / n), zm = (za + zb) / 2, y = gh(x, zm);
-      box(V, 0.75 + 0.1 * Math.sin(s * 3 + i), 1.25, zb - za - 0.15, (s + i) % 3 ? mat : matL, x, y + 0.95, zm);
-      box(V, 0.08, 1.6, 0.08, M.woodDark, x, y + 0.8, za + 0.1);
-    }
-  }
+  const V = new THREE.Group(), { xs, z0, z1 } = vineRows();
+  for (const x of xs) { collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1); }
   return V;
 }
 function buildDuckArea() {
