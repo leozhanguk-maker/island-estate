@@ -104,13 +104,15 @@ JS = r'''() => {
     if (dRoad < 4) fails.push(`西侧储能离道路边只有 ${r3(dRoad)} m，挡路`);
     const hc = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), hx = (pw.x - hg.x) * Math.cos(hc) - (pw.z - hg.z) * Math.sin(hc);
     if (!(Math.abs(Math.abs(hx) - 10.5) < 1.5)) fails.push(`西侧储能离机库侧墙 ${r3(Math.abs(hx) - 10.1)} m，应紧贴机库`); }
-  // ---- 2k. 别墅三部楼梯起步前留出 ≥ 2 m 的通行空间（V-019）：从每跑楼梯最下一级、离地 1 m 处沿楼梯反方向水平看，2 m 内不碰到墙或其他构件 ----
+  // ---- 2k. 别墅三部楼梯两端都离正对的墙 ≥ 2 m（V-019）：起步处离地 1 m 沿楼梯反方向、到顶处离上层楼面 1 m 沿楼梯方向水平看，2 m 内不碰到墙或其他构件 ----
   { const ramps = D.COLL.walks.filter(w => w.kind === 'ramp' && Math.abs((w.x0 + w.x1) / 2 - 180) < 12 && Math.abs((w.z0 + w.z1) / 2 + 46) < 8);
     __statics.groups.forEach(g => g.updateMatrixWorld(true));
     if (ramps.length !== 3) fails.push(`别墅楼梯坡面应为 3 跑，实际 ${ramps.length}`);
     for (const w of ramps) { const dx = w.x0 - w.x1, dz = w.z0 - w.z1, l = Math.hypot(dx, dz), o = new TH.Vector3(w.x0 + dx / l * 0.05, w.y0 + 1.0, w.z0 + dz / l * 0.05);
       const h = new TH.Raycaster(o, new TH.Vector3(dx / l, 0, dz / l), 0, 5).intersectObjects(__statics.groups, true)[0];
-      if (h && h.distance < 2.0) fails.push(`别墅楼梯（起步 ${r3(w.x0)}, ${r3(w.z0)}，高 ${r3(w.y0)}）起步前只有 ${r3(h.distance)} m 就碰到构件，应 ≥ 2 m`); } }
+      if (h && h.distance < 2.0) fails.push(`别墅楼梯（起步 ${r3(w.x0)}, ${r3(w.z0)}，高 ${r3(w.y0)}）起步前只有 ${r3(h.distance)} m 就碰到构件，应 ≥ 2 m`);
+      const o2 = new TH.Vector3(w.x1 - dx / l * 0.05, w.y1 + 1.0, w.z1 - dz / l * 0.05), h2 = new TH.Raycaster(o2, new TH.Vector3(-dx / l, 0, -dz / l), 0, 5).intersectObjects(__statics.groups, true)[0];
+      if (h2 && h2.distance < 2.0) fails.push(`别墅楼梯（到顶 ${r3(w.x1)}, ${r3(w.z1)}，高 ${r3(w.y1)}）迎面只有 ${r3(h2.distance)} m 就碰到构件，应 ≥ 2 m`); } }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
