@@ -104,6 +104,12 @@ JS = r'''() => {
     if (dRoad < 4) fails.push(`西侧储能离道路边只有 ${r3(dRoad)} m，挡路`);
     const hc = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), hx = (pw.x - hg.x) * Math.cos(hc) - (pw.z - hg.z) * Math.sin(hc);
     if (!(Math.abs(Math.abs(hx) - 10.5) < 1.5)) fails.push(`西侧储能离机库侧墙 ${r3(Math.abs(hx) - 10.1)} m，应紧贴机库`); }
+  // ---- 2j. 躺椅按实物结构（V-017）：靠背向头端抬起（最高点 ≥ 0.8 m）、没有构件低于地面、头尾两端都有着地的支点（头端滚轮、脚端脚垫） ----
+  { const g = new TH.Group(); D.lounger(g, 0, 0, 0, 0); g.updateMatrixWorld(true); const bb = new TH.Box3().setFromObject(g);
+    if (bb.max.y < 0.8) fails.push(`躺椅最高点 ${r3(bb.max.y)} m，靠背没有抬起（应 ≥ 0.8）`);
+    if (bb.min.y < -0.005) fails.push(`躺椅最低点 ${r3(bb.min.y)} m，有构件插进地面`);
+    let head = 0, foot = 0; g.traverse(o => { if (!o.isMesh) return; const b = new TH.Box3().setFromObject(o), cz = (b.min.z + b.max.z) / 2; if (b.min.y < 0.01) { if (cz < -0.5) head++; else if (cz > 0.5) foot++; } });
+    if (head < 2 || foot < 2) fails.push(`躺椅着地支点：头端 ${head} 个、脚端 ${foot} 个，两端都应至少 2 个（不能悬空）`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

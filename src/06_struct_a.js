@@ -431,7 +431,6 @@ function buildVilla() {
   for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
     planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
   for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
-  // 泳池旁（靠别墅一侧）两把沙滩椅 + 遮阳伞
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
     for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
@@ -440,16 +439,43 @@ function buildVilla() {
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
-function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {   // 精细躺椅：铝框、柚木板条、可调靠背、分段软垫、滚轮、浴巾
-  const g = new THREE.Group(), cu = std(cushion, 0.95);
-  for (const sx of [-1, 1]) { box(g, 0.04, 0.05, 1.95, M.alu, sx * 0.33, 0.3, 0.1); box(g, 0.04, 0.3, 0.04, M.alu, sx * 0.33, 0.15, 0.95); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 14), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.36, 0.07, -0.72); g.add(w); }
-  for (let i = 0; i < 11; i++) box(g, 0.64, 0.02, 0.1, M.teak, 0, 0.33, -0.15 + i * 0.105);
-  const back = new THREE.Group(); back.position.set(0, 0.33, -0.2); back.rotation.x = -0.75; g.add(back);
-  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.8, M.alu, sx * 0.33, 0, -0.4);
-  for (let i = 0; i < 7; i++) box(back, 0.64, 0.02, 0.1, M.teak, 0, 0.01, -0.06 - i * 0.11);
-  box(back, 0.6, 0.07, 0.78, cu, 0, 0.05, -0.4); box(back, 0.4, 0.1, 0.2, std(0xffffff, 0.9), 0, 0.12, -0.65);
-  box(g, 0.6, 0.07, 1.18, cu, 0, 0.38, 0.4); for (const zz of [-0.18, 0.99]) box(g, 0.61, 0.075, 0.015, std(0xd8d0c0, 0.9), 0, 0.38, zz);
-  box(g, 0.5, 0.03, 0.34, std(0x3e7fa6, 0.95), 0, 0.43, 0.7);
+// 躺椅（按实物结构）：头端在 -z、脚端在 +z，全长 2.0 m、宽 0.72 m；座面高 0.44（与 addSeat 的 +0.42 一致）
+// 铝合金框：两根纵梁 + 两端横梁，脚端两条腿（带橡胶脚垫），头端两条短腿各带一个滚轮（轮子着地，可推着走）
+// 柚木板条座面；靠背以铰轴与纵梁相连，向头端抬起约 40°，背后一根支撑杆顶在纵梁的卡槽上
+// 软垫：座垫、靠背垫分段并带滚边，头枕；脚端叠放一条条纹浴巾
+const LOUNGER_MAT = {};
+function loungerMat(c, r = 0.95) { const k = c + ':' + r; return LOUNGER_MAT[k] || (LOUNGER_MAT[k] = std(c, r)); }
+function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {
+  const g = new THREE.Group(), cu = loungerMat(cushion), pip = loungerMat(0xcfc6b4, 0.9), towelB = loungerMat(0x3e7fa6), towelW = loungerMat(0xf4f1ea);
+  const RY = 0.33, RH = 0.06, HX = 0.33;   // 纵梁中心高、截面高、半宽
+  for (const sx of [-1, 1]) {
+    box(g, 0.045, RH, 2.0, M.alu, sx * HX, RY, 0.05);                                  // 纵梁
+    box(g, 0.045, RY - RH / 2 - 0.02, 0.045, M.alu, sx * HX, (RY - RH / 2 - 0.02) / 2 + 0.02, 0.95);   // 脚端腿
+    box(g, 0.06, 0.02, 0.06, M.rubber, sx * HX, 0.01, 0.95);                           // 橡胶脚垫
+    box(g, 0.04, RY - RH / 2 - 0.09, 0.04, M.alu, sx * HX, (RY - RH / 2 + 0.09) / 2, -0.8);   // 头端短腿（下端接轮轴）
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.035, 16), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(w);   // 滚轮，着地
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.045, 10), M.alu); hub.rotation.z = Math.PI / 2; hub.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(hub);
+    for (const zz of [-0.72, -0.64, -0.56]) box(g, 0.05, 0.012, 0.02, M.metalDark, sx * HX, RY + RH / 2 + 0.006, zz);   // 靠背角度卡槽
+  }
+  for (const zz of [-0.93, 1.03]) box(g, 2 * HX + 0.045, 0.05, 0.04, M.alu, 0, RY, zz);   // 两端横梁
+  cyl(g, 0.012, 0.012, 2 * HX + 0.1, M.alu, 0, 0.09, -0.8, 6, 0, Math.PI / 2);          // 轮轴
+  for (let i = 0; i < 10; i++) box(g, 0.62, 0.02, 0.085, M.teak, 0, RY + RH / 2 + 0.012, -0.06 + i * 0.109);   // 座面板条
+  const sy = RY + RH / 2 + 0.022;   // 板条顶面
+  box(g, 0.6, 0.065, 1.07, cu, 0, sy + 0.005 + 0.0325, 0.46);                          // 座垫
+  for (const zz of [-0.075, 0.995]) box(g, 0.61, 0.018, 0.018, pip, 0, sy + 0.07, zz);    // 座垫滚边
+  // 靠背：铰轴在 z = -0.12，向头端（-z）抬起 40°
+  const back = new THREE.Group(); back.position.set(0, sy, -0.12); back.rotation.x = 0.7; g.add(back);
+  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.84, M.alu, sx * (HX - 0.03), -0.02, -0.42);
+  box(back, 2 * (HX - 0.03) + 0.04, 0.04, 0.04, M.alu, 0, -0.02, -0.82);
+  for (let i = 0; i < 7; i++) box(back, 0.58, 0.02, 0.095, M.teak, 0, 0.01, -0.08 - i * 0.11);
+  box(back, 0.58, 0.06, 0.8, cu, 0, 0.055, -0.43);                                     // 靠背垫
+  box(back, 0.59, 0.018, 0.018, pip, 0, 0.09, -0.83);
+  box(back, 0.44, 0.1, 0.2, loungerMat(0xffffff, 0.9), 0, 0.14, -0.7);                 // 头枕
+  // 支撑杆：从靠背背面（离铰轴 0.5 m 处）斜顶到纵梁中间的卡槽
+  const ca = Math.cos(0.7), sa = Math.sin(0.7), by = sy - 0.04 * ca + 0.5 * sa, bz = -0.12 - 0.5 * ca - 0.04 * sa;
+  for (const sx of [-1, 1]) rod(g, new THREE.Vector3(sx * (HX - 0.03), by, bz), new THREE.Vector3(sx * (HX - 0.03), RY + RH / 2, -0.64), 0.012, M.alu, 6);
+  // 脚端折叠浴巾（蓝白条纹）
+  for (let i = 0; i < 8; i++) box(g, 0.5, 0.03, 0.04, i % 2 ? towelW : towelB, 0, sy + 0.07 + 0.017, 0.62 + i * 0.04 + 0.02);
   g.position.set(x, y, z); g.rotation.y = ry; p.add(g); return g;
 }
 function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细遮阳伞：八角伞面 + 垂边 + 伞骨 + 摇柄 + 石材伞座
