@@ -4,9 +4,9 @@ const BOAT = { g: null, x: 0, z: 0, yaw: Math.PI, y: 0, v: 0, thr: 0, rud: 0, ho
 function setupBoat(scene, Y) {
   BOAT.g = Y; BOAT.x = L.yacht.x; BOAT.z = L.yacht.z; BOAT.yaw = Math.PI; BOAT.home = { x: BOAT.x, z: BOAT.z, yaw: BOAT.yaw };
   BOAT.YL = Y.userData.YL; BOAT.type = 'boat';
-  // 缆绳：首缆接系缆钢桩，尾缆接登岸浮台（离开泊位时自动解缆）
+  // 缆绳：尾缆接登岸浮台（离开泊位时自动解缆）
   const lineMat = std(0x2a2622, 0.9);
-  for (const [lx, lz, ly, wx, wz, wy] of [[22, -1.2, 3.8, 3.5, L.yacht.z - 6.5, 2.6], [22, 1.2, 3.8, 3.5, L.yacht.z + 6.5, 2.6], [-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
+  for (const [lx, lz, ly, wx, wz, wy] of [[-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), lineMat); scene.add(m); BOAT.lines.push({ m, l: [lx, ly, lz], w: new THREE.Vector3(wx, wy, wz) });
   }
   BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
@@ -38,7 +38,7 @@ function syncBoat(t) {
     ln.m.position.copy(a).addScaledVector(d, 0.5); ln.m.scale.set(1, L_, 1); ln.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
   }
 }
-// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、系缆桩、登岸浮台
+// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、登岸浮台
 function boatBlocked(x, z, yaw) {
   const P = [[24.5, 0], [18, 3.3], [18, -3.3], [8, 4.6], [8, -4.6], [-8, 4.6], [-8, -4.6], [-20, 4.5], [-20, -4.5], [-25, 4.2], [-25, -4.2], [-25, 0]];
   for (const [lx, lz] of P) {
@@ -46,7 +46,6 @@ function boatBlocked(x, z, yaw) {
     if (gh(wx, wz) > -2.6) return 'shallow';
     if (wz > 122.8 && wz < 133.2 && (Math.abs(wx) < 2.4 || (Math.abs(wx) > 36.4 && Math.abs(wx) < 44))) return 'pier';
     if (GATE.open < 0.98 && Math.abs(wx) < 38.5 && wz > 126.3 && wz < 129.7) return 'gate';
-    for (const pz of [L.yacht.z - 6.5, L.yacht.z + 6.5]) if (Math.hypot(wx - 3.5, wz - pz) < 0.9) return 'pile';
     if (wx > L.landing.x - 3.2 && wx < L.landing.x + 3.2 && wz > L.landing.z - 6.7 && wz < L.landing.z + 6.7) return 'dock';
   }
   return null;

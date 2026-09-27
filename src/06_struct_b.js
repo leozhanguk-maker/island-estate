@@ -386,8 +386,7 @@ function buildBoardwalk() {
   COLL.walks.push({ kind: 'rect', x: lx, z: lz, hw: 3.05, hd: 6.55, rot: 0, y: 0.5 });
   path(BOARDWALK.south.concat([[51.0, 118.1]]), 0.5, 2.54);   // 南端伸进警戒塔塔基 0.2 m，桥面与塔基顶面（2.6）齐平
   path(BOARDWALK.east, 0.5, 'ground');                         // 北端落到沙面上
-  // 泊位系缆桩（船首两根钢桩）与缆绳
-  for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
+  // 浮台两根系缆柱（尾缆）
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
   return B;
 }
