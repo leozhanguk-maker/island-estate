@@ -58,10 +58,10 @@ JS = r'''
   out.v_entry = []; for (const x of [180.6, 181.55, 182.5]) { setp(x, -34.5); run([], 0.1); const r = walkTo(x, -42.5, 8); out.v_entry.push(+r.z.toFixed(2), r.feet); }
   // ---- 别墅：楼梯逐层上到屋顶 ----
   setp(171.4, -39.4); run([], 0.1); out.v_gf = walkTo(171.4, -39.6);
-  out.v_1f = walkTo(171.4, -46.9); out.v_1fdoorApproach = walkTo(180, -50.5); out.v_balcony = walkTo(180, -55.2);
-  out.v_back = walkTo(180, -50.5); out.v_s2a = walkTo(176.2, -41.0); out.v_s2 = walkTo(174.8, -41.0); out.v_2f = walkTo(174.8, -48.8);
+  out.v_1f = walkTo(171.65, -48.4); out.v_1fdoorApproach = walkTo(180, -50.5); out.v_balcony = walkTo(180, -55.2);
+  out.v_back = walkTo(180, -50.5); out.v_s2a = walkTo(176.2, -41.8); out.v_s2 = walkTo(174.8, -41.8); out.v_2f = walkTo(174.8, -50.3);
   out.v_2fdoor = walkTo(178.5, -50.2); out.v_terrace = walkTo(178.5, -52.5); out.v_in2 = walkTo(178.5, -49.5);
-  out.v_s3a = walkTo(187.2, -40.8); out.v_s3 = walkTo(188.4, -40.8); out.v_roof = walkTo(188.4, -48.3); out.v_roofMid = walkTo(182, -46);
+  out.v_s3a = walkTo(187.2, -41.8); out.v_s3 = walkTo(188.4, -41.8); out.v_roof = walkTo(188.4, -49.8); out.v_roofMid = walkTo(182, -46);
   // ---- 塔：东峰塔沿折返楼梯登顶 ----
   { const rot = -0.38, cx = L.eastTower.x, cz = L.eastTower.z, toW = (lx, lz) => [cx + lx * Math.cos(rot) + lz * Math.sin(rot), cz - lx * Math.sin(rot) + lz * Math.cos(rot)];
     const H = 20, Lf = 2.4, n0 = Math.ceil(H / (Lf * 0.72)), n = n0 % 2 ? n0 : n0 + 1, zA = -Lf / 2, zB = Lf / 2;
