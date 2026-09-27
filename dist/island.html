@@ -3034,6 +3034,16 @@ vec4 chopSlope(vec2 xz) { vec4 r = vec4(0.0); ${[0, 1, 2].slice(0, nc).map(cas).
 `.replace('texture2DLodEXT_', 'textureLod');
 }
 
+// ---------------------------------------------------------------- 甲板遮罩
+// deckDist(xz, k)：点到甲板范围的距离（范围内 ≤ 0）；k = 0 登岸浮台（轴对齐矩形），k = 1 游艇（船体局部坐标下的矩形，x -27.7～25、|z| ≤ 4.6）
+const SEA_DECK_GLSL = `
+uniform vec4 uFloat, uBoat;
+#define SWASH_SLOPE 0.2
+float deckDist(vec2 xz, int k) {
+  if (k == 0) { vec2 d = abs(xz - uFloat.xy) - uFloat.zw; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+  vec2 r = xz - uBoat.xy, l = vec2(r.x * uBoat.z - r.y * uBoat.w, r.x * uBoat.w + r.y * uBoat.z), d = abs(l - vec2(-1.35, 0.0)) - vec2(26.35, 4.6);
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}`;
 // ---------------------------------------------------------------- 海面材质
 const SEA_FOAM_GLSL = `
 float sk_wall(vec2 q) { vec2 i = floor(q), f = fract(q); float f1 = 8.0, f2 = 8.0;
@@ -3052,7 +3062,7 @@ vec2 sk_foamSet(vec2 p, float fp) {
 vec2 sk_foam(vec2 xz, vec2 vel, float fp, float t) {
   float pa = fract(t / 4.0), pb = fract(t / 4.0 + 0.5), wa = 1.0 - abs(2.0 * pa - 1.0), wb = 1.0 - wa;
   vec2 A = sk_foamSet(xz - vel * pa * 4.0, fp), B = sk_foamSet(xz - vel * pb * 4.0 + 17.3, fp);
-  return (A * wa + B * wb) / max(sqrt(wa * wa + wb * wb), 1e-3) * vec2(1.0, 1.0);
+  return min((A * wa + B * wb) / max(sqrt(wa * wa + wb * wb), 1e-3), vec2(1.0));   // 两组交替时按能量归一会超过 1，截到 1
 }`;
 function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
   const nc = fft.nc, U = {
@@ -3063,6 +3073,8 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
     uCenter: { value: new THREE.Vector2() }, uSeaDbg: { value: location.hash.includes('seadbg') ? 1 : 0 },
     uSun: { value: SUN_DIR }, uZen: { value: SKY.zenith }, uHor: { value: SKY.horizon }, uFog: { value: SKY.fog }, uFogD: { value: 0.00021 }, uCloudOn: { value: opts.clouds ? 1 : 0 },
     uUwC: { value: new THREE.Color(0.07, 0.28, 0.30) }, uUwD: { value: 0.08 }, uUwE: { value: 0 },   // 水下雾（17e 按所在水域写入）
+    // 甲板遮罩：登岸浮台（中心 x、z，半宽、半长）与游艇（x、z、cos 航向、sin 航向），水面不得从甲板底下冒上来
+    uFloat: { value: new THREE.Vector4(L.landing.x, L.landing.z, 3.05, 6.55) }, uBoat: { value: new THREE.Vector4(1e5, 1e5, 1, 0) },
   };
   fft.slope.forEach((rt, i) => { U['uSlope' + i] = { value: rt.texture }; });
   const COMMON = seaGLSL(opts.maxEvents) + seaChopGLSL(nc);
@@ -3070,19 +3082,24 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
     side: THREE.DoubleSide, transparent: true, uniforms: U,
     vertexShader: `uniform float uTime; uniform vec2 uCenter; varying vec3 vW; varying vec2 vXZ;
       ${COMMON}
+      ${SEA_DECK_GLSL}
       void main() {
         vec2 xz = uCenter + position.xz; float dist = length(position.xz);
         Coast c = coastAt(xz); SeaState S = seaState(c, uTime);
-        float base = c.bed > 0.0 ? ((c.cliff < 0.5 && c.n > -25.0) ? c.bed + S.level : -1.0) : S.level, depth = base + S.eta - c.bed;
+        float base = c.bed > 0.0 ? ((c.cliff < 0.5 && c.slope <= SWASH_SLOPE && c.n > -25.0) ? c.bed + S.level : -1.0) : S.level, depth = base + S.eta - c.bed;
         float chopW = smoothstep(0.05, 0.8, depth) * (1.0 - 0.85 * clamp(abs(S.dz), 0.0, 1.0)) * (1.0 - smoothstep(150.0, 400.0, dist));
         vec3 ch = chopDisp(xz, max(dist * 0.017, 0.03)) * chopW; ch.xz *= 1.0 - smoothstep(25.0, 60.0, dist);
         vec3 P = vec3(xz.x + ch.x, base + S.eta + ch.y + (c.bed > 0.0 ? 0.008 : 0.0), xz.y + ch.z);
+        // 甲板周边压低水面：浮台四周 4 m 内渐变到不高于 0.32（浮台顶面 0.5），游艇船体四周 3 m 内不高于 0.7（游泳平台 0.9）
+        P.y = mix(min(P.y, 0.32), P.y, smoothstep(0.0, 4.0, deckDist(xz, 0)));
+        P.y = mix(min(P.y, 0.7), P.y, smoothstep(0.0, 3.0, deckDist(xz, 1)));
         vW = P; vXZ = xz; gl_Position = projectionMatrix * viewMatrix * vec4(P, 1.0);
       }`,
     fragmentShader: `uniform float uTime, uFogD, uSeaDbg, uUwD, uUwE; uniform vec3 uSun, uZen, uHor, uFog, uUwC; varying vec3 vW; varying vec2 vXZ;
       ${GLSL_NOISE}
       ${GLSL_CLOUD}
       ${COMMON}
+      ${SEA_DECK_GLSL}
       ${SEA_FOAM_GLSL}
       const vec3 SIGMA = vec3(0.30, 0.048, 0.040);   // 热带清水：比 ShoreBreak 的地中海水略清
       vec3 skyCol(vec3 R) { vec3 s = mix(uHor, uZen, pow(clamp(R.y, 0.0, 1.0), 0.5));
@@ -3093,6 +3110,8 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         vec4 chS = chopSlope(vXZ);
         vec3 dPx = dFdx(vW), dPy = dFdy(vW); float fp = max(max(length(dPx), length(dPy)), 1e-4);
         vec3 V = normalize(cameraPosition - vW); float dist = length(cameraPosition - vW);
+        if (deckDist(vXZ, 0) <= 0.0 || deckDist(vXZ, 1) <= 0.0) discard;   // 浮台、船体范围内不画水面（甲板底下不会透出水）
+        if (!gl_FrontFacing && cameraPosition.y > vW.y + 0.05) discard;       // 相机在水面以上却看到背面：水面网格贴着陡坡翻折的假象（原先显示成一整片不透明的青绿色）
         if (!gl_FrontFacing) {                       // 水下仰视水面：与原海面相同（生态水域的雾色由 17e 写入 uUwC/uUwD/uUwE）
           float rip = vnoise(vW.xz * 0.6 + uTime * 0.4) * 0.6 + vnoise(vW.xz * 1.7 - uTime * 0.7) * 0.4;
           vec3 cu = mix(vec3(0.10, 0.36, 0.38), vec3(0.70, 0.90, 0.88), smoothstep(0.3, 0.95, rip) * exp(-dist * 0.04));
@@ -3106,7 +3125,10 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         }
         Coast c = coastAt(vXZ); SeaState S = seaState(c, uTime);
         float hCol = max(c.bed, 0.0) + S.level + S.eta - c.bed;
-        if (c.bed > 0.0 && (c.cliff > 0.5 || c.n < -25.0 || (hCol < 0.012 && S.foam < 0.2))) discard;
+        if (c.bed > 0.0 && (c.cliff > 0.5 || c.slope > SWASH_SLOPE || c.n < -25.0 || (hCol < 0.012 && S.foam < 0.2))) discard;
+        // 岸边水面网格被抬成陡面：贴着岩石的上涌水片（崖岸的浪不会变陡，陡面都是网格被上涌抬起的假象）与陆上翻折，泡沫图案会被拉成竖条，直接不画
+        float steepY = abs(normalize(cross(dPx, dPy)).y);
+        if ((c.bed > -0.3 || c.cliff > 0.3) && steepY < 0.6) discard;
         float chopW = smoothstep(0.03, 0.6, hCol) * (1.0 - 0.85 * clamp(abs(S.dz), 0.0, 1.0));
         vec2 g = -S.dz * c.g + chS.xy * chopW;
         vec3 N = normalize(vec3(-g.x, 1.0, -g.y));
@@ -3139,10 +3161,11 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         vec2 vel = (c.lag > 0.5 || c.cliff < 0.5) ? -c.g * min(S.speed, 1.5) * 0.35 : c.g * 0.35;
         vec2 pat = sk_foam(vXZ, vel, fp, uTime);
         float vis = 1.0 - smoothstep(0.05, 0.4, fp);
-        float blanket = mix(S.foam, smoothstep(1.0 - S.foam - 0.18, 1.0 - S.foam + 0.18, pat.x), vis);
+        // 泡沫毯只出现在有泡沫量的地方：原先 S.foam = 0 时 smoothstep(0.82, 1.18, pat.x) 仍在图案较亮处给出白斑，外海与港内满海面都是白色碎片
+        float blanket = mix(S.foam, smoothstep(1.0 - S.foam - 0.18, 1.0 - S.foam + 0.18, pat.x) * smoothstep(0.0, 0.12, S.foam), vis);
         float lace = clamp(mix(0.12, pat.y * 1.6, vis) * S.lace, 0.0, 1.0);
         float crest = S.crest * smoothstep(0.25, 0.75, 0.5 + 0.5 * sk_gn(vXZ * vec2(7.0, 11.0) + vec2(0.0, -uTime * 3.0)) + S.crest * 0.5);
-        float foam = clamp(1.0 - (1.0 - blanket * 0.95) * (1.0 - lace) * (1.0 - crest), 0.0, 1.0);
+        float foam = clamp(1.0 - (1.0 - blanket * 0.95) * (1.0 - lace) * (1.0 - crest), 0.0, 1.0) * smoothstep(0.5, 0.8, steepY);   // 陡面上泡沫图案会被拉长失真，淡出
         vec3 fcol = vec3(0.90, 0.93, 0.93) * (0.62 + 0.45 * max(dot(N, uSun), 0.0) * (1.0 - 0.6 * csh));
         P = P * (1.0 - foam) + fcol * foam; A = A * (1.0 - foam) + foam;
         // 湿沙上的薄水膜：只保留反光
@@ -3184,6 +3207,7 @@ function buildSea(X, dataTex, QS, renderer) {
     update(r, camera, t) {
       fft.update(t);
       mat.uniforms.uCenter.value.set(camera.position.x, camera.position.z);
+      if (typeof BOAT !== 'undefined' && BOAT.g) mat.uniforms.uBoat.value.set(BOAT.x, BOAT.z, Math.cos(BOAT.yaw), Math.sin(BOAT.yaw));
       sched.pack(t, mat.uniforms, X.shore.delayMax);
     },
   };
