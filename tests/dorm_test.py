@@ -45,7 +45,7 @@ JS = r'''() => {
   walkTo(u(5.6, 5.45)); walkTo(u(3.2, 5.9)); walkTo(u(1.3, 5.6)); walkTo(u(1.0, 1.8)); walkTo(W(5.0, -0.4)); walkTo(W(-1.05, -0.5));
   out.stairFoot = walkTo(W(-1.05, -2.3)); out.midLanding = walkTo(W(-1.05, -6.4)); walkTo(W(-2.95, -6.4)); out.roofLanding = walkTo(W(-2.95, -2.2));
   // 6b. 屋面楼梯间：从楼梯口往东侧梯井（下一层第一跑上方）走，被 1.25 m 高的墙挡住，不会掉下去
-  out.roofVoid = walkTo(W(-1.05, -4.2), 3); walkTo(W(-2.95, -2.2));
+  walkTo(W(-1.05, -2.2)); out.roofVoid = walkTo(W(-1.05, -4.2), 3); walkTo(W(-2.95, -2.2));   // 从楼梯口东半边笔直往北（下一层第一跑上方）走
   out.roof = walkTo(W(-2.0, 1.5)); out.roofEdge = walkTo(W(-2.0, 12), 4);
   return out;
 }'''
