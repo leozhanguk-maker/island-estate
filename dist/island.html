@@ -7279,11 +7279,12 @@ function ecoOceanShow(x, z) {
   ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
-// 跟船：召唤期间，各水域保持召唤时相对游艇的方位，随船移动（速度不超过船速的 1.15 倍、至少 3 m/s，看上去是鲸群鱼群追着船游）；
+// 跟船：召唤期间，各水域保持召唤时相对游艇的方位，追着船游：船开多快就跟多快（船速的 1.15 倍，落后时能追上），船停下（航速 < 0.3 m/s）鲸群鱼群也停下；
 // 新位置须仍满足鲸群可去的条件（深水、外海、离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m，P-017），不满足时原地等候，船开回深海再跟上
 function ecoShowFollow(dt) {
   if (typeof BOAT === 'undefined' || !BOAT.g || ecoZone(BOAT.x, BOAT.z) !== 'ocean') return;
-  const vmax = Math.max(3, Math.abs(BOAT.v || 0) * 1.15) * dt;
+  const sp = Math.abs(BOAT.v || 0); if (sp < 0.3) return;   // 船停鲸群停
+  const vmax = sp * 1.15 * dt;
   for (const m of ECO_SHOW.moved) {
     const Z = ECO.zones[m[0]], tx = BOAT.x + m[3], tz = BOAT.z + m[4]; let dx = tx - Z.center.x, dz = tz - Z.center.z; const d = Math.hypot(dx, dz);
     if (d < 1.5) continue;
