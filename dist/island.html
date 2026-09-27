@@ -5947,8 +5947,7 @@ function syncBoat(t) {
 // 船体外轮廓（局部坐标：x 向船首，z 向右舷；含船尾游泳平台），略大于船体。人不能直接走上走下（双向阻挡），只能按 F
 const BOAT_HULL = [[24.9, 0], [18, 3.6], [8, 4.9], [-8, 4.9], [-20, 4.8], [-25.2, 4.5], [-27.7, 4.3], [-27.7, -4.3], [-25.2, -4.5], [-20, -4.8], [-8, -4.9], [8, -4.9], [18, -3.6]];
 // 登船落脚点（局部坐标与甲板高度）：船尾游泳平台、后甲板、两舷通道、前甲板；按 F 时落到离人最近的一处
-const BOAT_BOARD = [[-26.2, 0, 0.9], [-23.4, -2.6, 2.26], [-23.4, 2.6, 2.26]].concat(
-  ...[-12, 0, 11].map(x => [-1, 1].map(sz => [x, sz * 4.15, lerp(2.26, 3.05, (x + 19.2) / 33)])), [[17.5, 0, 3.3]]);
+const BOAT_ENTRY = [-19.8, 0, 2.26], BOAT_TV = [-11.52, 0];   // 登船落点（主甲板室后墙门洞外 0.8 m，后甲板面 2.26）与沙龙电视屏幕（船体局部坐标）
 const wToBoat = (wx, wz) => { const dx = wx - BOAT.x, dz = wz - BOAT.z, c = Math.cos(BOAT.yaw), s = Math.sin(BOAT.yaw); return [dx * c - dz * s, dx * s + dz * c]; };
 // 点到船体轮廓的最近距离与最近边的外法线（局部坐标）
 function boatEdge(lx, lz) {
@@ -5967,9 +5966,10 @@ function boatFAction(st) {
   if (!st.onBoat && DRIVE.active !== BOAT) {
     // 岸上、浮台上或水里：离船体轮廓 3 米以内、高度与船相近即可登船
     if (E.inside || E.d > 3.0 || st.feet > deck + 3 || st.feet < -4) return null;
+    // 无论从哪一侧登船，都落到主甲板后甲板上的固定位置：一楼（主甲板室）舱门口，面朝船首，正对沙龙前端的电视
     return { label: '登上游艇', fn: () => {
-      let b = BOAT_BOARD[0], bd = 1e9; for (const q of BOAT_BOARD) { const d = Math.hypot(q[0] - lx, q[1] - lz); if (d < bd) { bd = d; b = q; } }
-      const [x, z] = boatToW(b[0], b[1]), yaw = Math.atan2(-(BOAT.x - x), -(BOAT.z - z)); FP_API.teleport(x, z, yaw, b[2] + BOAT.y, true); } };
+      const [x, z] = boatToW(BOAT_ENTRY[0], BOAT_ENTRY[1]), [tx, tz] = boatToW(BOAT_TV[0], BOAT_TV[1]), yaw = Math.atan2(-(tx - x), -(tz - z));
+      FP_API.teleport(x, z, yaw, BOAT_ENTRY[2] + BOAT.y, true); } };
   }
   // 船上：站在船四周边缘（离轮廓 1.6 米以内）才能离船；驾驶中直接跳船
   if (DRIVE.active !== BOAT && (!E.inside || E.d > 1.6)) return null;

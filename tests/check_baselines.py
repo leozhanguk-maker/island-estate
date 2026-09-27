@@ -53,6 +53,7 @@ CHECKS = {
     'boat': [
         ('不按 F 从浮台走不上船（被挡在船体轮廓外）', lambda r: (r['wallIn']['onBoat'], r['wallIn']['lx']), lambda v: v[0] is False and v[1] < -27.6),
         ('浮台上提示并按 F 登船后在船上', lambda r: (r['boardPrompt'], r['boarded']['onBoat']), lambda v: '按 F 登上游艇' in v[0] and v[1] is True),
+        ('按 F 登船落在主甲板一楼舱门口（局部 -19.8, 0，脚底 2.26），正对沙龙电视', lambda r: (r['boarded']['lx'], r['boarded']['lz'], r['boarded']['feet'], r['boardFaceTV']), lambda v: near(v[0], -19.8, 0.15) and near(v[1], 0, 0.15) and near(v[2], 2.26, 0.05) and v[3] > 0.99),
         ('船上不按 F 走不下船', lambda r: (r['wallOut']['onBoat'], r['wallOut']['lx']), lambda v: v[0] is True and v[1] > -27.8),
         ('靠泊时船边按 F 离船落到登岸浮台', lambda r: (r['leavePrompt'], r['leftToDock']['onBoat'], r['leftToDock']['feet'], r['leftToDock']['lx']), lambda v: '按 F 离开游艇' in v[0] and v[1] is False and v[2] > 0.2 and v[3] < -27.7),
         ('再按 F 重新登船', lambda r: r['reboard']['onBoat'], lambda v: v is True),

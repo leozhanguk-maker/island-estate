@@ -23,11 +23,11 @@ JS = r'''() => {
   out.landing = walkTo(58.6, 83.9); walkTo(...toW(-24, 0), 4); out.wallIn = pose();
   // 在登岸浮台按 F 登船
   walkTo(58.6, 83.9); out.boardPrompt = document.getElementById('fpprompt').textContent; keyF();
-  out.boarded = pose();
-  // 船上不按 F 往船外走，被挡在船上；靠泊时站到船尾边按 F，落回登岸浮台；再按 F 登船
-  walkTo(...toW(-31, 0), 4); out.wallOut = pose(); out.leavePrompt = document.getElementById('fpprompt').textContent; keyF(); out.leftToDock = pose(); keyF(); out.reboard = pose();
+  out.boarded = pose(); { const [tx, tz] = toW(-11.52, 0), dx = tx - st.pos.x, dz = tz - st.pos.z, l = Math.hypot(dx, dz); out.boardFaceTV = +((-Math.sin(st.yaw) * dx - Math.cos(st.yaw) * dz) / l).toFixed(3); }
+  // 船上不按 F 往船外走，被挡在船上；靠泊时站到船尾边按 F，落回登岸浮台；再按 F 登船（从登船点绕开后甲板沙发，经右舷梯级下到游泳平台再往船外走）
+  walkL(-22.6, 1.6); walkL(-22.9, 3.2); walkL(-26.0, 3.2); walkTo(...toW(-31, 0), 4); out.wallOut = pose(); out.leavePrompt = document.getElementById('fpprompt').textContent; keyF(); out.leftToDock = pose(); keyF(); out.reboard = pose();
   // 从船尾游泳平台（0.9）经右舷梯级上后甲板（2.26）
-  walkL(-26.0, 3.2); out.platStair = walkL(-22.9, 3.2);
+  walkL(-22.6, 1.6); walkL(-22.9, 3.2); walkL(-26.0, 3.2); out.platStair = walkL(-22.9, 3.2);
   out.aftDeck = walkL(-22.6, 1.6); walkL(-19.8, 1.6); out.door = walkL(-19.4, 0);
   walkL(-17.2, 0); walkL(-16.8, -1.6); out.salon = walkL(-12.8, -1.6); walkL(-10.4, -1.8);
   walkL(-6, -2.1); out.dining = walkL(-6, 2.1);
