@@ -86,6 +86,13 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     // 游艇在峡谷出口外鸣笛：召唤来的鲸群出现的位置与之后 30 秒都不违规
     if (!bad) { for (const w of E.whales) w.chaseT = 30; const msg = D.ecoOceanShow(0, 222); if (!D.ECO_SHOW.moved) bad = `峡谷出口外鸣笛没有召唤成功：${msg}`; const b0 = E.whales.map(badOf).find(Boolean); const b = b0 || run(30, 300);
       if (b) bad = `峡谷出口外鸣笛（${msg}）后${b}`; }
+    // 跟船：鸣笛后游艇从峡谷出口外以 3 m/s 南行 30 秒（90 m），召唤来的各水域随船移动，期间鲸群不违规
+    if (!bad && D.ECO_SHOW.moved) { const B = D.BOAT, keep = { x: B.x, z: B.z, v: B.v }, M = D.ECO_SHOW.moved; B.x = 0; B.z = 222; B.v = 3; D.ECO_SHOW.t = 120;
+      const c0 = M.map(m => D.ECO.zones[m[0]].center.z);
+      for (let s = 0; s < 900 && !bad; s++) { B.z = 222 + s / 30 * 3; D.ecoShowUpdate(1 / 30); for (const w of E.whales) w.update(1 / 30, 400 + s / 30); if (s % 15 === 0) { const b = E.whales.map(badOf).find(Boolean); if (b) bad = `鸣笛后游艇南行、鲸群跟船时${b}`; } }
+      stats.follow = M.map((m, i) => +(D.ECO.zones[m[0]].center.z - c0[i]).toFixed(1));
+      if (!bad && Math.min(...stats.follow) < 60) bad = `鸣笛后游艇南行 90 m，召唤来的水域只跟了 ${stats.follow.join('、')} m（应随船移动）`;
+      Object.assign(B, keep); }
     // 还原：召唤的水域挪回原处、鲸群回到测试前的状态（不影响后面的绘制调用测量）
     if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }
     for (const o of snap) { o.a.forEach((c, i) => Object.assign(o.w.a[i], c)); o.w.wp = o.wp; o.w.wt = o.wt; o.w.chaseT = o.chaseT; o.w.chasing = o.chasing; }
