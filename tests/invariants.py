@@ -104,6 +104,11 @@ JS = r'''() => {
     if (dRoad < 4) fails.push(`西侧储能离道路边只有 ${r3(dRoad)} m，挡路`);
     const hc = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), hx = (pw.x - hg.x) * Math.cos(hc) - (pw.z - hg.z) * Math.sin(hc);
     if (!(Math.abs(Math.abs(hx) - 10.5) < 1.5)) fails.push(`西侧储能离机库侧墙 ${r3(Math.abs(hx) - 10.1)} m，应紧贴机库`); }
+  // ---- 2l. 灌木不再有实心内核（V-018：原来 8 张叶片面片围着一个光滑绿球），约三分之一的灌木换成野草莓丛 ----
+  { const v = I.veg, nS = v.shrubs - v.strawPatches; let sm = null; I.scene.traverse(o => { if (o.isInstancedMesh && o.count === nS && Array.isArray(o.material) && o.geometry.groups.length === 2) sm = o; });
+    if (!sm) fails.push(`找不到灌木实例网格（灌木 ${v.shrubs}，草莓丛 ${v.strawPatches}）`); else if (sm.geometry.groups[0].count > 0) fails.push(`灌木几何体仍有实心内核（${sm.geometry.groups[0].count / 3} 个三角形），近看是一大块绿包`);
+    const ratio = v.strawPatches / v.shrubs; if (!(ratio > 0.28 && ratio < 0.39)) fails.push(`草莓丛占灌木 ${r3(ratio)}，应约为三分之一`);
+    if (!(v.strawberries >= v.strawPatches * 4)) fails.push(`草莓 ${v.strawberries} 株 / ${v.strawPatches} 丛，每丛应至少 4 株`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
