@@ -4206,8 +4206,7 @@ function buildBoardwalk() {
   COLL.walks.push({ kind: 'rect', x: lx, z: lz, hw: 3.05, hd: 6.55, rot: 0, y: 0.5 });
   path(BOARDWALK.south.concat([[51.0, 118.1]]), 0.5, 2.54);   // 南端伸进警戒塔塔基 0.2 m，桥面与塔基顶面（2.6）齐平
   path(BOARDWALK.east, 0.5, 'ground');                         // 北端落到沙面上
-  // 泊位系缆桩（船首两根钢桩）与缆绳
-  for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
+  // 浮台两根系缆柱（尾缆）
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
   return B;
 }
@@ -5907,9 +5906,9 @@ const BOAT = { g: null, x: 0, z: 0, yaw: Math.PI, y: 0, v: 0, thr: 0, rud: 0, ho
 function setupBoat(scene, Y) {
   BOAT.g = Y; BOAT.x = L.yacht.x; BOAT.z = L.yacht.z; BOAT.yaw = Math.PI; BOAT.home = { x: BOAT.x, z: BOAT.z, yaw: BOAT.yaw };
   BOAT.YL = Y.userData.YL; BOAT.type = 'boat';
-  // 缆绳：首缆接系缆钢桩，尾缆接登岸浮台（离开泊位时自动解缆）
+  // 缆绳：尾缆接登岸浮台（离开泊位时自动解缆）
   const lineMat = std(0x2a2622, 0.9);
-  for (const [lx, lz, ly, wx, wz, wy] of [[22, -1.2, 3.8, 3.5, L.yacht.z - 6.5, 2.6], [22, 1.2, 3.8, 3.5, L.yacht.z + 6.5, 2.6], [-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
+  for (const [lx, lz, ly, wx, wz, wy] of [[-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), lineMat); scene.add(m); BOAT.lines.push({ m, l: [lx, ly, lz], w: new THREE.Vector3(wx, wy, wz) });
   }
   BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
@@ -5941,7 +5940,7 @@ function syncBoat(t) {
     ln.m.position.copy(a).addScaledVector(d, 0.5); ln.m.scale.set(1, L_, 1); ln.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
   }
 }
-// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、系缆桩、登岸浮台
+// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、登岸浮台
 function boatBlocked(x, z, yaw) {
   const P = [[24.5, 0], [18, 3.3], [18, -3.3], [8, 4.6], [8, -4.6], [-8, 4.6], [-8, -4.6], [-20, 4.5], [-20, -4.5], [-25, 4.2], [-25, -4.2], [-25, 0]];
   for (const [lx, lz] of P) {
@@ -5949,7 +5948,6 @@ function boatBlocked(x, z, yaw) {
     if (gh(wx, wz) > -2.6) return 'shallow';
     if (wz > 122.8 && wz < 133.2 && (Math.abs(wx) < 2.4 || (Math.abs(wx) > 36.4 && Math.abs(wx) < 44))) return 'pier';
     if (GATE.open < 0.98 && Math.abs(wx) < 38.5 && wz > 126.3 && wz < 129.7) return 'gate';
-    for (const pz of [L.yacht.z - 6.5, L.yacht.z + 6.5]) if (Math.hypot(wx - 3.5, wz - pz) < 0.9) return 'pile';
     if (wx > L.landing.x - 3.2 && wx < L.landing.x + 3.2 && wz > L.landing.z - 6.7 && wz < L.landing.z + 6.7) return 'dock';
   }
   return null;
@@ -7440,7 +7438,7 @@ try {
     { const hr = updateHeli(dt, fp._st.keys, fp.on ? camera : null);
       if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
     if (fp.on && DRIVE.active === HELI) {}
-    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', pile: '碰撞系缆桩', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位`; }
+    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位`; }
     else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  V 视角  E 下车`; }
     else if (!fp.update(dt)) controls.update();
     for (const m of W.mats) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = t;
