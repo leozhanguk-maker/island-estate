@@ -9,7 +9,7 @@ function setupBoat(scene, Y) {
   for (const [lx, lz, ly, wx, wz, wy] of [[22, -1.2, 3.8, 3.5, L.yacht.z - 6.5, 2.6], [22, 1.2, 3.8, 3.5, L.yacht.z + 6.5, 2.6], [-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), lineMat); scene.add(m); BOAT.lines.push({ m, l: [lx, ly, lz], w: new THREE.Vector3(wx, wy, wz) });
   }
-  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
+  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, recline: s0.recline, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
   // 靠近游艇按 E 登船（直接到后甲板）；船上按 E 下船（仅靠泊时）
   INTERACT.push({ get x() { return BOAT.atHome ? L.landing.x - 0.5 : 1e9; }, z: L.landing.z, r: 3.5, y: 0.5, label: '登上游艇（到达后甲板）', fn: () => { const [x, z] = boatToW(-24.2, 1.6); FP_API.teleport(x, z, BOAT.yaw, 2.26 + BOAT.y, true); } });
   syncBoat(0);
