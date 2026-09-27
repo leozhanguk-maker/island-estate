@@ -4920,21 +4920,20 @@ function vegScatter(X, H, NR, QS) {
   }
   return { trees, shrubs, excl };
 }
-// 草莓植株（原点在地面，约 0.25 m 高、0.5 m 宽）：7 片复叶的低矮叶丛 + 4 颗果（3 红 1 青白，锥形、带绿色萼片）+ 2 朵白花
+// 草莓植株（原点在地面，约 0.3 m 高、0.6 m 宽）：6 片复叶的低矮叶丛 + 4 颗果（3 红 1 青白，锥形、带绿色萼片）+ 2 朵白花
 let VEG_STRAW = null;
 function strawberryPlantGeo() {
-  const leaves = frondGeo(7, 0.24, 7, 0.16, 0.03);
+  const leaves = frondGeo(6, 0.3, 7, 0.15, 0.03);
   const solidC = (g, c) => { g = g.index ? g.toNonIndexed() : g; const C = new THREE.Color(c), a = []; for (let i = 0; i < g.attributes.position.count; i++) a.push(C.r, C.g, C.b); g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); if (g.attributes.uv) g.deleteAttribute('uv'); return g; };
   const parts = [];
   [[0.17, 0.3, 0xd41c24], [0.2, 2.4, 0xc81822], [0.14, 4.3, 0xdc2a26], [0.19, 5.5, 0xe6e2b0]].forEach(([d, a, c], k) => {
     const x = Math.cos(a) * d, z = Math.sin(a) * d, y = 0.055 + (k % 2) * 0.02;
-    const b = new THREE.ConeGeometry(0.03, 0.06, 7, 1, true); b.rotateX(Math.PI); b.translate(x, y - 0.03, z); parts.push(solidC(b, c));   // 果实尖端朝下
-    const cx = new THREE.ConeGeometry(0.034, 0.014, 5, 1, true); cx.translate(x, y + 0.005, z); parts.push(solidC(cx, 0x3f7a2a));          // 萼片
-    const st = new THREE.CylinderGeometry(0.003, 0.003, 0.09, 3, 1, true); st.rotateZ(0.6 * Math.cos(a)); st.rotateX(-0.6 * Math.sin(a)); st.translate(x * 0.7, y + 0.04, z * 0.7); parts.push(solidC(st, 0x5c8a32));   // 果柄
+    const b = new THREE.ConeGeometry(0.032, 0.065, 5, 1, true); b.rotateX(Math.PI); b.translate(x, y - 0.03, z); parts.push(solidC(b, c));   // 果实尖端朝下
+    const cx = new THREE.ConeGeometry(0.036, 0.014, 4, 1, true); cx.translate(x, y + 0.005, z); parts.push(solidC(cx, 0x3f7a2a));          // 萼片
   });
   for (const [d, a] of [[0.1, 1.3], [0.22, 3.6]]) {
-    const x = Math.cos(a) * d, z = Math.sin(a) * d, f = new THREE.CircleGeometry(0.02, 5); f.rotateX(-Math.PI / 2); f.translate(x, 0.1, z); parts.push(solidC(f, 0xfbfaf4));
-    const c = new THREE.CircleGeometry(0.007, 5); c.rotateX(-Math.PI / 2); c.translate(x, 0.101, z); parts.push(solidC(c, 0xe8c230));
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, f = new THREE.CircleGeometry(0.022, 5); f.rotateX(-Math.PI / 2); f.translate(x, 0.1, z); parts.push(solidC(f, 0xfbfaf4));
+    const c = new THREE.CircleGeometry(0.008, 4); c.rotateX(-Math.PI / 2); c.translate(x, 0.101, z); parts.push(solidC(c, 0xe8c230));
   }
   parts.forEach(g => { if (g.attributes.normal) g.deleteAttribute('normal'); });
   const fruit = THREE.BufferGeometryUtils.mergeGeometries(parts); fruit.computeVertexNormals();
@@ -4979,11 +4978,11 @@ function buildVegetation(X, scene, QS) {
     lists[kind][v].push({ x: t[0], y: t[1], z: t[2], sx: Rc, sy: Rc * (0.92 + R() * 0.16), rot, tint });    // 整株：地面为原点，均匀缩放
     treeColl.push([t[0], t[2], 0.1 * Rc + 0.08]);
   }
-  const straw = [];
+  const straw = []; let strawPatches = 0;
   for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3];
     // 随机三分之一的灌木换成一丛野草莓（按格点单独取随机数，不影响其余灌木的布置）
-    { const Rs = vegCell(t[0], t[2], 13); if (Rs() < 1 / 3) { const k = 3 + Math.floor(r * 1.5), rad = 0.25 + r * 0.25;
-      for (let i = 0; i < k; i++) { const a = i * 2.39996 + Rs() * 0.6, d = rad * Math.sqrt((i + 0.5) / k), x = t[0] + Math.cos(a) * d, z = t[2] + Math.sin(a) * d; straw.push([x, gh(x, z), z, Rs()]); } continue; } }
+    { const Rs = vegCell(t[0], t[2], 13); if (Rs() < 1 / 3) { const k = 4 + Math.floor(r * 1.5), rad = 0.2 + r * 0.15;   // 植株挨得很近，叶片相互交叠成一丛
+      for (let i = 0; i < k; i++) { const a = i * 2.39996 + Rs() * 0.6, d = rad * Math.sqrt((i + 0.5) / k), x = t[0] + Math.cos(a) * d, z = t[2] + Math.sin(a) * d; straw.push([x, gh(x, z), z, Rs()]); } strawPatches++; continue; } }
     lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
   const out = [];
   for (const k in lists) lists[k].forEach((L_, vi) => {
@@ -5053,7 +5052,7 @@ function buildVegetation(X, scene, QS) {
   rocks.forEach((r, i) => { const R = vegCell(r[0], r[2], 9); m4.compose(ps.set(r[0], r[1] + r[3] * 0.15, r[2]), q.setFromEuler(new THREE.Euler(R() * 0.5, R() * TAU, R() * 0.5)), sc.set(r[3], r[3] * (0.7 + R() * 0.5), r[3] * (0.8 + R() * 0.4))); rm.setMatrixAt(i, m4); rm.setColorAt(i, col.setHex(0x6e675c).lerp(new THREE.Color(0x9a9282), R())); });
   rm.castShadow = true; rm.receiveShadow = true; scene.add(rm);
   for (const r of rocks) if (r[3] > 0.7) collC(r[0], r[2], r[3] * 0.85);
-  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, strawberries: straw.length, rocks: rocks.length, ferns: ferns.length };
+  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, strawberries: straw.length, strawPatches, rocks: rocks.length, ferns: ferns.length };
 }
 // 盆地内空地判定（不压占任何功能区）
 function basinFree(x, z) {
@@ -7422,7 +7421,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; } }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
