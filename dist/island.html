@@ -4218,7 +4218,7 @@ function buildDuckArea() {
 // 平面（局部坐标，x 东、z 南，原点为楼中心；1 层地面高 0.9，层高 3.0）：
 //   东西向楼道 z ∈ [-1.25, 1.25] 贯通全楼；楼道北侧中间为交通核：楼梯间 x ∈ [-4, 0]、两部电梯 x ∈ [0, 4]；南侧中间为楼道采光厅（1 层为入户大堂）
 //   四户分居四角：西北、东北、西南、东南，每户 10.8 × 8.55 m，户型、门窗、内饰完全相同（按楼道与交通核镜像布置）
-//   1 层为大堂与物业用房（不设住户）；2～12 层每层四户；楼梯从 1 层一直通到屋顶（顶层楼道进楼梯间上屋顶）；电梯服务 1～12 层
+//   1～12 层每层四户（1 层四户与楼上户型、门窗、内饰相同，另有入户大堂）；楼梯从 1 层一直通到屋顶（顶层楼道进楼梯间上屋顶）；电梯服务 1～12 层
 // 直升机按整栋楼体避让（窗是透明玻璃、窗洞 3～5 m，按构件逐个检查会从窗洞飞进楼里）：楼身（含阳台）一个实心盒，屋顶以上不限制（可以降落在屋顶）
 const HELI_SOLIDS = [];
 const DORM = { n: 12, fl: 3.0, y0: 0.9, W: 30, D: 20, doors: [], lifts: [], doorIM: null, handleIM: null, landIM: null, built: false };
@@ -4355,31 +4355,34 @@ function buildDorm() {
     box(D, 3.8, 0.2, STAIR.zF - STAIR.zM, M.stone, -2.0, ym + 0.035 - 0.1, (STAIR.zF + STAIR.zM) / 2);          // 中间平台
     COLL.walks.push({ kind: 'rect', x: DWX(-2.0), z: DWZ((STAIR.zF + STAIR.zM) / 2), hw: 1.9, hd: (STAIR.zF - STAIR.zM) / 2, rot: 0, y: DWY(ym + 0.035) });
     // 两跑之间的隔墙（梯段段落 zL→zF），1 层西跑下方封闭
-    box(D, 0.12, fl - 0.03, STAIR.zL - STAIR.zF, M.wallWarm, -2.0, y + (fl - 0.03) / 2, (STAIR.zL + STAIR.zF) / 2);
+    // 顶层上屋面的一跑：隔墙加高到屋面以上 1.25 m（比扶手高 0.3 m），人从屋面楼梯间不会翻落到下面的梯井
+    const hDiv = fl - 0.03 + (f === n - 1 ? 0.03 + 0.035 + 1.25 : 0);
+    box(D, 0.12, hDiv, STAIR.zL - STAIR.zF, M.wallWarm, -2.0, y + hDiv / 2, (STAIR.zL + STAIR.zF) / 2);
     dSeg(-2.0, STAIR.zL, -2.0, STAIR.zF, f, f);
   }
-  dSeg(-3.9, STAIR.zL, -2.05, STAIR.zL, 0, 0);                                              // 1 层西跑底下（净高不足）不可进入
-  // ---------------- 楼道与户门：2～12 层每层四户 ----------------
+  dSeg(-3.9, STAIR.zL, -2.05, STAIR.zL, 0, 0);
+  // 屋面楼梯间：东侧梯井（下一层第一跑与中间平台上方）临空边补 1.25 m 高的实墙，与加高的隔墙连成一体
+  { const yr = dormY(n), hw = 0.035 + 1.25; box(D, 1.9, hw, 0.12, M.wallWarm, -1.05, yr + hw / 2, STAIR.zL); dSeg(-2.06, STAIR.zL, 0, STAIR.zL, n, n); dSeg(-2.0, STAIR.zL, -2.0, STAIR.zF, n, n); }                                              // 1 层西跑底下（净高不足）不可进入
+  // ---------------- 楼道与户门：1～12 层每层四户 ----------------
   const doorGeo = new THREE.BoxGeometry(0.95, 2.1, 0.045); doorGeo.translate(0.475, 1.05, 0);   // 专用几何体（不改共享几何体）
   const handleGeo = new THREE.BoxGeometry(0.14, 0.03, 0.12); handleGeo.translate(0.82, 1.0, 0);
-  const doorMat = std(0x7a5a3e, 0.6), total = (n - 1) * 4;
+  const doorMat = std(0x7a5a3e, 0.6), total = n * 4;
   DORM.doorIM = new THREE.InstancedMesh(doorGeo, doorMat, total); DORM.handleIM = new THREE.InstancedMesh(handleGeo, M.alu, total);
   for (const im of [DORM.doorIM, DORM.handleIM]) { im.userData.live = true; im.castShadow = true; im.frustumCulled = false; D.add(im); }
   for (let f = 0; f < n; f++) {
     const y = dormY(f), yt = y + fl - 0.2;
     for (const sz of [-1, 1]) {
       const c = sz * CZ;
-      // 楼道墙：每户一樘户门（门洞 u ∈ [0.525, 1.475]，即 |x| ∈ [4.525, 5.475]）；1 层为物业用房，不开门
-      const gaps = f === 0 ? [] : [[-5.475, -4.525], [4.525, 5.475]];
+      // 楼道墙：每户一樘户门（门洞 u ∈ [0.525, 1.475]，即 |x| ∈ [4.525, 5.475]）；1 层与楼上相同
+      const gaps = [[-5.475, -4.525], [4.525, 5.475]];
       for (const sx of [-1, 1]) {
-        dWall(D, 'x', c + sz * 0.06, sx < 0 ? -IW : 4, sx < 0 ? -4 : IW, y, yt, 0.12, M.wallWarm, f === 0 ? [] : [[sx * 4.525, sx * 5.475].sort((a, b) => a - b).concat([y, y + 2.15])]);
-        if (f > 0) { const x0 = sx * 4.525, x1 = sx * 5.475; box(D, 1.07, 0.1, 0.16, M.woodDark, (x0 + x1) / 2, y + 2.17, c + sz * 0.06); for (const x of [x0, x1]) box(D, 0.06, 2.15, 0.16, M.woodDark, x, y + 1.075, c + sz * 0.06);
+        dWall(D, 'x', c + sz * 0.06, sx < 0 ? -IW : 4, sx < 0 ? -4 : IW, y, yt, 0.12, M.wallWarm, [[sx * 4.525, sx * 5.475].sort((a, b) => a - b).concat([y, y + 2.15])]);
+        { const x0 = sx * 4.525, x1 = sx * 5.475; box(D, 1.07, 0.1, 0.16, M.woodDark, (x0 + x1) / 2, y + 2.17, c + sz * 0.06); for (const x of [x0, x1]) box(D, 0.06, 2.15, 0.16, M.woodDark, x, y + 1.075, c + sz * 0.06);
           box(D, 0.18, 0.1, 0.02, M.alu, (x0 + x1) / 2, y + 1.65, c - sz * 0.01); }   // 门套、门牌
       }
       dSegRun('x', c, -IW, -4, f, f, gaps); dSegRun('x', c, 4, IW, f, f, gaps);
       if (sz > 0) { dWall(D, 'z', -4, CZ, ID, y, yt, 0.12, M.wallWarm); dWall(D, 'z', 4, CZ, ID, y, yt, 0.12, M.wallWarm); dSeg(-4, CZ, -4, HD, f, f); dSeg(4, CZ, 4, HD, f, f); }
     }
-    if (f === 0) continue;
     for (const sz of [-1, 1]) for (const sx of [-1, 1]) {
       const i = DORM.doors.length, hx = sx * 4.525, hz = sz * CZ, d = { i, f, sx, sz, open: false, ang: 0, hx, hz, name: `${dormFloorName(f)}${sz < 0 ? '北' : '南'}${sx < 0 ? '西' : '东'}户` };
       DORM.doors.push(d);
@@ -4428,7 +4431,8 @@ function buildDorm() {
   for (const sx of [-1, 1]) { box(D, 3, 1.4, 2, M.metalMid, sx * 8, top + 0.7, 5); dRect(sx * 8, 5, 1.6, 1.1, n, 1.6); }
   // ---------------- 1 层大堂与入口 ----------------
   box(D, 9, 0.22, 3.2, M.metalDark, 0, y0 + 3.0, HD + 1.6);
-  for (const x of [-4.2, 4.2]) cyl(D, 0.08, 0.08, 3.0, M.metalDark, x, y0 + 1.5, HD + 3.0, 8);
+  for (const x of [-4.2, 4.2]) { const gy = gh(DWX(x), DWZ(HD + 3.0)) - 15.0 - 0.15, yt = y0 + 3.0 - 0.11, h = yt - gy;   // 雨篷柱落到柱下地面以下 0.15 m，柱脚加方形底座
+    cyl(D, 0.08, 0.08, h, M.metalDark, x, gy + h / 2, HD + 3.0, 8); box(D, 0.32, 0.25, 0.32, M.concreteWarm, x, gy + 0.15 + 0.125 - 0.1, HD + 3.0); collC(DWX(x), DWZ(HD + 3.0), 0.18); }
   for (const s of [-1, 1]) dWin(D, 1.9, 2.7, s * 2.6, y0 + 1.36, HD - 0.12, 0, 2);                    // 大堂玻璃（入口两侧，门洞 x∈[-1.6, 1.6] 敞开）
   { const gz = DWZ(HD + 0.5), g0 = gh(0, DWZ(HD + 2.6)) - 15.0, N = Math.max(1, Math.round((y0 - g0) / 0.15));   // 入口台阶：基座高出地面 y0 - g0
     for (let k = 0; k < N; k++) box(D, 3.4, 0.15 * (k + 1), 0.3, M.concreteWarm, 0, g0 + 0.075 * (k + 1), HD + 0.5 + 0.3 * (N - k));
@@ -4440,7 +4444,7 @@ function buildDorm() {
   const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
   for (const sx of [-1, 1]) {
     const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
-    planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
+    collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3); planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4, 0, 'narcissus', [L.dorm.x, DY, L.dorm.z]);   // 花池种水仙（碰撞已登记，planter 不重复登记）
     const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
     box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
   HELI_SOLIDS.push({ x0: DWX(-HW - 0.2), x1: DWX(HW + 0.2), y0: DWY(0), y1: DWY(top + 1.0), z0: DWZ(-HD - 1.6), z1: DWZ(HD + 1.6) });

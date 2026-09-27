@@ -19,7 +19,15 @@ JS = r'''() => {
   const A = DM.lifts[0], B = DM.lifts[1], U = (sx, sz) => (u, v) => W(sx * (4 + u), sz * (1.25 + v));
   // 1. 前庭 → 入口台阶 → 大堂
   fp.teleport(...W(0, 15), 0); for (let i = 0; i < 20; i++) frame([]);
+  // 0. 入口雨篷柱落地（柱底不高于柱下地面）；前庭花池种水仙
+  { const TH = __statics.THREE; out.canopyCols = []; __statics.groups.forEach(g => { g.updateMatrixWorld(true); g.traverse(o => { if (!o.isMesh || o.geometry.type !== 'CylinderGeometry') return; const bb = new TH.Box3().setFromObject(o), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+      for (const sx of [-1, 1]) if (Math.hypot(cx - (O.x + sx * 4.2), cz - (O.z + 13)) < 0.3) out.canopyCols.push(+(bb.min.y - D.gh(cx, cz)).toFixed(2)); }); });
+    out.frontPots = D.POTS.filter(p => p.kind === 'narcissus' && Math.abs(p.z - (O.z + 11.4)) < 0.6 && Math.abs(Math.abs(p.x - O.x) - 10) < 3.6).length; }
   out.court = pose(); walkTo(W(0, 12.6)); out.lobby = walkTo(W(0, 7));
+  // 1b. 1 层西南户：门关着走不进；按 E 开门进户（1 层四户与楼上相同）
+  walkTo(W(0, 1.0)); walkTo(W(-5.0, 0.6)); out.door1Prompt = prompt(); out.door1Closed = walkTo(W(-5.0, 2.8), 3);
+  walkTo(W(-5.0, 0.6)); keyE(); wait(() => DM.doors.find(d => d.f === 0 && d.sx < 0 && d.sz > 0).ang > 1.4, 3);
+  out.in1 = walkTo(W(-5.0, 3.0)); walkTo(W(-5.0, 0.3));
   // 2. 楼道 → 西梯厅，按 E 叫电梯，门开后进轿厢
   walkTo(W(0.6, 0.2)); walkTo(W(1.78, -0.7)); out.callPrompt = prompt(); keyE();
   out.doorOpenT = wait(() => A.door > 0.98, 20); walkTo(W(1.0, -0.6)); out.inCar = walkTo(W(1.0, -3.0));
@@ -36,6 +44,8 @@ JS = r'''() => {
   // 6. 回楼道 → 楼梯间 → 两跑楼梯 → 屋顶平台 → 出屋面门到屋顶
   walkTo(u(5.6, 5.45)); walkTo(u(3.2, 5.9)); walkTo(u(1.3, 5.6)); walkTo(u(1.0, 1.8)); walkTo(W(5.0, -0.4)); walkTo(W(-1.05, -0.5));
   out.stairFoot = walkTo(W(-1.05, -2.3)); out.midLanding = walkTo(W(-1.05, -6.4)); walkTo(W(-2.95, -6.4)); out.roofLanding = walkTo(W(-2.95, -2.2));
+  // 6b. 屋面楼梯间：从楼梯口往东侧梯井（下一层第一跑上方）走，被 1.25 m 高的墙挡住，不会掉下去
+  out.roofVoid = walkTo(W(-1.05, -4.2), 3); walkTo(W(-2.95, -2.2));
   out.roof = walkTo(W(-2.0, 1.5)); out.roofEdge = walkTo(W(-2.0, 12), 4);
   return out;
 }'''

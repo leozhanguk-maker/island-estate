@@ -69,6 +69,10 @@ CHECKS = {
         ('人仍在船上', lambda r: r['player']['onBoat'], lambda v: v is True),
     ],
     'dorm': [
+        ('入口雨篷两根柱都落到地面（柱底不高于柱下地面，V-021）', lambda r: r['canopyCols'], lambda v: isinstance(v, list) and len(v) == 2 and all(x <= 0.0 for x in v)),
+        ('前庭两处花池种水仙（每池至少 10 株）', lambda r: r['frontPots'], lambda v: isinstance(v, int) and v >= 20),
+        ('1 层户门关着走不进；按 E 开门后进户（脚底 15.94）', lambda r: (r['door1Prompt'], r['door1Closed']['z'], r['in1']['z'], r['in1']['feet']), lambda v: '开门进入 1 层' in v[0] and v[1] < 1.3 and v[2] > 2.5 and near(v[3], 15.94, 0.03)),
+        ('屋面楼梯间东侧梯井被墙挡住，不会掉下去（脚底保持 51.93）', lambda r: (r['roofVoid']['z'], r['roofVoid']['feet']), lambda v: v[0] > -2.85 and near(v[1], 51.93, 0.03)),
         ('前庭经入口台阶走进 1 层大堂（脚底 15.94）', lambda r: r['lobby']['feet'], lambda v: near(v, 15.94, 0.03)),
         ('梯厅按 E 叫电梯，门在 3 秒内打开', lambda r: (r['callPrompt'], r['doorOpenT']), lambda v: '电梯' in v[0] and v[1] < 3),
         ('走进轿厢（轿厢地面 15.94）', lambda r: (r['inCar']['z'], r['inCar']['feet']), lambda v: v[0] < -2.2 and near(v[1], 15.94, 0.03)),
