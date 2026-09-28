@@ -3622,25 +3622,51 @@ function buildVilla() {
   for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
     planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
   for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
-  // 泳池旁（靠别墅一侧）两把沙滩椅 + 遮阳伞
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
-    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
+    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(V, 4.5, 0.05, -7.6, 1.35); collC(184.5, -53.6, 0.25); tableF(V, 4.5, 0.05, -8.9, 0, 0.35, 0.35, 0.45, M.teak, M.alu); }
   collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2);   // 泳池北侧水仙花池的碰撞由 planter() 登记
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
-function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {   // 精细躺椅：铝框、柚木板条、可调靠背、分段软垫、滚轮、浴巾
-  const g = new THREE.Group(), cu = std(cushion, 0.95);
-  for (const sx of [-1, 1]) { box(g, 0.04, 0.05, 1.95, M.alu, sx * 0.33, 0.3, 0.1); box(g, 0.04, 0.3, 0.04, M.alu, sx * 0.33, 0.15, 0.95); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 14), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.36, 0.07, -0.72); g.add(w); }
-  for (let i = 0; i < 11; i++) box(g, 0.64, 0.02, 0.1, M.teak, 0, 0.33, -0.15 + i * 0.105);
-  const back = new THREE.Group(); back.position.set(0, 0.33, -0.2); back.rotation.x = -0.75; g.add(back);
-  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.8, M.alu, sx * 0.33, 0, -0.4);
-  for (let i = 0; i < 7; i++) box(back, 0.64, 0.02, 0.1, M.teak, 0, 0.01, -0.06 - i * 0.11);
-  box(back, 0.6, 0.07, 0.78, cu, 0, 0.05, -0.4); box(back, 0.4, 0.1, 0.2, std(0xffffff, 0.9), 0, 0.12, -0.65);
-  box(g, 0.6, 0.07, 1.18, cu, 0, 0.38, 0.4); for (const zz of [-0.18, 0.99]) box(g, 0.61, 0.075, 0.015, std(0xd8d0c0, 0.9), 0, 0.38, zz);
-  box(g, 0.5, 0.03, 0.34, std(0x3e7fa6, 0.95), 0, 0.43, 0.7);
+// 躺椅（按实物结构）：头端在 -z、脚端在 +z，全长 2.0 m、宽 0.72 m；座面高 0.44（与 addSeat 的 +0.42 一致）
+// 铝合金框：两根纵梁 + 两端横梁，脚端两条腿（带橡胶脚垫），头端两条短腿各带一个滚轮（轮子着地，可推着走）
+// 柚木板条座面；靠背以铰轴与纵梁相连，向头端抬起约 40°，背后一根支撑杆顶在纵梁的卡槽上
+// 软垫：座垫、靠背垫分段并带滚边，头枕；脚端叠放一条条纹浴巾
+const LOUNGER_MAT = {}, LOUNGER_BACK = 0.7;   // 靠背抬起角（弧度，约 40°）；躺椅座位带 recline，漫游时按此角度半躺
+function loungerMat(c, r = 0.95) { const k = c + ':' + r; return LOUNGER_MAT[k] || (LOUNGER_MAT[k] = std(c, r)); }
+function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {
+  const g = new THREE.Group(), cu = loungerMat(cushion), pip = loungerMat(0xcfc6b4, 0.9), towelB = loungerMat(0x3e7fa6), towelW = loungerMat(0xf4f1ea);
+  const RY = 0.33, RH = 0.06, HX = 0.33;   // 纵梁中心高、截面高、半宽
+  for (const sx of [-1, 1]) {
+    box(g, 0.045, RH, 2.0, M.alu, sx * HX, RY, 0.05);                                  // 纵梁
+    box(g, 0.045, RY - RH / 2 - 0.02, 0.045, M.alu, sx * HX, (RY - RH / 2 - 0.02) / 2 + 0.02, 0.95);   // 脚端腿
+    box(g, 0.06, 0.02, 0.06, M.rubber, sx * HX, 0.01, 0.95);                           // 橡胶脚垫
+    box(g, 0.04, RY - RH / 2 - 0.09, 0.04, M.alu, sx * HX, (RY - RH / 2 + 0.09) / 2, -0.8);   // 头端短腿（下端接轮轴）
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.035, 16), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(w);   // 滚轮，着地
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.045, 10), M.alu); hub.rotation.z = Math.PI / 2; hub.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(hub);
+    for (const zz of [-0.72, -0.64, -0.56]) box(g, 0.05, 0.012, 0.02, M.metalDark, sx * HX, RY + RH / 2 + 0.006, zz);   // 靠背角度卡槽
+  }
+  for (const zz of [-0.93, 1.03]) box(g, 2 * HX + 0.045, 0.05, 0.04, M.alu, 0, RY, zz);   // 两端横梁
+  cyl(g, 0.012, 0.012, 2 * HX + 0.1, M.alu, 0, 0.09, -0.8, 6, 0, Math.PI / 2);          // 轮轴
+  for (let i = 0; i < 10; i++) box(g, 0.62, 0.02, 0.085, M.teak, 0, RY + RH / 2 + 0.012, -0.06 + i * 0.109);   // 座面板条
+  const sy = RY + RH / 2 + 0.022;   // 板条顶面
+  box(g, 0.6, 0.065, 1.07, cu, 0, sy + 0.005 + 0.0325, 0.46);                          // 座垫
+  for (const zz of [-0.075, 0.995]) box(g, 0.61, 0.018, 0.018, pip, 0, sy + 0.07, zz);    // 座垫滚边
+  // 靠背：铰轴在 z = -0.12，向头端（-z）抬起 40°
+  const back = new THREE.Group(); back.position.set(0, sy, -0.12); back.rotation.x = LOUNGER_BACK; g.add(back);
+  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.84, M.alu, sx * (HX - 0.03), -0.02, -0.42);
+  box(back, 2 * (HX - 0.03) + 0.04, 0.04, 0.04, M.alu, 0, -0.02, -0.82);
+  for (let i = 0; i < 7; i++) box(back, 0.58, 0.02, 0.095, M.teak, 0, 0.01, -0.08 - i * 0.11);
+  box(back, 0.58, 0.06, 0.8, cu, 0, 0.055, -0.43);                                     // 靠背垫
+  box(back, 0.59, 0.018, 0.018, pip, 0, 0.09, -0.83);
+  box(back, 0.44, 0.1, 0.2, loungerMat(0xffffff, 0.9), 0, 0.14, -0.7);                 // 头枕
+  // 支撑杆：从靠背背面（离铰轴 0.5 m 处）斜顶到纵梁中间的卡槽
+  const ca = Math.cos(LOUNGER_BACK), sa = Math.sin(LOUNGER_BACK), by = sy - 0.04 * ca + 0.5 * sa, bz = -0.12 - 0.5 * ca - 0.04 * sa;
+  for (const sx of [-1, 1]) rod(g, new THREE.Vector3(sx * (HX - 0.03), by, bz), new THREE.Vector3(sx * (HX - 0.03), RY + RH / 2, -0.64), 0.012, M.alu, 6);
+  // 脚端折叠浴巾（蓝白条纹）
+  for (let i = 0; i < 8; i++) box(g, 0.5, 0.03, 0.04, i % 2 ? towelW : towelB, 0, sy + 0.07 + 0.017, 0.62 + i * 0.04 + 0.02);
   g.position.set(x, y, z); g.rotation.y = ry; p.add(g); return g;
 }
 function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细遮阳伞：八角伞面 + 垂边 + 伞骨 + 摇柄 + 石材伞座
@@ -4170,7 +4196,7 @@ function buildBeachSets() {
   for (const [x, z] of [[30, 26], [42, 23]]) {
     const y = gh(x, z);
     // 正对闸内海面（朝南），可看海豚来回游
-    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); }
+    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(B, x, y, z - 0.6, 1.4, 2.4, 0xeae3d2); collC(x, z - 0.6, 0.25);
   }
   return B;
@@ -4633,7 +4659,7 @@ function buildYacht() {
   box(Y, 1.2, 2.2, 0.35, M.yachtWhite, 1.5, 11.6, 0); box(Y, 0.3, 0.2, 3.2, M.metalDark, 1.5, 12.7, 0);
   cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, 0.9, 12); cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, -0.9, 12);
   // 日光甲板躺椅（后段遮阳顶上）
-  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); }
+  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); YL.seats.at(-1).recline = LOUNGER_BACK; }
   // 日光甲板按摩池
   cyl(Y, 1.25, 1.3, 0.55, M.white, -9.5, 7.93, 0, 24); cyl(Y, 1.1, 1.1, 0.05, M.pool, -9.5, 8.2, 0, 24); YL.rects.push({ x: -9.5, z: 0, hw: 1.3, hd: 1.3, rot: 0, bottom: 7.3, top: 9 });
   // ---- 楼梯：主甲板 → 上甲板、上甲板后部 → 日光甲板；船尾游泳平台 → 后甲板（下甲板已改为舱盖） ----
@@ -5855,7 +5881,7 @@ function setupFP(ctx) {
   const tend = (e) => { for (const t of e.changedTouches) { if (st.touchMove && t.identifier === st.touchMove.id) st.touchMove = null; if (st.touchLook && t.identifier === st.touchLook.id) st.touchLook = null; } };
   cvs.addEventListener('touchend', tend); cvs.addEventListener('touchcancel', tend);
   // ---- 座位：坐下 / 躺下 ----
-  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? 0.9 : -0.05; st.keys.clear(); }
+  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? (seat.recline ? -0.2 : 0.9) : -0.05; st.keys.clear(); }
   function standUp() { if (!st.seat) return; const sv = st.seat, s0 = sv.boat ? { x: sv.x - Math.sin(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), z: sv.z - Math.cos(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), feet: sv.y - (sv.type === 'lie' ? 0.62 : 0.45) } : st.seatStand; if (sv.boat) st.onBoat = true; st.seat = null; st.pos.x = s0.x; st.pos.z = s0.z; st.feet = s0.feet; st.vy = 0; st.grounded = true; st.pitch = -0.1; }
   for (const seat of SEATS) INTERACT.push({ x: seat.x, z: seat.z, r: seat.type === 'lie' ? 1.8 : 1.35, y: seat.y - (seat.type === 'lie' ? 0.45 : 0.5), label: seat.type === 'lie' ? '躺下休息' : '坐下', fn: () => sitDown(seat) });
   // ---- 传送、交互、小地图 ----
@@ -5918,7 +5944,15 @@ function setupFP(ctx) {
     if (st.seat) {                                              // 坐/躺：固定身体，只转动视线
       const sv = st.seat, f = new THREE.Vector3(-Math.sin(sv.yaw), 0, -Math.cos(sv.yaw)), u = person.userData;
       person.rotation.order = 'YXZ'; person.rotation.y = sv.yaw + Math.PI;
-      if (sv.type === 'lie') {
+      if (sv.type === 'lie' && sv.recline) {
+        // 躺椅：半躺。上身顺着靠背（与水平面成 recline 角）向头端仰靠，大腿平放在座垫上、小腿伸直，头枕在头枕上；
+        // 髋关节（人物模型 y 0.9）落在座面（座位高 sv.y）以上 0.1 m、靠背铰轴略前
+        const th = Math.PI / 2 - sv.recline, hx = sv.x + f.x * 0.02, hz = sv.z + f.z * 0.02, hy = sv.y + 0.1;
+        person.rotation.x = -th; person.position.set(hx + f.x * 0.9 * Math.sin(th), hy - 0.9 * Math.cos(th), hz + f.z * 0.9 * Math.sin(th));
+        for (const k of ['legL', 'legR']) u[k].rotation.x = -(Math.PI / 2 - th); u.shinL.rotation.x = u.shinR.rotation.x = 0.08;
+        u.armL.rotation.x = u.armR.rotation.x = -0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.35;
+        person.updateMatrixWorld(true); camera.position.copy(person.localToWorld(new THREE.Vector3(0, 1.8, 0.12)));
+      } else if (sv.type === 'lie') {
         person.rotation.x = -Math.PI / 2; person.position.set(sv.x + f.x * 0.9, sv.y + 0.13, sv.z + f.z * 0.9);
         for (const k of ['legL', 'legR', 'shinL', 'shinR']) u[k].rotation.x = 0; u.armL.rotation.x = u.armR.rotation.x = 0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.2;
         camera.position.set(sv.x - f.x * 0.55, sv.y + 0.42, sv.z - f.z * 0.55);
@@ -6028,7 +6062,7 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _person: person, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }
 
 // ======================= 12 近景草叶（仅漫游模式） =======================
@@ -6223,7 +6257,7 @@ function setupBoat(scene, Y) {
   for (const [lx, lz, ly, wx, wz, wy] of [[-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), lineMat); scene.add(m); BOAT.lines.push({ m, l: [lx, ly, lz], w: new THREE.Vector3(wx, wy, wz) });
   }
-  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
+  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, recline: s0.recline, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
   // 登船、离船改为 F 键（boatFAction）：船体四周是空气墙，不能直接走上走下
   syncBoat(0);
 }
@@ -7997,7 +8031,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, lounger }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));

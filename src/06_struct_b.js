@@ -396,7 +396,7 @@ function buildBeachSets() {
   for (const [x, z] of [[30, 26], [42, 23]]) {
     const y = gh(x, z);
     // 正对闸内海面（朝南），可看海豚来回游
-    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); }
+    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(B, x, y, z - 0.6, 1.4, 2.4, 0xeae3d2); collC(x, z - 0.6, 0.25);
   }
   return B;

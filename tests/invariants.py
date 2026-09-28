@@ -109,6 +109,26 @@ JS = r'''() => {
     for (const pz of zs) { if (D.COLL.circles.some(c => Math.hypot(c.x - 3.5, c.z - pz) < 1.5)) fails.push(`泊位 (3.5, ${pz}) 仍有系缆钢桩碰撞体`);
       let hit = false; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || hit) return; const bb = new TH.Box3().setFromObject(o); if (bb.max.x - bb.min.x < 1.5 && bb.max.z - bb.min.z < 1.5 && bb.max.y - bb.min.y > 2 && Math.hypot((bb.min.x + bb.max.x) / 2 - 3.5, (bb.min.z + bb.max.z) / 2 - pz) < 1.5) hit = true; }));
       if (hit) fails.push(`泊位 (3.5, ${pz}) 仍有竖直钢桩构件`); } }
+  // ---- 2j. 躺椅按实物结构（V-017）：靠背向头端抬起（最高点 ≥ 0.8 m）、没有构件低于地面、头尾两端都有着地的支点（头端滚轮、脚端脚垫） ----
+  { const g = new TH.Group(); D.lounger(g, 0, 0, 0, 0); g.updateMatrixWorld(true); const bb = new TH.Box3().setFromObject(g);
+    if (bb.max.y < 0.8) fails.push(`躺椅最高点 ${r3(bb.max.y)} m，靠背没有抬起（应 ≥ 0.8）`);
+    if (bb.min.y < -0.005) fails.push(`躺椅最低点 ${r3(bb.min.y)} m，有构件插进地面`);
+    let head = 0, foot = 0; g.traverse(o => { if (!o.isMesh) return; const b = new TH.Box3().setFromObject(o), cz = (b.min.z + b.max.z) / 2; if (b.min.y < 0.01) { if (cz < -0.5) head++; else if (cz > 0.5) foot++; } });
+    if (head < 2 || foot < 2) fails.push(`躺椅着地支点：头端 ${head} 个、脚端 ${foot} 个，两端都应至少 2 个（不能悬空）`);
+    // 躺上去的姿势贴合靠背：上身与水平面夹角 = 靠背角、大腿水平、髋在座面上方约 0.1 m、头在座面上方 0.35～0.8 m
+    const recl = D.SEATS.filter(q => q.recline), fp = __fp, st = fp._st, on0 = st.on;
+    if (recl.length !== 6) fails.push(`带靠背角的躺椅座位 ${recl.length} 个，应为泳池 2 + 沙滩 4`);
+    for (const sv of recl.slice(0, 2)) { st.on = true; fp.sitDown(sv); fp.update(1 / 60); const P = fp._person, u = P.userData; P.updateMatrixWorld(true);
+      const up = new TH.Vector3(0, 1, 0).transformDirection(P.matrixWorld), th = new TH.Vector3(0, -1, 0).transformDirection(u.legL.matrixWorld);
+      const hip = new TH.Vector3().setFromMatrixPosition(u.legL.matrixWorld), hd = new TH.Vector3().setFromMatrixPosition(u.head.matrixWorld);
+      const a = Math.asin(up.y), bad = [];
+      if (Math.abs(a - sv.recline) > 0.06) bad.push(`上身仰角 ${r3(a)}（靠背 ${sv.recline}）`);
+      if (Math.abs(th.y) > 0.1) bad.push(`大腿不水平（方向 y ${r3(th.y)}）`);
+      if (Math.abs(hip.y - sv.y - 0.1) > 0.05) bad.push(`髋高 ${r3(hip.y - sv.y)}`);
+      if (!(hd.y - sv.y > 0.35 && hd.y - sv.y < 0.8)) bad.push(`头高 ${r3(hd.y - sv.y)}`);
+      if (bad.length) fails.push(`躺椅 (${r3(sv.x)}, ${r3(sv.z)}) 躺姿不贴合靠背：${bad.join('、')}`);
+      fp.standUp(); }
+    st.on = on0; }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
