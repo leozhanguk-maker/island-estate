@@ -86,6 +86,8 @@ body.under #uw{opacity:1}
 import * as THREE_ from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-const THREE = Object.assign({}, THREE_, { OrbitControls, BufferGeometryUtils: { mergeGeometries, mergeVertices } });
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+const THREE = Object.assign({}, THREE_, { OrbitControls, GLTFLoader, MeshoptDecoder, BufferGeometryUtils: { mergeGeometries, mergeVertices } });
 (async function () {
 'use strict';
