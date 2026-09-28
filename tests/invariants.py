@@ -165,6 +165,17 @@ JS = r'''() => {
     if (arms < 6) fails.push(`旋翼组只有 ${arms} 个子组，应有 3 片桨叶 + 3 个星形桨毂臂`);
     if (emissive < 8) fails.push(`直升机发光件 ${emissive} 个（航行灯、着陆灯、显示屏等），应 ≥ 8`);
     if (reg < 2) fails.push('尾梁两侧注册号缺失'); }
+  // ---- 2p. Cybertruck 外观换用用户提供的模型（assets/cybertruck.glb）：车身整组替换、四个车轮挂在转向/滚动节点下、轮底贴地、车长约 5.68 m ----
+  { const K = D.CT_GLB, C = K && K.car; if (!C || !C.userData.glb) fails.push('Cybertruck 模型没有加载（退回了程序化车身）');
+    else { const ud = C.userData, inv = new TH.Matrix4().copy(C.matrixWorld).invert(), bb = new TH.Box3();
+      ud.body.updateMatrixWorld(true); ud.body.traverse(o => { if (o.isMesh) { o.geometry.computeBoundingBox(); bb.union(o.geometry.boundingBox.clone().applyMatrix4(new TH.Matrix4().multiplyMatrices(inv, o.matrixWorld))); } });
+      const len = bb.max.x - bb.min.x; if (Math.abs(len - 5.683) > 0.05) fails.push(`Cybertruck 车身长 ${r3(len)}，应约 5.683 m`);
+      if (bb.min.y < 0.1) fails.push(`Cybertruck 车身最低点 ${r3(bb.min.y)}，离地过低（会压进车轮或地面）`);
+      if (ud.wheels.length !== 4) fails.push('Cybertruck 车轮不是 4 个');
+      for (const w of ud.wheels) { if (w.spin.children.length !== 1 || !w.spin.children[0].isGroup) { fails.push('Cybertruck 车轮没有换成模型车轮'); break; }
+        const wb = new TH.Box3(); w.spin.updateMatrixWorld(true); w.spin.traverse(o => { if (o.isMesh) { o.geometry.computeBoundingBox(); wb.union(o.geometry.boundingBox.clone().applyMatrix4(new TH.Matrix4().multiplyMatrices(inv, o.matrixWorld))); } });
+        if (Math.abs(wb.min.y) > 0.03 || Math.abs(wb.max.y - 0.89) > 0.03) { fails.push(`Cybertruck 车轮高度 ${r3(wb.min.y)}～${r3(wb.max.y)}，应为 0～0.89`); break; } }
+      let bodyWheels = 0; ud.body.traverse(o => { if (/^Sphere/.test(o.name)) bodyWheels++; }); if (bodyWheels) fails.push('Cybertruck 车身里仍留有模型车轮（会与滚动车轮重叠）'); } }
   // ---- 2q. 厨房馆（别墅西侧，连廊接别墅西门）：室内地面与别墅首层同高、连廊可行走面连通两栋楼、别墅西门处没有墙线段、基座内无植被 ----
   { const K = D.KITCHEN; if (!K || !K.group) fails.push('厨房馆没有建造');
     else { const vy = 11.35 + 0.13, at = (x, z) => D.COLL.walks.filter(w => w.kind === 'rect' && Math.abs(x - w.x) < w.hw && Math.abs(z - w.z) < w.hd).map(w => w.y);

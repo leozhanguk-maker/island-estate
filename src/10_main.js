@@ -49,6 +49,7 @@ try {
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   try { await loadDeskModel(scene); } catch (e) { console.warn('书桌模型加载失败，改用程序化书桌', e); deskFallback(scene); }   // 别墅书房桌椅（用户提供的模型）
+  try { await loadCybertruckModel(ct); } catch (e) { console.warn('Cybertruck 模型加载失败，保留程序化车身', e); }   // Cybertruck 外观（用户提供的模型）
   await stage(0.8, '雨林与作物');
   const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene); buildEgrets(scene);
   await stage(0.92, '光影');
@@ -98,7 +99,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, DESK, KITCHEN, get VEG_STRAW() { return VEG_STRAW; }, get VINEYARD() { return VINEYARD; }, lounger }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, DESK, KITCHEN, CT_GLB, get VEG_STRAW() { return VEG_STRAW; }, get VINEYARD() { return VINEYARD; }, lounger }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
