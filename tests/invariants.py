@@ -151,6 +151,13 @@ JS = r'''() => {
     if (boxes) fails.push(`葡萄园仍有 ${boxes} 个贴图方块`);
     let apple = null, fruit = 0; I.scene.traverse(o => { if (o.isInstancedMesh && Array.isArray(o.material) && o.count > 20 && o.count < 200 && o.geometry.groups.length === 2 && o.geometry.attributes.uv && o.geometry.groups[1].count === (20 + 8) * 6) apple = o; });
     if (!apple) fails.push('找不到苹果树冠（外层 20 + 内层 8 张面片、无实心内核）'); }
+  // ---- 2n. 别墅书房桌椅模型（assets/mac_desk.glb）已加载：桌脚落在三层楼板（18.8）上、整套在书房内不穿墙，桌椅碰撞与椅子座位已登记 ----
+  { const K = D.DESK; if (!K || !K.loaded) fails.push('书房桌椅模型没有加载（退回了程序化书桌）');
+    else { const bb = new TH.Box3().setFromObject(K.group);
+      if (Math.abs(bb.min.y - 18.8) > 0.02) fails.push(`书房桌椅模型最低点 ${r3(bb.min.y)}，应落在三层楼板 18.8 上`);
+      if (bb.min.x < 180 - 6.3 || bb.max.x > 180 + 7.8 || bb.min.z < -46 - 4.9 || bb.max.z > -46 + 5.5) fails.push(`书房桌椅模型超出书房范围：x ${r3(bb.min.x)}～${r3(bb.max.x)}，z ${r3(bb.min.z)}～${r3(bb.max.z)}`);
+      if (!D.COLL.rects.some(r => Math.abs(r.x - 182.5) < 0.05 && Math.abs(r.z + 49.6) < 0.05 && r.hw >= 1.19)) fails.push('书桌碰撞没有登记');
+      if (!D.SEATS.some(q => Math.abs(q.x - 182.95) < 0.05 && Math.abs(q.z + 48.84) < 0.05)) fails.push('书桌椅座位没有登记'); } }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
