@@ -68,7 +68,8 @@ function makeMaterialMap(X) {
   const inR = (x, z, r, m = 0) => x >= r.x0 - m && x <= r.x1 + m && z >= r.z0 - m && z <= r.z1 + m;
   const gh0 = L.greenhouses, ghR = { x0: gh0.x0 - 3, z0: gh0.z0 - 3, x1: gh0.x0 + gh0.n * gh0.w + (gh0.n - 1) * gh0.gap + 3, z1: gh0.z0 + gh0.len + 3 };
   const pads = [
-    [164, -64, 198, -32], [-19, -163, 19, -136], [-10.5, -134, 10.5, -98], [205, 9.5, 227, 24], [L.barn.x - 15, L.barn.z - 8, L.barn.x + 15, L.barn.z + 8]
+    [164, -64, 198, -32], [-19, -163, 19, -136], [-10.5, -134, 10.5, -98], [205, 9.5, 227, 24], [L.barn.x - 15, L.barn.z - 8, L.barn.x + 15, L.barn.z + 8],
+    ...L.kitchen.pads.map(([x0, z0, x1, z1]) => [x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5])   // 厨房馆基座：草叶不从基座里长出来
   ];
   for (let py = 0; py < Hh; py++) for (let px = 0; px < W; px++) {
     const x = TX.x0 + px + 0.5, z = TX.z0 + py + 0.5, o = (py * W + px) * 4;

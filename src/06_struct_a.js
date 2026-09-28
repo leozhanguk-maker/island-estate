@@ -273,7 +273,9 @@ function buildVilla() {
     const ex = 180 + hx + Math.cos(-sd * 1.75) * sd * 1.35, ez = -46 + 7.14 - Math.sin(-sd * 1.75) * sd * 1.35;
     collS(180 + hx, -46 + 7.14, ex, ez, y0 - 0.3, y0 + 2.9); }
   wallRun('z', 11, [[-7, -5, 'w'], [-5, 3, 'g'], [3, 7, 'w']]);
-  wallRun('z', -11, [[-7, -0.5, 'w'], [-0.5, 5.5, 'g'], [5.5, 7, 'w']]);
+  wallRun('z', -11, [[-7, -1, 'w'], [-1, 1, 'o'], [1, 5.5, 'g'], [5.5, 7, 'w']]);   // 西：落地窗 + 2 m 西门（经连廊通厨房馆，与连廊中线对齐）
+  box(V, 0.25, 0.7, 2.0, M.wallWarm, -11, 3.25, 0);                                                   // 西门门楣
+  box(V, 0.04, 2.7, 1.9, M.glassClear, -10.84, 1.5, 2.0); for (const z of [1.05, 2.95]) box(V, 0.07, 2.74, 0.05, M.metalDark, -10.84, 1.5, z);   // 推拉门扇（开启，收在门洞南侧落地窗内侧）
   // 南立面木格栅（外侧）
   for (let i = 0; i < 26; i++) box(V, 0.07, 3.2, 0.12, M.wood, 3.4 + i * 0.26, 1.7, 7.22);
   // 室内：客厅（北侧面湖）——精细沙发、茶几、落地灯、地毯；座位可坐
@@ -338,7 +340,7 @@ function buildVilla() {
   const gt = y0 + 3.0;
   for (const [x0, x1] of [[-11, -6], [-3.4, 11]]) collS(wx(x0), wz(-7), wx(x1), wz(-7), -1e9, gt);
   for (const [x0, x1] of [[-11, 0.2], [2.9, 11]]) collS(wx(x0), wz(7), wx(x1), wz(7), -1e9, gt);   // 南墙：正门门洞 0.2～2.9
-  collS(wx(11), wz(-7), wx(11), wz(7), -1e9, gt); collS(wx(-11), wz(-7), wx(-11), wz(7), -1e9, gt);
+  collS(wx(11), wz(-7), wx(11), wz(7), -1e9, gt); collS(wx(-11), wz(-7), wx(-11), wz(-1), -1e9, gt); collS(wx(-11), wz(1), wx(-11), wz(7), -1e9, gt);   // 西墙：西门 -1～1 通连廊
   const low = y0 + 3;
   collR(wx(-4.5), wz(-1.35), 1.5, 0.45, 0, low); collR(wx(-6.85), wz(-3.3), 0.45, 1.0, 0, low); collR(wx(-4.5), wz(-3.3), 0.6, 0.35, 0, low); collR(wx(-10.6), wz(-3.3), 0.25, 1.1, 0, low);
   collR(wx(3.2), wz(-3.2), 1.5, 1.0, 0, low); collR(wx(5.5), wz(1.8), 1.9, 0.6, 0, low); collR(wx(5.2), wz(5.6), 2.2, 0.35, 0, low); collR(wx(-7.3), wz(-5.0), 0.25, 0.25, 0, low); collR(wx(7.9), wz(5.5), 0.45, 0.35, 0, low);
