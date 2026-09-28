@@ -178,7 +178,7 @@ function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含
   const white = std(0xf4f5f5, 0.3, 0.1), blue = std(0x163a66, 0.35, 0.2), gold = std(0xc8a24a, 0.35, 0.5), dark = std(0x1b1d20, 0.5, 0.3), glass = std(0x1a2733, 0.05, 0.4, { envMapIntensity: 1.8 });
   // 机身：沿 x 的一系列椭圆截面放样（机头 +x）；上前方为玻璃，下部与腰线涂装
   const secs = [[2.55, 1.18, 0.06, 0.06], [2.42, 1.2, 0.46, 0.44], [2.15, 1.34, 0.74, 0.68], [1.65, 1.5, 0.9, 0.8], [0.9, 1.6, 0.97, 0.86], [0.1, 1.66, 0.98, 0.86], [-0.7, 1.7, 0.92, 0.8], [-1.45, 1.76, 0.74, 0.6], [-2.05, 1.86, 0.44, 0.32], [-2.55, 1.92, 0.22, 0.17]];
-  const RING = 24, pos = [], col = [], idx = [];
+  const RING = 40, pos = [], col = [], idx = [];   // 截面 40 边，机身曲面更圆顺
   const cW = new THREE.Color(0xf4f5f5), cB = new THREE.Color(0x163a66), cG = new THREE.Color(0xc8a24a), cGl = new THREE.Color(0x1a2733);
   secs.forEach(([x, cy, hy, hw], i) => { for (let k = 0; k < RING; k++) { const a = k / RING * TAU, y = cy + Math.sin(a) * hy, z = Math.cos(a) * hw * FW; pos.push(FX(x), y, z);
     let c = cW; const up = Math.sin(a);
@@ -216,11 +216,77 @@ function buildH125() {   // 空客 H125（AS350 B3e）：机身长 10.93 m，含
   box(H, 0.3, 0.3, 1.3, dark, FX(1.8), 1.25, 0); box(H, 0.02, 0.2, 0.9, std(0x0e1216, 0.2, 0, { emissive: 0x2f6a8a, emissiveIntensity: 0.5 }), FX(1.64), 1.33, 0).rotation.z = 0.3;
   for (const sz of [-1, 1]) { box(H, 0.5, 0.12, 0.5, std(0x3a3c40, 0.8), FX(0.9), 0.95, sz * 0.4); box(H, 0.1, 0.65, 0.5, std(0x3a3c40, 0.8), FX(0.62), 1.3, sz * 0.4); }
   rod(H, new THREE.Vector3(FX(1.3), 0.85, 0.4), new THREE.Vector3(FX(1.35), 1.35, 0.4), 0.02, dark, 5);
+  h125Details(H, rotor, trotor, { FX, FW, HUB, white, blue, dark, glass });
   H.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   H.userData = { rotor, trotor };
   return H;
 }
 
+// H125 细节（真实机型的可见部件；均挂在原机身、旋翼组、尾桨组上，不改尺寸与碰撞）
+function h125Details(H, rotor, trotor, { FX, FW, HUB, white, blue, dark, glass }) {
+  const alu = M.alu, rub = M.rubber, seam = std(0x2a2d31, 0.6, 0.2), steel = std(0x9aa0a6, 0.35, 0.8), seat = std(0x4a3a2c, 0.75), belt = std(0x22262c, 0.8);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z), emi = (c, k = 1) => std(0x0a0c0f, 0.25, 0, { emissive: c, emissiveIntensity: k });
+  // ---- 旋翼头（随旋翼转）：星形柔性桨毂（Starflex）三臂、弹性轴承、桨叶夹套、变距摇臂与变距拉杆 ----
+  for (let k = 0; k < 3; k++) { const a = k / 3 * TAU, arm = new THREE.Group(); arm.rotation.y = a; rotor.add(arm);
+    box(arm, 0.42, 0.05, 0.16, dark, 0.3, 0.0, 0);                                         // 星形臂
+    cyl(arm, 0.07, 0.07, 0.1, rub, 0.34, 0.0, 0, 10);                                     // 球形弹性轴承
+    box(arm, 0.5, 0.09, 0.2, steel, 0.62, -0.02, 0);                                      // 桨叶夹套
+    for (const sz of [-1, 1]) cyl(arm, 0.018, 0.018, 0.12, alu, 0.72, -0.02, sz * 0.07, 6); // 桨根螺栓
+    box(arm, 0.08, 0.04, 0.16, steel, 0.5, -0.06, 0.14);                                  // 变距摇臂
+    rod(arm, V(0.5, -0.07, 0.2), V(0.36, -0.3, 0.22), 0.013, steel, 5);                   // 变距拉杆（到倾斜盘）
+    box(arm, 0.9, 0.045, 0.37, std(0x3b3f45, 0.45), 1.3, -0.03, 0);                       // 桨根整流套
+    box(arm, 4.5, 0.012, 0.03, std(0x8d939a, 0.3, 0.8), 3.1, -0.005, -0.17);              // 前缘防磨条
+    box(arm, 0.7, 0.008, 0.06, dark, 4.7, -0.03, 0.2); }                                  // 后缘调整片
+  // ---- 倾斜盘与主桨轴（不转的下盘挂在机身上，转动的上盘挂在旋翼组） ----
+  cyl(H, 0.26, 0.26, 0.05, steel, HUB, 2.76, 0, 16); cyl(rotor, 0.25, 0.25, 0.04, alu, 0, -0.27, 0, 16);
+  for (const sz of [-1, 1]) rod(H, V(HUB + 0.1, 2.52, sz * 0.18), V(HUB + 0.14, 2.74, sz * 0.2), 0.02, steel, 5);   // 伺服作动筒
+  rod(rotor, V(0.18, -0.24, 0), V(0.12, -0.02, 0), 0.015, steel, 5);                    // 剪刀臂
+  // ---- 发动机舱：进气格栅、整流罩分缝与铰链、滑油散热口、检修口搭扣 ----
+  for (const sz of [-1, 1]) { box(H, 0.55, 0.3, 0.02, dark, -0.55, 2.52, sz * 0.395); for (let i = 0; i < 7; i++) box(H, 0.52, 0.012, 0.03, steel, -0.55, 2.4 + i * 0.04, sz * 0.405);
+    box(H, 1.7, 0.012, 0.012, seam, -1.1, 2.3, sz * 0.4); for (const x of [-1.6, -0.9]) box(H, 0.012, 0.35, 0.012, seam, x, 2.5, sz * 0.4);
+    for (const x of [-1.55, -1.25, -0.95]) box(H, 0.05, 0.03, 0.012, alu, x, 2.3, sz * 0.41); }
+  box(H, 0.35, 0.02, 0.22, dark, -1.75, 2.945, 0); for (let i = 0; i < 6; i++) box(H, 0.02, 0.02, 0.2, steel, -1.9 + i * 0.06, 2.96, 0);   // 顶部滑油散热口
+  // ---- 机身：前门/后滑门分缝、门把手、后滑门导轨、踏板、加油口、应急把手 ----
+  for (const sz of [-1, 1]) { const zz = sz * 0.9 * FW;
+    box(H, 0.012, 1.2, 0.012, seam, FX(1.35), 1.45, sz * 0.92 * FW); box(H, 1.9, 0.012, 0.012, seam, FX(0.4), 0.92, zz);            // 前门前缘、门槛线
+    box(H, 0.14, 0.025, 0.03, alu, FX(0.65), 1.35, sz * 0.955 * FW); box(H, 0.14, 0.025, 0.03, alu, -0.9, 1.35, sz * 0.93 * FW);   // 前门、后滑门把手
+    box(H, 1.4, 0.03, 0.03, alu, -1.2, 2.25, sz * 0.8 * FW); box(H, 1.2, 0.025, 0.025, alu, -1.0, 0.9, sz * 0.95 * FW);             // 后滑门上下导轨
+    box(H, 0.28, 0.02, 0.2, std(0x6e737a, 0.5, 0.6), FX(0.55), 0.62, sz * 1.02); }                                                    // 登机踏板（横管上）
+  cyl(H, 0.05, 0.05, 0.02, alu, -1.45, 1.1, 0.9 * FW, 10).rotation.x = Math.PI / 2;     // 右侧加油口
+  // ---- 机头：空速管、外界温度探头、上下剪线器、着陆灯与滑行灯 ----
+  for (const sz of [-1, 1]) { rod(H, V(FX(2.3), 1.55, sz * 0.25), V(FX(2.3) + 0.2, 1.57, sz * 0.25), 0.012, alu, 6); cyl(H, 0.02, 0.02, 0.05, alu, FX(2.3) + 0.22, 1.57, sz * 0.25, 6).rotation.z = Math.PI / 2; }   // 空速管收在机头尖以内（机身长 10.93 m 不变）
+  { const wc = new THREE.Shape(); wc.moveTo(0, 0); wc.lineTo(0.34, 0.02); wc.lineTo(0.38, 0.14); wc.lineTo(0.05, 0.05); wc.closePath(); const g = new THREE.ExtrudeGeometry(wc, { depth: 0.02, bevelEnabled: false }); g.translate(0, 0, -0.01);
+    const up = new THREE.Mesh(g, steel); up.position.set(FX(1.45), 2.55, 0); up.rotation.z = -0.25; H.add(up);                                   // 上剪线器（风挡上方）
+    const lo = new THREE.Mesh(g, steel); lo.position.set(FX(0.9), 0.62, 0); lo.scale.set(1, -1, 1); H.add(lo); }          // 下剪线器（机腹）
+  { const ll = cyl(H, 0.09, 0.09, 0.04, emi(0xfff6d8, 1.2), FX(1.6), 0.72, 0.25, 16); ll.rotation.z = 0.5; cyl(H, 0.1, 0.1, 0.03, alu, FX(1.6) - 0.02, 0.715, 0.25, 16).rotation.z = 0.5;
+    const tl = cyl(H, 0.06, 0.06, 0.04, emi(0xfff6d8, 1.0), FX(1.6), 0.72, -0.25, 12); tl.rotation.z = 0.5; }
+  cyl(H, 0.03, 0.03, 0.06, emi(0xffffff, 2), FX(0.2), 2.66, 0, 8);                      // 顶部白色频闪灯
+  // ---- 天线：顶部 GPS 圆罩、腹部 VHF 刀形天线、尾梁 ELT 天线 ----
+  { const d = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 6, 0, TAU, 0, Math.PI / 2), white); d.scale.set(1.2, 0.5, 1); d.position.set(-1.25, 2.93, 0); H.add(d); }
+  { const bl = new THREE.Shape(); bl.moveTo(0, 0); bl.lineTo(0.22, 0); bl.lineTo(0.05, -0.28); bl.lineTo(-0.02, -0.28); bl.closePath(); const g = new THREE.ExtrudeGeometry(bl, { depth: 0.015, bevelEnabled: false }); g.translate(0, 0, -0.0075);
+    const m = new THREE.Mesh(g, dark); m.position.set(-0.9, 0.72, 0); H.add(m); const m2 = new THREE.Mesh(g, dark); m2.position.set(-3.3, 1.92, 0); m2.scale.set(0.7, 0.7, 1); H.add(m2); }
+  rod(H, V(-4.2, 2.1, 0), V(-4.25, 2.45, 0), 0.008, dark, 4);                             // ELT 鞭状天线
+  // ---- 尾部：尾传动轴整流罩与轴承座、尾桨减速箱、尾桨毂与变距拉杆、尾撬护板 ----
+  box(H, 4.6, 0.07, 0.12, white, -4.9, 2.19, 0); for (let i = 0; i < 6; i++) box(H, 0.06, 0.09, 0.14, seam, -2.95 - i * 0.78, 2.2, 0);
+  box(H, 0.3, 0.26, 0.24, white, -7.1, 2.2, 0.06); box(H, 0.02, 0.2, 0.2, seam, -6.96, 2.2, 0.06);
+  cyl(trotor, 0.035, 0.035, 0.16, steel, 0, 0, 0.05, 8).rotation.x = Math.PI / 2; for (let k = 0; k < 2; k++) { const bp = new THREE.Group(); bp.rotation.z = k * Math.PI; trotor.add(bp); box(bp, 0.04, 0.12, 0.04, steel, 0.05, 0.08, 0.02); rod(bp, V(0.06, 0.12, 0.03), V(0.02, 0.02, 0.1), 0.008, steel, 4); }
+  rod(H, V(-7.35, 1.38, 0), V(-6.6, 1.72, 0), 0.02, steel, 6);                            // 尾撬（护住下垂尾与尾桨）
+  // ---- 注册号（尾梁两侧） ----
+  { const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d'); g.clearRect(0, 0, 512, 96); g.fillStyle = '#163a66'; g.font = 'bold 78px Arial, sans-serif'; g.textBaseline = 'middle'; g.fillText('9V-ISL', 40, 52);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; const mat = new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    for (const sz of [-1, 1]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.24), mat); m.position.set(-4.3, 2.0, sz * 0.155); if (sz < 0) m.rotation.y = Math.PI; H.add(m); } }
+  // ---- 驾驶舱：玻璃座舱显示屏、遮光罩、中央操纵台、总距杆、脚蹬、后排座椅、头枕、安全带、顶部板、地板 ----
+  box(H, 0.25, 0.04, 1.35, dark, FX(1.72), 1.44, 0);                                    // 遮光罩
+  for (const [z, c] of [[-0.3, 0x3a8fd0], [0.05, 0x46b36a], [0.36, 0x3a8fd0]]) { const sc = box(H, 0.02, 0.17, 0.24, emi(c, 0.9), FX(1.62) + 0.01, 1.3, z); sc.rotation.z = 0.3; }
+  box(H, 0.55, 0.42, 0.22, dark, FX(1.25), 1.05, 0); for (let i = 0; i < 4; i++) box(H, 0.02, 0.05, 0.16, emi(i % 2 ? 0x55ff88 : 0xffb030, 0.7), FX(1.25) + 0.28, 1.0 + i * 0.07, 0);   // 中央操纵台（无线电、应答机）
+  for (const sz of [-1, 1]) { rod(H, V(FX(0.75), 0.82, sz * 0.62), V(FX(1.15), 0.98, sz * 0.62), 0.02, dark, 6);                    // 总距杆
+    for (const dz of [-0.1, 0.1]) box(H, 0.06, 0.12, 0.08, dark, FX(1.95), 0.85, sz * 0.4 + dz);                                      // 脚蹬
+    box(H, 0.06, 0.16, 0.36, seat, FX(0.6), 1.72, sz * 0.4); box(H, 0.03, 0.55, 0.05, belt, FX(0.66), 1.35, sz * 0.4 + 0.1); }     // 前排头枕、肩带
+  box(H, 0.55, 0.12, 1.5, seat, -0.95, 0.95, 0); box(H, 0.12, 0.62, 1.5, seat, -1.25, 1.3, 0);                                        // 后排长椅（三座）
+  for (const z of [-0.5, 0, 0.5]) { box(H, 0.07, 0.15, 0.34, seat, -1.28, 1.73, z); box(H, 0.02, 0.5, 0.05, belt, -1.18, 1.35, z + 0.12); }
+  box(H, 0.34, 0.04, 0.3, dark, FX(0.75), 2.5, 0); for (let i = 0; i < 12; i++) box(H, 0.015, 0.015, 0.015, emi(0xffffff, 0.3), FX(0.75) - 0.13 + (i % 6) * 0.05, 2.475, i < 6 ? -0.07 : 0.07);   // 顶部电门板
+  box(H, 3.0, 0.02, 1.6, std(0x2e3134, 0.9), 0.1, 0.8, 0);                              // 座舱地板
+}
 // ---------------- Tesla Cybertruck（1:1：长 5.683 宽 2.027 高 1.791 m，轴距 3.665 m，35 英寸轮胎） ----------------
 function buildCybertruck() {
   const C = new THREE.Group(), body = new THREE.Group(); C.add(body);
