@@ -1,6 +1,6 @@
 # 物理/载具基线断言：运行现有的 5 个浏览器测试，解析输出并对照基线数值（HANDOVER“当前测试基线”）
 # 这些脚本本身只打印数据，本文件负责判定通过/失败。
-# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli]
+# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm]
 import os, sys, ast, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +51,13 @@ CHECKS = {
         ('拖拉机 4 秒行驶 ≥ 5 m', lambda r: r['tractor']['moved'], lambda v: isinstance(v, (int, float)) and v >= 5),
     ],
     'boat': [
-        ('按 E 登船后在船上', lambda r: r['boarded']['onBoat'], lambda v: v is True),
+        ('不按 F 从浮台走不上船（被挡在船体轮廓外）', lambda r: (r['wallIn']['onBoat'], r['wallIn']['lx']), lambda v: v[0] is False and v[1] < -27.6),
+        ('浮台上提示并按 F 登船后在船上', lambda r: (r['boardPrompt'], r['boarded']['onBoat']), lambda v: '按 F 登上游艇' in v[0] and v[1] is True),
+        ('按 F 登船落在主甲板一楼舱门口（局部 -19.8, 0，脚底 2.26），正对沙龙电视', lambda r: (r['boarded']['lx'], r['boarded']['lz'], r['boarded']['feet'], r['boardFaceTV']), lambda v: near(v[0], -19.8, 0.15) and near(v[1], 0, 0.15) and near(v[2], 2.26, 0.05) and v[3] > 0.99),
+        ('船上不按 F 走不下船', lambda r: (r['wallOut']['onBoat'], r['wallOut']['lx']), lambda v: v[0] is True and v[1] > -27.8),
+        ('靠泊时船边按 F 离船落到登岸浮台', lambda r: (r['leavePrompt'], r['leftToDock']['onBoat'], r['leftToDock']['feet'], r['leftToDock']['lx']), lambda v: '按 F 离开游艇' in v[0] and v[1] is False and v[2] > 0.2 and v[3] < -27.7),
+        ('再按 F 重新登船', lambda r: r['reboard']['onBoat'], lambda v: v is True),
+        ('游泳平台经梯级上后甲板（2.26）', lambda r: (r['platStair']['onBoat'], r['platStair']['feet']), lambda v: v[0] is True and near(v[1], 2.26, 0.05)),
         ('走到驾驶台舵位（上层 5.16）', lambda r: r['helmSpot']['feet'], lambda v: near(v, 5.16, 0.1)),
         ('舵位可接管驾驶', lambda r: r['driving'], lambda v: v is True),
         ('出港四段零碰撞', lambda r: [r[k]['hit'] for k in ('leg1', 'leg2', 'leg3', 'leg4')], lambda v: all(h is None for h in v)),
@@ -60,6 +66,7 @@ CHECKS = {
         ('主甲板走过负一舱盖不掉下去（2.45）', lambda r: (r['hatch']['onBoat'], r['hatch']['feet']), lambda v: v[0] is True and near(v[1], 2.45, 0.05)),
         ('上甲板经楼梯上日光甲板（7.88）', lambda r: (r['sunDeck']['feet'], r['sunDeckIn']['feet']), lambda v: near(v[0], 7.88, 0.05) and near(v[1], 7.88, 0.05)),
         ('外海鸣笛召唤鲸群与鱼群', lambda r: (r['horn'], r['showNear']), lambda v: '正在游向游艇' in v[0] and v[1] == 4),
+        ('行驶中船边按 F 跳入附近海域', lambda r: (r['jumpPrompt'], r['jumped']['onBoat'], r['afterJump']['mode'], r['afterJump']['feet']), lambda v: '跳入附近海域' in v[0] and v[1] is False and v[2] == 'swim' and v[3] < 0.3),
     ],
     'cruise': [
         ('自动巡航完成', lambda r: r['done'], lambda v: v is True),
@@ -67,6 +74,22 @@ CHECKS = {
         ('用时约 10.4 分钟', lambda r: r['minutes'], lambda v: near(v, 10.4, 0.4)),
         ('回到泊位 (30, 87, π)', lambda r: (r['final']['x'], r['final']['z'], r['final']['yaw']), lambda v: near(v[0], 30, 0.5) and near(v[1], 87, 0.5) and near(v[2], 3.142, 0.05)),
         ('人仍在船上', lambda r: r['player']['onBoat'], lambda v: v is True),
+    ],
+    'dorm': [
+        ('入口雨篷两根柱都落到地面（柱底不高于柱下地面，V-021）', lambda r: r['canopyCols'], lambda v: isinstance(v, list) and len(v) == 2 and all(x <= 0.0 for x in v)),
+        ('前庭两处花池种水仙（每池至少 10 株）', lambda r: r['frontPots'], lambda v: isinstance(v, int) and v >= 20),
+        ('1 层户门关着走不进；按 E 开门后进户（脚底 15.94）', lambda r: (r['door1Prompt'], r['door1Closed']['z'], r['in1']['z'], r['in1']['feet']), lambda v: '开门进入 1 层' in v[0] and v[1] < 1.3 and v[2] > 2.5 and near(v[3], 15.94, 0.03)),
+        ('屋面楼梯间东侧梯井被墙挡住，不会掉下去（脚底保持 51.93）', lambda r: (r['roofVoid']['z'], r['roofVoid']['feet']), lambda v: v[0] > -2.85 and near(v[1], 51.93, 0.03)),
+        ('前庭经入口台阶走进 1 层大堂（脚底 15.94）', lambda r: r['lobby']['feet'], lambda v: near(v, 15.94, 0.03)),
+        ('梯厅按 E 叫电梯，门在 3 秒内打开', lambda r: (r['callPrompt'], r['doorOpenT']), lambda v: '电梯' in v[0] and v[1] < 3),
+        ('走进轿厢（轿厢地面 15.94）', lambda r: (r['inCar']['z'], r['inCar']['feet']), lambda v: v[0] < -2.2 and near(v[1], 15.94, 0.03)),
+        ('轿厢内按 E 选 12 层，60 秒内到站开门，人随轿厢到 48.93', lambda r: (r['sel'], r['rideT'], r['carTop']['at'], r['carTop']['feet']), lambda v: v[0] == 11 and v[1] < 60 and v[2] == 11 and near(v[3], 48.93, 0.05)),
+        ('出电梯到 12 层楼道', lambda r: (r['corr12']['z'], r['corr12']['feet']), lambda v: v[0] > -1.25 and near(v[1], 48.93, 0.03)),
+        ('另一部电梯不在本层：厅门关着走不进电梯井', lambda r: (r['bAt'], r['shaftB']['z']), lambda v: v[0] != 11 and v[1] > -1.3),
+        ('户门关着走不进户', lambda r: (r['doorPrompt'], r['doorClosed']['z']), lambda v: '开门进入' in v[0] and v[1] > -1.3),
+        ('按 E 开门后进户、走到客厅与主卧', lambda r: (r['inUnit']['z'], r['living']['x'], r['master']['x'], r['master']['feet']), lambda v: v[0] < -2.5 and v[1] > 9 and v[2] > 11 and near(v[3], 48.93, 0.03)),
+        ('12 层楼梯经中间平台（50.43）上到屋顶（51.93）', lambda r: (r['midLanding']['feet'], r['roofLanding']['feet'], r['roof']['feet']), lambda v: near(v[0], 50.43, 0.05) and near(v[1], 51.93, 0.03) and near(v[2], 51.93, 0.03)),
+        ('屋顶女儿墙挡住，不会走出楼外', lambda r: r['roofEdge']['z'], lambda v: isinstance(v, (int, float)) and v < 10),
     ],
     'heli': [
         ('登机', lambda r: r['inHeli'], lambda v: v is True),
