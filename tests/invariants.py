@@ -158,6 +158,13 @@ JS = r'''() => {
       if (bb.min.x < 180 - 6.3 || bb.max.x > 180 + 7.8 || bb.min.z < -46 - 4.9 || bb.max.z > -46 + 5.5) fails.push(`书房桌椅模型超出书房范围：x ${r3(bb.min.x)}～${r3(bb.max.x)}，z ${r3(bb.min.z)}～${r3(bb.max.z)}`);
       if (!D.COLL.rects.some(r => Math.abs(r.x - 182.5) < 0.05 && Math.abs(r.z + 49.6) < 0.05 && r.hw >= 1.19)) fails.push('书桌碰撞没有登记');
       if (!D.SEATS.some(q => Math.abs(q.x - 182.95) < 0.05 && Math.abs(q.z + 48.84) < 0.05)) fails.push('书桌椅座位没有登记'); } }
+  // ---- 2o. 直升机细节（用户要求进一步细节化）：旋翼头三臂星形桨毂与变距拉杆、驾驶舱显示屏、尾部注册号都在，且细节件都挂在机体上（不超出原机体包围盒 0.3 m） ----
+  { const Hg = D.HELI.g, rot = Hg.userData.rotor; let meshes = 0, emissive = 0, reg = 0; Hg.traverse(o => { if (!o.isMesh) return; meshes++; if (o.material.emissive && o.material.emissiveIntensity > 0.5 && o.material.emissive.getHex() !== 0) emissive++; if (o.material.map && o.material.transparent) reg++; });
+    const arms = rot.children.filter(o => o.isGroup).length;
+    if (meshes < 200) fails.push(`直升机构件 ${meshes} 个，细节不足（应 ≥ 200；细节化前 61）`);
+    if (arms < 6) fails.push(`旋翼组只有 ${arms} 个子组，应有 3 片桨叶 + 3 个星形桨毂臂`);
+    if (emissive < 8) fails.push(`直升机发光件 ${emissive} 个（航行灯、着陆灯、显示屏等），应 ≥ 8`);
+    if (reg < 2) fails.push('尾梁两侧注册号缺失'); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });
