@@ -2,15 +2,8 @@
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
 // 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
-function ecoHornSound() {
-  try {
-    const A = ECO_SHOW.ac || (ECO_SHOW.ac = new (window.AudioContext || window.webkitAudioContext)()); if (A.state === 'suspended') A.resume();
-    const t0 = A.currentTime, g = A.createGain(), f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.08); g.gain.setValueAtTime(0.32, t0 + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.3);
-    f.connect(g); g.connect(A.destination);
-    for (const fr of [110, 138.6, 165]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t0); o.stop(t0 + 2.4); }
-  } catch (e) { /* 浏览器不支持或未允许播放声音时静默 */ }
-}
+// 游艇汽笛音色统一在 13b_horn.js
+function ecoHornSound() { hornSound('boat'); }
 function ecoToast(msg) {
   let el = document.getElementById('fptoast');
   if (!el) { el = document.createElement('div'); el.id = 'fptoast'; el.style.cssText = 'position:fixed;left:50%;top:16%;transform:translateX(-50%);padding:8px 16px;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;font-size:15px;pointer-events:none;transition:opacity .6s;z-index:30;opacity:0'; document.body.appendChild(el); }
