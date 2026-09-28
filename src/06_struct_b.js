@@ -386,8 +386,7 @@ function buildBoardwalk() {
   COLL.walks.push({ kind: 'rect', x: lx, z: lz, hw: 3.05, hd: 6.55, rot: 0, y: 0.5 });
   path(BOARDWALK.south.concat([[51.0, 118.1]]), 0.5, 2.54);   // 南端伸进警戒塔塔基 0.2 m，桥面与塔基顶面（2.6）齐平
   path(BOARDWALK.east, 0.5, 'ground');                         // 北端落到沙面上
-  // 泊位系缆桩（船首两根钢桩）与缆绳
-  for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
+  // 浮台两根系缆柱（尾缆）
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
   return B;
 }
@@ -397,7 +396,7 @@ function buildBeachSets() {
   for (const [x, z] of [[30, 26], [42, 23]]) {
     const y = gh(x, z);
     // 正对闸内海面（朝南），可看海豚来回游
-    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); }
+    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(B, x, y, z - 0.6, 1.4, 2.4, 0xeae3d2); collC(x, z - 0.6, 0.25);
   }
   return B;
@@ -412,23 +411,11 @@ function buildGolfFlags() {
   }
   return F;
 }
+// 葡萄园：只登记每行的碰撞；立柱、铁丝、葡萄藤、叶幕、果穗在 08_vegetation 的 buildVineyardPlants() 里按实例绘制
+function vineRows() { const vy = L.vineyard, out = []; for (let x = vy.x0 + 1.4; x < vy.x1 - 0.8; x += 2.6) out.push(x); return { xs: out, z0: vy.z0 + 1.8, z1: vy.z1 - 1.8 }; }
 function buildVineyard() {
-  const V = new THREE.Group(), vy = L.vineyard;
-  const vc = document.createElement('canvas'); vc.width = vc.height = 256; const g = vc.getContext('2d'); g.fillStyle = '#3c5e28'; g.fillRect(0, 0, 256, 256);
-  const R = mulberry32(333);
-  for (let i = 0; i < 420; i++) { const x = R() * 256, y = R() * 256, s = 7 + R() * 9, a = R() * TAU; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.save(); g.translate(x + dx, y + dy); g.rotate(a); g.fillStyle = `hsl(${85 + R() * 20},${40 + R() * 15}%,${30 + R() * 22}%)`; for (const d of [-0.9, 0, 0.9]) { g.save(); g.rotate(d); g.beginPath(); g.ellipse(s * 0.5, 0, s * 0.55, s * 0.28, 0, 0, TAU); g.fill(); g.restore(); } g.restore(); } }
-  for (let i = 0; i < 30; i++) { const x = R() * 256, y = R() * 256; g.fillStyle = 'rgba(70,40,70,0.85)'; for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(x + (k % 3) * 4, y + Math.floor(k / 3) * 4 + (k % 3), 2.4, 0, TAU); g.fill(); } }
-  const vt = new THREE.CanvasTexture(vc); vt.colorSpace = THREE.SRGBColorSpace; vt.wrapS = vt.wrapT = THREE.RepeatWrapping; vt.repeat.set(5, 1); vt.anisotropy = 8;
-  const mat = std(0xffffff, 0.85, 0, { map: vt }), matL = std(0xdfe8cf, 0.85, 0, { map: vt });
-  for (let x = vy.x0 + 1.4, i = 0; x < vy.x1 - 0.8; x += 2.6, i++) {
-    const z0 = vy.z0 + 1.8, z1 = vy.z1 - 1.8, n = 8;
-    collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1);
-    for (let s = 0; s < n; s++) {
-      const za = lerp(z0, z1, s / n), zb = lerp(z0, z1, (s + 1) / n), zm = (za + zb) / 2, y = gh(x, zm);
-      box(V, 0.75 + 0.1 * Math.sin(s * 3 + i), 1.25, zb - za - 0.15, (s + i) % 3 ? mat : matL, x, y + 0.95, zm);
-      box(V, 0.08, 1.6, 0.08, M.woodDark, x, y + 0.8, za + 0.1);
-    }
-  }
+  const V = new THREE.Group(), { xs, z0, z1 } = vineRows();
+  for (const x of xs) { collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1); }
   return V;
 }
 function buildDuckArea() {

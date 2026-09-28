@@ -65,7 +65,7 @@ function setupFP(ctx) {
   // ---- 碰撞数据：固定实体 + 各构件登记 ----
   const rects = COLL.rects.slice(), circles = COLL.circles, segs = COLL.segs;
   const R_ = (x, z, hw, hd, rot = 0, top = 1e9, bottom = -1e9) => rects.push({ x, z, hw, hd, rot, top, bottom });
-  R_(L.dorm.x, L.dorm.z, 15.5, 10.5);
+  // 住宅楼改为可进出：外墙、隔墙、户门、电梯在 06c_dorm.js 里逐段登记碰撞，不再整体当作实心矩形
   R_(L.barn.x, L.barn.z, 13.3, 6.3);
   const gh0 = L.greenhouses; for (let i = 0; i < gh0.n; i++) R_(gh0.x0 + i * (gh0.w + gh0.gap) + gh0.w / 2, gh0.z0 + gh0.len / 2, gh0.w / 2 + 0.2, gh0.len / 2 + 0.2);
   for (const pen of [L.pig, L.chicken]) R_(pen.x, pen.z, pen.w / 2 + 0.1, pen.d / 2 + 0.1);
@@ -118,6 +118,8 @@ function setupFP(ctx) {
     // 陆地漫游边界；在船上时不限制（游艇巡航会驶出该范围，否则人在船上寸步难行）
     if (!st.onBoat && (x1 < -372 || x1 > 372 || z1 < -222 || z1 > 222)) return false;
     if (st.onBoat) for (const o of DYN.segs) if (inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
+    // 游艇船体空气墙：船上船下都不能直接跨过船体轮廓（只能按 F 登船、离船）
+    for (const o of DYN.hull || []) if (cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     for (const o of near(x1, z1)) if (o.t === 's' && inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     const f = floorAt(x1, z1, feet), d = Math.hypot(x1 - x0, z1 - z0) + 1e-6;
     const w = waterAt(x1, z1);
@@ -221,7 +223,7 @@ function setupFP(ctx) {
   const tend = (e) => { for (const t of e.changedTouches) { if (st.touchMove && t.identifier === st.touchMove.id) st.touchMove = null; if (st.touchLook && t.identifier === st.touchLook.id) st.touchLook = null; } };
   cvs.addEventListener('touchend', tend); cvs.addEventListener('touchcancel', tend);
   // ---- 座位：坐下 / 躺下 ----
-  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? 0.9 : -0.05; st.keys.clear(); }
+  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? (seat.recline ? -0.2 : 0.9) : -0.05; st.keys.clear(); }
   function standUp() { if (!st.seat) return; const sv = st.seat, s0 = sv.boat ? { x: sv.x - Math.sin(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), z: sv.z - Math.cos(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), feet: sv.y - (sv.type === 'lie' ? 0.62 : 0.45) } : st.seatStand; if (sv.boat) st.onBoat = true; st.seat = null; st.pos.x = s0.x; st.pos.z = s0.z; st.feet = s0.feet; st.vy = 0; st.grounded = true; st.pitch = -0.1; }
   for (const seat of SEATS) INTERACT.push({ x: seat.x, z: seat.z, r: seat.type === 'lie' ? 1.8 : 1.35, y: seat.y - (seat.type === 'lie' ? 0.45 : 0.5), label: seat.type === 'lie' ? '躺下休息' : '坐下', fn: () => sitDown(seat) });
   // ---- 传送、交互、小地图 ----
@@ -248,10 +250,11 @@ function setupFP(ctx) {
   function findInteract() {
     act = null; let best = 1e9;
     for (const it of (DYN.interact.length ? INTERACT.concat(DYN.interact) : INTERACT)) { const d = Math.hypot(st.pos.x - it.x, st.pos.z - it.z); const fy = it.y !== undefined ? it.y : gh(it.x, it.z); if (d < it.r && d < best && Math.abs(st.feet - fy) < 1.8) { best = d; act = it; } }
-    prompt.textContent = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : ''; prompt.style.opacity = act ? 1 : 0;
+    const fa = boatFAction(st), pe = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : '', pf = fa ? '按 F ' + fa.label : '';
+    prompt.textContent = pe && pf ? pe + '　' + pf : pe || pf; prompt.style.opacity = act || fa ? 1 : 0;
   }
   window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyH') hornSound('heli'); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
-  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyH') { hornSound(DRIVE.active.sp && DRIVE.active.sp.horn || 'car'); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
+  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyF' && DRIVE.active === BOAT) { const fa = boatFAction(st); if (fa) fa.fn(); return; } if (e.code === 'KeyH') { hornSound(DRIVE.active.sp && DRIVE.active.sp.horn || 'car'); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyF') { const fa = boatFAction(st); if (fa) { fa.fn(); return; } } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
   st.mapR = 150;
   const mm = document.getElementById('minimap'), mctx = mm.getContext('2d');
   let mapBase = null, lastMap = 0;
@@ -283,7 +286,15 @@ function setupFP(ctx) {
     if (st.seat) {                                              // 坐/躺：固定身体，只转动视线
       const sv = st.seat, f = new THREE.Vector3(-Math.sin(sv.yaw), 0, -Math.cos(sv.yaw)), u = person.userData;
       person.rotation.order = 'YXZ'; person.rotation.y = sv.yaw + Math.PI;
-      if (sv.type === 'lie') {
+      if (sv.type === 'lie' && sv.recline) {
+        // 躺椅：半躺。上身顺着靠背（与水平面成 recline 角）向头端仰靠，大腿平放在座垫上、小腿伸直，头枕在头枕上；
+        // 髋关节（人物模型 y 0.9）落在座面（座位高 sv.y）以上 0.1 m、靠背铰轴略前
+        const th = Math.PI / 2 - sv.recline, hx = sv.x + f.x * 0.02, hz = sv.z + f.z * 0.02, hy = sv.y + 0.1;
+        person.rotation.x = -th; person.position.set(hx + f.x * 0.9 * Math.sin(th), hy - 0.9 * Math.cos(th), hz + f.z * 0.9 * Math.sin(th));
+        for (const k of ['legL', 'legR']) u[k].rotation.x = -(Math.PI / 2 - th); u.shinL.rotation.x = u.shinR.rotation.x = 0.08;
+        u.armL.rotation.x = u.armR.rotation.x = -0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.35;
+        person.updateMatrixWorld(true); camera.position.copy(person.localToWorld(new THREE.Vector3(0, 1.8, 0.12)));
+      } else if (sv.type === 'lie') {
         person.rotation.x = -Math.PI / 2; person.position.set(sv.x + f.x * 0.9, sv.y + 0.13, sv.z + f.z * 0.9);
         for (const k of ['legL', 'legR', 'shinL', 'shinR']) u[k].rotation.x = 0; u.armL.rotation.x = u.armR.rotation.x = 0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.2;
         camera.position.set(sv.x - f.x * 0.55, sv.y + 0.42, sv.z - f.z * 0.55);
@@ -393,5 +404,5 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _person: person, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }
