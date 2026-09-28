@@ -76,19 +76,25 @@ function leafMaterial(atlas) {
 }
 // 树冠：低面数内核（组 0）+ 外壳叶簇面片（组 1）。法线按球面外向，获得柔和体积感
 function crownCardsGeo(seed, opt) {
-  const { lobes = 2, detail = 1, flat = 0.85, cards = 16, cell = 0, cardSize = 0.95, shell = 0.78 } = opt;
-  const core = crownGeo(seed, lobes, flat, detail); core.scale(0.82, 0.82, 0.82);
-  const cp = core.attributes.position, cc = core.attributes.color;
-  const pos = Array.from(cp.array), nrm = Array.from(core.attributes.normal.array), col = Array.from(cc.array), uv = new Array(cp.count * 2).fill(0.5);
-  const idx = Array.from(core.index.array), coreCount = idx.length;
-  for (let i = 0; i < col.length; i++) col[i] = 0.4 + col[i] * 0.45;   // 内核偏暗但底部不至于死黑
+  // core = false：不要实心内核（灌木的叶片面片少，实心内核会露出一大块光滑绿包），改为内外两层叶片面片（inner 为内层面片数）
+  const { lobes = 2, detail = 1, flat = 0.85, cards = 16, cell = 0, cardSize = 0.95, shell = 0.78, core: withCore = true, inner = 0 } = opt;
+  let pos = [], nrm = [], col = [], uv = [], idx = [];
+  if (withCore) {
+    const core = crownGeo(seed, lobes, flat, detail); core.scale(0.82, 0.82, 0.82);
+    const cp = core.attributes.position, cc = core.attributes.color;
+    pos = Array.from(cp.array); nrm = Array.from(core.attributes.normal.array); col = Array.from(cc.array); uv = new Array(cp.count * 2).fill(0.5);
+    idx = Array.from(core.index.array);
+    for (let i = 0; i < col.length; i++) col[i] = 0.4 + col[i] * 0.45;   // 内核偏暗但底部不至于死黑
+  }
+  const coreCount = idx.length;
   const R = mulberry32(Math.floor(seed * 977)), [u0, v0, u1, v1] = ATLAS_UV(cell);
   const n = new THREE.Vector3(), t = new THREE.Vector3(), b = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  for (let k = 0; k < cards; k++) {
-    // 球面近似均匀分布（上半球略多）
-    const yy = 1 - 1.85 * (k + 0.5) / cards, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), ph = k * 2.39996 + R() * 0.4;
+  for (let k = 0; k < cards + inner; k++) {
+    // 球面近似均匀分布（上半球略多）；内层面片单独一轮分布，半径取外层的一半
+    const inn = k >= cards, kk = inn ? k - cards : k, nn = inn ? inner : cards;
+    const yy = 1 - 1.85 * (kk + 0.5) / nn, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), ph = kk * 2.39996 + R() * 0.4 + (inn ? 1.3 : 0);
     n.set(Math.cos(ph) * rr, clamp(yy, -0.85, 1), Math.sin(ph) * rr).normalize();
-    const c = n.clone().multiplyScalar(shell); c.y *= flat;
+    const c = n.clone().multiplyScalar(inn ? shell * 0.5 : shell); c.y *= flat;
     t.crossVectors(Math.abs(n.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : up, n).normalize(); b.crossVectors(n, t).normalize();
     const roll = R() * TAU, cr = Math.cos(roll), sr = Math.sin(roll), T = t.clone().multiplyScalar(cr).addScaledVector(b, sr), B = b.clone().multiplyScalar(cr).addScaledVector(t, -sr);
     const s = cardSize * (0.8 + R() * 0.4), base = pos.length / 3;

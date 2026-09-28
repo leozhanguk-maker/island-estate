@@ -109,6 +109,55 @@ JS = r'''() => {
     for (const pz of zs) { if (D.COLL.circles.some(c => Math.hypot(c.x - 3.5, c.z - pz) < 1.5)) fails.push(`泊位 (3.5, ${pz}) 仍有系缆钢桩碰撞体`);
       let hit = false; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || hit) return; const bb = new TH.Box3().setFromObject(o); if (bb.max.x - bb.min.x < 1.5 && bb.max.z - bb.min.z < 1.5 && bb.max.y - bb.min.y > 2 && Math.hypot((bb.min.x + bb.max.x) / 2 - 3.5, (bb.min.z + bb.max.z) / 2 - pz) < 1.5) hit = true; }));
       if (hit) fails.push(`泊位 (3.5, ${pz}) 仍有竖直钢桩构件`); } }
+  // ---- 2j. 躺椅按实物结构（V-017）：靠背向头端抬起（最高点 ≥ 0.8 m）、没有构件低于地面、头尾两端都有着地的支点（头端滚轮、脚端脚垫） ----
+  { const g = new TH.Group(); D.lounger(g, 0, 0, 0, 0); g.updateMatrixWorld(true); const bb = new TH.Box3().setFromObject(g);
+    if (bb.max.y < 0.8) fails.push(`躺椅最高点 ${r3(bb.max.y)} m，靠背没有抬起（应 ≥ 0.8）`);
+    if (bb.min.y < -0.005) fails.push(`躺椅最低点 ${r3(bb.min.y)} m，有构件插进地面`);
+    let head = 0, foot = 0; g.traverse(o => { if (!o.isMesh) return; const b = new TH.Box3().setFromObject(o), cz = (b.min.z + b.max.z) / 2; if (b.min.y < 0.01) { if (cz < -0.5) head++; else if (cz > 0.5) foot++; } });
+    if (head < 2 || foot < 2) fails.push(`躺椅着地支点：头端 ${head} 个、脚端 ${foot} 个，两端都应至少 2 个（不能悬空）`);
+    // 躺上去的姿势贴合靠背：上身与水平面夹角 = 靠背角、大腿水平、髋在座面上方约 0.1 m、头在座面上方 0.35～0.8 m
+    const recl = D.SEATS.filter(q => q.recline), fp = __fp, st = fp._st, on0 = st.on;
+    if (recl.length !== 6) fails.push(`带靠背角的躺椅座位 ${recl.length} 个，应为泳池 2 + 沙滩 4`);
+    for (const sv of recl.slice(0, 2)) { st.on = true; fp.sitDown(sv); fp.update(1 / 60); const P = fp._person, u = P.userData; P.updateMatrixWorld(true);
+      const up = new TH.Vector3(0, 1, 0).transformDirection(P.matrixWorld), th = new TH.Vector3(0, -1, 0).transformDirection(u.legL.matrixWorld);
+      const hip = new TH.Vector3().setFromMatrixPosition(u.legL.matrixWorld), hd = new TH.Vector3().setFromMatrixPosition(u.head.matrixWorld);
+      const a = Math.asin(up.y), bad = [];
+      if (Math.abs(a - sv.recline) > 0.06) bad.push(`上身仰角 ${r3(a)}（靠背 ${sv.recline}）`);
+      if (Math.abs(th.y) > 0.1) bad.push(`大腿不水平（方向 y ${r3(th.y)}）`);
+      if (Math.abs(hip.y - sv.y - 0.1) > 0.05) bad.push(`髋高 ${r3(hip.y - sv.y)}`);
+      if (!(hd.y - sv.y > 0.35 && hd.y - sv.y < 0.8)) bad.push(`头高 ${r3(hd.y - sv.y)}`);
+      if (bad.length) fails.push(`躺椅 (${r3(sv.x)}, ${r3(sv.z)}) 躺姿不贴合靠背：${bad.join('、')}`);
+      fp.standUp(); }
+    st.on = on0; }
+  // ---- 2k. 别墅三部楼梯两端都离正对的墙 ≥ 2 m（V-019）：起步处离地 1 m 沿楼梯反方向、到顶处离上层楼面 1 m 沿楼梯方向水平看，2 m 内不碰到墙或其他构件 ----
+  { const ramps = D.COLL.walks.filter(w => w.kind === 'ramp' && Math.abs((w.x0 + w.x1) / 2 - 180) < 12 && Math.abs((w.z0 + w.z1) / 2 + 46) < 8);
+    __statics.groups.forEach(g => g.updateMatrixWorld(true));
+    if (ramps.length !== 3) fails.push(`别墅楼梯坡面应为 3 跑，实际 ${ramps.length}`);
+    for (const w of ramps) { const dx = w.x0 - w.x1, dz = w.z0 - w.z1, l = Math.hypot(dx, dz), o = new TH.Vector3(w.x0 + dx / l * 0.05, w.y0 + 1.0, w.z0 + dz / l * 0.05);
+      const h = new TH.Raycaster(o, new TH.Vector3(dx / l, 0, dz / l), 0, 5).intersectObjects(__statics.groups, true)[0];
+      if (h && h.distance < 2.0) fails.push(`别墅楼梯（起步 ${r3(w.x0)}, ${r3(w.z0)}，高 ${r3(w.y0)}）起步前只有 ${r3(h.distance)} m 就碰到构件，应 ≥ 2 m`);
+      const o2 = new TH.Vector3(w.x1 - dx / l * 0.05, w.y1 + 1.0, w.z1 - dz / l * 0.05), h2 = new TH.Raycaster(o2, new TH.Vector3(-dx / l, 0, -dz / l), 0, 5).intersectObjects(__statics.groups, true)[0];
+      if (h2 && h2.distance < 2.0) fails.push(`别墅楼梯（到顶 ${r3(w.x1)}, ${r3(w.z1)}，高 ${r3(w.y1)}）迎面只有 ${r3(h2.distance)} m 就碰到构件，应 ≥ 2 m`); } }
+  // ---- 2l. 灌木不再有实心内核（V-018：原来 8 张叶片面片围着一个光滑绿球），约三分之一的灌木换成野草莓丛 ----
+  { const v = I.veg, nS = v.shrubs - v.strawPatches; let sm = null; I.scene.traverse(o => { if (o.isInstancedMesh && o.count === nS && Array.isArray(o.material) && o.geometry.groups.length === 2) sm = o; });
+    if (!sm) fails.push(`找不到灌木实例网格（灌木 ${v.shrubs}，草莓丛 ${v.strawPatches}）`); else if (sm.geometry.groups[0].count > 0) fails.push(`灌木几何体仍有实心内核（${sm.geometry.groups[0].count / 3} 个三角形），近看是一大块绿包`);
+    const ratio = v.strawPatches / v.shrubs; if (!(ratio > 0.28 && ratio < 0.39)) fails.push(`草莓丛占灌木 ${r3(ratio)}，应约为三分之一`);
+    if (!(v.strawberries >= v.strawPatches * 4)) fails.push(`草莓 ${v.strawberries} 株 / ${v.strawPatches} 丛，每丛应至少 4 株`); }
+  // ---- 2m. 农田细节（V-023）：葡萄园为篱架式（每行立柱、四道铁丝、每株主干/单臂/叶幕、每株 3 串果穗），不再是贴图方块；苹果树冠无实心内核并挂果；香蕉有果串 ----
+  { const V = D.VINEYARD;
+    if (!V) fails.push('葡萄园没有按株绘制（VINEYARD 为空）');
+    else { if (V.vines < 500) fails.push(`葡萄 ${V.vines} 株，太少`); if (V.bunches < V.vines * 3) fails.push(`果穗 ${V.bunches} 串，应为每株 3 串`); if (V.wires !== V.rows * 40) fails.push(`铁丝段 ${V.wires}，应为每行 10 跨 × 4 道`); if (V.posts !== V.rows * 11) fails.push(`立柱 ${V.posts}，应为每行 11 根`); }
+    let boxes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh && o.material.map && o.material.map.image && o.material.map.image.width === 256 && o.material.map.repeat && o.material.map.repeat.x === 5) boxes++; }));
+    if (boxes) fails.push(`葡萄园仍有 ${boxes} 个贴图方块`);
+    let apple = null, fruit = 0; I.scene.traverse(o => { if (o.isInstancedMesh && Array.isArray(o.material) && o.count > 20 && o.count < 200 && o.geometry.groups.length === 2 && o.geometry.attributes.uv && o.geometry.groups[1].count === (20 + 8) * 6) apple = o; });
+    if (!apple) fails.push('找不到苹果树冠（外层 20 + 内层 8 张面片、无实心内核）'); }
+  // ---- 2n. 别墅书房桌椅模型（assets/mac_desk.glb）已加载：桌脚落在三层楼板（18.8）上、整套在书房内不穿墙，桌椅碰撞与椅子座位已登记 ----
+  { const K = D.DESK; if (!K || !K.loaded) fails.push('书房桌椅模型没有加载（退回了程序化书桌）');
+    else { const bb = new TH.Box3().setFromObject(K.group);
+      if (Math.abs(bb.min.y - 18.8) > 0.02) fails.push(`书房桌椅模型最低点 ${r3(bb.min.y)}，应落在三层楼板 18.8 上`);
+      if (bb.min.x < 180 - 6.3 || bb.max.x > 180 + 7.8 || bb.min.z < -46 - 4.9 || bb.max.z > -46 + 5.5) fails.push(`书房桌椅模型超出书房范围：x ${r3(bb.min.x)}～${r3(bb.max.x)}，z ${r3(bb.min.z)}～${r3(bb.max.z)}`);
+      if (!D.COLL.rects.some(r => Math.abs(r.x - 182.5) < 0.05 && Math.abs(r.z + 49.6) < 0.05 && r.hw >= 1.19)) fails.push('书桌碰撞没有登记');
+      if (!D.SEATS.some(q => Math.abs(q.x - 182.95) < 0.05 && Math.abs(q.z + 48.84) < 0.05)) fails.push('书桌椅座位没有登记'); } }
   // ---- 2o. 直升机细节（用户要求进一步细节化）：旋翼头三臂星形桨毂与变距拉杆、驾驶舱显示屏、尾部注册号都在，且细节件都挂在机体上（不超出原机体包围盒 0.3 m） ----
   { const Hg = D.HELI.g, rot = Hg.userData.rotor; let meshes = 0, emissive = 0, reg = 0; Hg.traverse(o => { if (!o.isMesh) return; meshes++; if (o.material.emissive && o.material.emissiveIntensity > 0.5 && o.material.emissive.getHex() !== 0) emissive++; if (o.material.map && o.material.transparent) reg++; });
     const arms = rot.children.filter(o => o.isGroup).length;

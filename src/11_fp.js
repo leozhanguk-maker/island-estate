@@ -223,7 +223,7 @@ function setupFP(ctx) {
   const tend = (e) => { for (const t of e.changedTouches) { if (st.touchMove && t.identifier === st.touchMove.id) st.touchMove = null; if (st.touchLook && t.identifier === st.touchLook.id) st.touchLook = null; } };
   cvs.addEventListener('touchend', tend); cvs.addEventListener('touchcancel', tend);
   // ---- 座位：坐下 / 躺下 ----
-  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? 0.9 : -0.05; st.keys.clear(); }
+  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? (seat.recline ? -0.2 : 0.9) : -0.05; st.keys.clear(); }
   function standUp() { if (!st.seat) return; const sv = st.seat, s0 = sv.boat ? { x: sv.x - Math.sin(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), z: sv.z - Math.cos(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), feet: sv.y - (sv.type === 'lie' ? 0.62 : 0.45) } : st.seatStand; if (sv.boat) st.onBoat = true; st.seat = null; st.pos.x = s0.x; st.pos.z = s0.z; st.feet = s0.feet; st.vy = 0; st.grounded = true; st.pitch = -0.1; }
   for (const seat of SEATS) INTERACT.push({ x: seat.x, z: seat.z, r: seat.type === 'lie' ? 1.8 : 1.35, y: seat.y - (seat.type === 'lie' ? 0.45 : 0.5), label: seat.type === 'lie' ? '躺下休息' : '坐下', fn: () => sitDown(seat) });
   // ---- 传送、交互、小地图 ----
@@ -286,7 +286,15 @@ function setupFP(ctx) {
     if (st.seat) {                                              // 坐/躺：固定身体，只转动视线
       const sv = st.seat, f = new THREE.Vector3(-Math.sin(sv.yaw), 0, -Math.cos(sv.yaw)), u = person.userData;
       person.rotation.order = 'YXZ'; person.rotation.y = sv.yaw + Math.PI;
-      if (sv.type === 'lie') {
+      if (sv.type === 'lie' && sv.recline) {
+        // 躺椅：半躺。上身顺着靠背（与水平面成 recline 角）向头端仰靠，大腿平放在座垫上、小腿伸直，头枕在头枕上；
+        // 髋关节（人物模型 y 0.9）落在座面（座位高 sv.y）以上 0.1 m、靠背铰轴略前
+        const th = Math.PI / 2 - sv.recline, hx = sv.x + f.x * 0.02, hz = sv.z + f.z * 0.02, hy = sv.y + 0.1;
+        person.rotation.x = -th; person.position.set(hx + f.x * 0.9 * Math.sin(th), hy - 0.9 * Math.cos(th), hz + f.z * 0.9 * Math.sin(th));
+        for (const k of ['legL', 'legR']) u[k].rotation.x = -(Math.PI / 2 - th); u.shinL.rotation.x = u.shinR.rotation.x = 0.08;
+        u.armL.rotation.x = u.armR.rotation.x = -0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.35;
+        person.updateMatrixWorld(true); camera.position.copy(person.localToWorld(new THREE.Vector3(0, 1.8, 0.12)));
+      } else if (sv.type === 'lie') {
         person.rotation.x = -Math.PI / 2; person.position.set(sv.x + f.x * 0.9, sv.y + 0.13, sv.z + f.z * 0.9);
         for (const k of ['legL', 'legR', 'shinL', 'shinR']) u[k].rotation.x = 0; u.armL.rotation.x = u.armR.rotation.x = 0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.2;
         camera.position.set(sv.x - f.x * 0.55, sv.y + 0.42, sv.z - f.z * 0.55);
@@ -396,5 +404,5 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _person: person, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }
