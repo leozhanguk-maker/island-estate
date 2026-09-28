@@ -6,6 +6,7 @@
 #   P-014 植被随机数按位置独立：把一小块林地挖成海，只有附近的树和灌木变化，12 m 以外的撒点完全不变
 #   载具喇叭：驾驶汽车、拖拉机、直升机、游艇时按 H 各自鸣笛（音色不同），ESC 暂停面板列出 H 键
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
+#   V-024 海面：外海岩岸边满是碎片状白色漂浮物（崖岸泡沫图案硬阈值切出孤立小白块）：固定时刻截图统计孤立白色小碎块
 #   V-022 海面：外海满海面白色碎片（泡沫毯在无泡沫处仍出白斑）、登岸浮台旁水面网格贴着岩石翻折显示成一整片青绿色背面：固定时刻截图按像素统计
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
@@ -135,6 +136,21 @@ def main():
     b = np.asarray(Image.open(os.path.join(out, 'v022_浮台.png')).convert('RGB')).astype(int); teal = ((b[..., 1] - b[..., 0] > 45) & (b[..., 2] - b[..., 0] > 45) & (b[..., 1] > 150)).mean() * 100
     ok = white < 0.5 and teal < 5
     print(f"  {'✓' if ok else '✗'} V-022 外海没有满海面白色碎片（近白像素 {white:.2f}%，< 0.5%）；登岸浮台旁没有翻折的青绿色水面背面（{teal:.2f}%，< 5%）")
+    failed += 0 if ok else 1
+    # V-024：固定海面时刻 23 秒，南岸崖脚俯看、近景两个机位下部海面里“孤立白色小碎块”像素（近白且 7×7 邻域近白比例 < 35%）须 < 0.5%（修复前 4.25%、2.15%）
+    def flakes(p):
+        a = np.asarray(Image.open(p).convert('RGB')).astype(int)[200:]
+        w = (a.min(axis=2) > 200).astype(float); k = 7
+        c = np.pad(np.pad(w, k // 2).cumsum(0).cumsum(1), ((1, 0), (1, 0)))
+        m = (c[k:, k:] - c[:-k, k:] - c[k:, :-k] + c[:-k, :-k]) / (k * k)
+        return (w.astype(bool) & (m < 0.35)).mean() * 100
+    with Session('#fp,still,q=high,clean', size=(960, 540)) as s:
+        s.js("() => { const u = document.getElementById('fpui'); if (u) u.style.display = 'none'; }")
+        s.js(rj, [150, 14, 206, 152, 0, 193]); s.shot(os.path.join(out, 'v024_崖脚俯看.png'))
+        s.js(rj, [140, 6, 212, 150, 1, 190]); s.shot(os.path.join(out, 'v024_崖脚近景.png'))
+    f1, f2 = flakes(os.path.join(out, 'v024_崖脚俯看.png')), flakes(os.path.join(out, 'v024_崖脚近景.png'))
+    ok = f1 < 0.5 and f2 < 0.5
+    print(f"  {'✓' if ok else '✗'} V-024 岩岸边没有碎片状白色漂浮物（孤立白色小碎块 俯看 {f1:.2f}%、近景 {f2:.2f}%，均 < 0.5%）")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)

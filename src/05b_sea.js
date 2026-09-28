@@ -265,7 +265,7 @@ SeaState seaState(Coast c, float t) {
       float w = smoothstep(-0.1, 0.25, tau) * exp(-tau / 4.0), rf = 0.8 + 2.2 * sqrt(max(tau, 0.0)) * b.rs;
       S.foam = max(S.foam, c.cliff * w * smoothstep(rf + 0.8, rf - 0.8, r) * mix(0.7, 1.0, b.style));
       float lw = exp(-tau / 9.0) * smoothstep(0.4, 1.6, tau), rl = 1.5 + 0.45 * tau;
-      S.lace = max(S.lace, c.cliff * lw * smoothstep(rl + 3.5, rl - 1.0, r));
+      S.lace = max(S.lace, c.cliff * lw * smoothstep(rl + 3.5, rl - 1.0, r) * exp(-r / 7.0));   // 蕾丝随离崖距离衰减（原先一直漂到离崖 15 m 以外，满是白色碎点）
     }
     // ---- 沙滩：弹道上冲、涌潮、湿膜（ShoreBreak 远场模型的简化版）
     if (c.cliff < 0.99 && x > b.zI - 0.5 && x < 25.0) {
@@ -437,10 +437,20 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         // 泡沫
         vec2 vel = (c.lag > 0.5 || c.cliff < 0.5) ? -c.g * min(S.speed, 1.5) * 0.35 : c.g * 0.35;
         vec2 pat = sk_foam(vXZ, vel, fp, uTime);
+        // 崖岸泡沫（V-024）：泡沫毯用的是蜂窝状撕裂图案（一格约 0.17 m），泡沫量不高时按硬阈值切成一个个孤立小白块，
+        // 离崖 15 m 内满是像碎纸片、垃圾的白色漂浮物。崖岸处改用连续噪声：柔和的泡沫团块（x）+ 脊线噪声的细长相连泡沫纹（y），
+        // 阈值放宽，部分覆盖时是半透明的团块与纹路，泡沫量高时在崖脚连成一片；沙滩仍用原图案
+        float cl = smoothstep(0.3, 0.7, c.cliff), soft = mix(0.18, 0.3, cl);
+        if (cl > 0.0) {
+          vec2 q = vXZ + c.g * uTime * 0.15;
+          float body = 0.5 + 0.5 * (0.62 * sk_gn(q * 1.1 + uTime * vec2(0.05, -0.03)) + 0.38 * sk_gn(q * 2.9 - uTime * vec2(0.04, 0.07)));
+          float ridge = pow(1.0 - abs(sk_gn(q * 1.7 + uTime * vec2(0.03, 0.06))), 10.0) * 0.8 + pow(1.0 - abs(sk_gn(q * 3.4 - uTime * vec2(0.05, 0.02))), 12.0) * 0.4;
+          pat = mix(pat, vec2(body, ridge), cl);
+        }
         float vis = 1.0 - smoothstep(0.05, 0.4, fp);
         // 泡沫毯只出现在有泡沫量的地方：原先 S.foam = 0 时 smoothstep(0.82, 1.18, pat.x) 仍在图案较亮处给出白斑，外海与港内满海面都是白色碎片
-        float blanket = mix(S.foam, smoothstep(1.0 - S.foam - 0.18, 1.0 - S.foam + 0.18, pat.x) * smoothstep(0.0, 0.12, S.foam), vis);
-        float lace = clamp(mix(0.12, pat.y * 1.6, vis) * S.lace, 0.0, 1.0);
+        float blanket = mix(S.foam, smoothstep(1.0 - S.foam - soft, 1.0 - S.foam + soft, pat.x) * smoothstep(0.0, 0.12, S.foam), vis);
+        float lace = clamp(mix(0.12, pat.y * 1.6, vis) * S.lace * mix(1.0, 0.7, cl), 0.0, 1.0);
         float crest = S.crest * smoothstep(0.25, 0.75, 0.5 + 0.5 * sk_gn(vXZ * vec2(7.0, 11.0) + vec2(0.0, -uTime * 3.0)) + S.crest * 0.5);
         float foam = clamp(1.0 - (1.0 - blanket * 0.95) * (1.0 - lace) * (1.0 - crest), 0.0, 1.0) * smoothstep(0.5, 0.8, steepY);   // 陡面上泡沫图案会被拉长失真，淡出
         vec3 fcol = vec3(0.90, 0.93, 0.93) * (0.62 + 0.45 * max(dot(N, uSun), 0.0) * (1.0 - 0.6 * csh));
