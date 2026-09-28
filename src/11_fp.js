@@ -241,7 +241,7 @@ function setupFP(ctx) {
     });
   }
   const TP = [
-    ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
+    ['湖畔泳池', 175.3, -55.4, 0], ['别墅南门', START.x, START.z, START.yaw], ['厨房馆', L.kitchen.x + 8.5, L.kitchen.z, Math.PI / 2, 11.48], ['登岸浮台', 60, 87, Math.PI / 2], ['港口沙滩', 0, 20, Math.PI],
     ['西山机场', -228, -98, 0.9], ...towerTP(), ['山上湖泊', L.upperLake.x, L.upperLake.z + L.upperLake.b + 2.2, 0], ['农业区', -40, -8, 0], ['宿舍楼', 14.7, -132.0, Math.PI, 13.91],
   ];
   const tpBox = document.getElementById('fptp');

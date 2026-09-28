@@ -165,6 +165,15 @@ JS = r'''() => {
     if (arms < 6) fails.push(`旋翼组只有 ${arms} 个子组，应有 3 片桨叶 + 3 个星形桨毂臂`);
     if (emissive < 8) fails.push(`直升机发光件 ${emissive} 个（航行灯、着陆灯、显示屏等），应 ≥ 8`);
     if (reg < 2) fails.push('尾梁两侧注册号缺失'); }
+  // ---- 2q. 厨房馆（别墅西侧，连廊接别墅西门）：室内地面与别墅首层同高、连廊可行走面连通两栋楼、别墅西门处没有墙线段、基座内无植被 ----
+  { const K = D.KITCHEN; if (!K || !K.group) fails.push('厨房馆没有建造');
+    else { const vy = 11.35 + 0.13, at = (x, z) => D.COLL.walks.filter(w => w.kind === 'rect' && Math.abs(x - w.x) < w.hw && Math.abs(z - w.z) < w.hd).map(w => w.y);
+      for (const [n, x] of [['展示厨房', K.x + 3.5], ['后勤区', K.x - 4.5], ['连廊西端', K.x + 6.3], ['连廊东端', 168.8]]) { const ys = at(x, K.z + 0.1); if (!ys.some(y => Math.abs(y - vy) < 0.005)) fails.push(`${n}可行走面高度 ${ys.map(r3)}，应与别墅首层 ${r3(vy)} 齐平`); }
+      for (let x = K.x + 6; x <= 169.2; x += 0.25) if (!at(x, K.z).some(y => Math.abs(y - vy) < 0.005)) { fails.push(`连廊在 x=${r3(x)} 处断开`); break; }
+      const cross = (s, x0, z0, x1, z1) => { const d = (x1 - x0) * (s.bz - s.az) - (z1 - z0) * (s.bx - s.ax); if (Math.abs(d) < 1e-9) return false; const t = ((s.ax - x0) * (s.bz - s.az) - (s.az - z0) * (s.bx - s.ax)) / d, u = ((s.ax - x0) * (z1 - z0) - (s.az - z0) * (x1 - x0)) / d; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
+      if (D.COLL.segs.some(s => vy >= s.bottom && vy <= s.top && cross(s, 170, -46, 164, -46))) fails.push('别墅西门—连廊—厨房东门一线被墙线段挡住');
+      const pads = D.L.kitchen.pads, inPad = (x, z) => pads.some(([x0, z0, x1, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
+      const pots = D.POTS.filter(p => inPad(p.x, p.z)).length; if (pots) fails.push(`厨房馆基座内有 ${pots} 盆栽`); } }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

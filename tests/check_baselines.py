@@ -1,6 +1,6 @@
 # 物理/载具基线断言：运行现有的 5 个浏览器测试，解析输出并对照基线数值（HANDOVER“当前测试基线”）
 # 这些脚本本身只打印数据，本文件负责判定通过/失败。
-# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm]
+# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm kitchen]
 import os, sys, ast, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -90,6 +90,19 @@ CHECKS = {
         ('按 E 开门后进户、走到客厅与主卧', lambda r: (r['inUnit']['z'], r['living']['x'], r['master']['x'], r['master']['feet']), lambda v: v[0] < -2.5 and v[1] > 9 and v[2] > 11 and near(v[3], 48.93, 0.03)),
         ('12 层楼梯经中间平台（50.43）上到屋顶（51.93）', lambda r: (r['midLanding']['feet'], r['roofLanding']['feet'], r['roof']['feet']), lambda v: near(v[0], 50.43, 0.05) and near(v[1], 51.93, 0.03) and near(v[2], 51.93, 0.03)),
         ('屋顶女儿墙挡住，不会走出楼外', lambda r: r['roofEdge']['z'], lambda v: isinstance(v, (int, float)) and v < 10),
+    ],
+    'kitchen': [
+        ('别墅客厅经楼梯西侧过道走到西门，门槛处脚底保持首层 11.48（不掉到地面）', lambda r: (r['villaAisle']['feet'], r['villaDoor']['feet']), lambda v: near(v[0], 11.48, 0.02) and near(v[1], 11.48, 0.02)),
+        ('经连廊进展示厨房，全程与别墅首层齐平（11.48）', lambda r: (r['corridor']['feet'], r['showIn']['x'], r['showIn']['feet']), lambda v: near(v[0], 11.48, 0.02) and v[1] < 6 and near(v[2], 11.48, 0.02)),
+        ('中岛南侧经玻璃隔断推拉门进中式热厨（地面低 2 cm：11.46）', lambda r: (r['hot']['x'], r['hot']['feet']), lambda v: v[0] < 0.9 and near(v[1], 11.46, 0.015)),
+        ('热厨经隔墙门进干货储藏间', lambda r: (r['dry']['x'], r['dry']['feet']), lambda v: v[0] < -3.3 and near(v[1], 11.48, 0.02)),
+        ('冷库进不去（隔墙挡住）', lambda r: r['cold']['x'], lambda v: v > -3.0),
+        ('洗碗间经西侧后勤门进后勤院（基座 11.33）', lambda r: (r['dish']['x'], r['yard']['x'], r['yard']['feet']), lambda v: v[0] < -3.3 and v[1] < -6.3 and near(v[2], 11.33, 0.02)),
+        ('后勤院西侧出入口经石阶下到场地', lambda r: (r['yardStairs']['x'], r['yardStairs']['feet'], r['yardGround']), lambda v: v[0] < -17 and near(v[1], v[2], 0.1)),
+        ('展示厨房经南侧玻璃门到户外餐台（11.45），经南沿石阶下到高尔夫球场', lambda r: (r['deck']['z'], r['deck']['feet'], r['golf']['z'], r['golf']['feet'], r['golfGround']), lambda v: v[0] > 4.7 and near(v[1], 11.45, 0.02) and v[2] > 12 and near(v[3], v[4], 0.1)),
+        ('基座外地面上的人被挡土墙挡住，不会钻进基座', lambda r: (r['podiumOut']['x'], r['podiumOut']['feet']), lambda v: v[0] < -6.3 and v[1] < 10.5),
+        ('别墅西墙除西门外仍是实墙', lambda r: r['villaWallX'], lambda v: v > -11.0),
+        ('厨房馆座位 20 个（4 高脚凳 + 6 餐椅 + 10 户外餐椅）', lambda r: r['seats'], lambda v: v == 20),
     ],
     'heli': [
         ('登机', lambda r: r['inHeli'], lambda v: v is True),
