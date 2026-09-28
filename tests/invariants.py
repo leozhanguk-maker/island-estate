@@ -104,6 +104,11 @@ JS = r'''() => {
     if (dRoad < 4) fails.push(`西侧储能离道路边只有 ${r3(dRoad)} m，挡路`);
     const hc = Math.atan2(Lh.x - hg.x, Lh.z - hg.z), hx = (pw.x - hg.x) * Math.cos(hc) - (pw.z - hg.z) * Math.sin(hc);
     if (!(Math.abs(Math.abs(hx) - 10.5) < 1.5)) fails.push(`西侧储能离机库侧墙 ${r3(Math.abs(hx) - 10.1)} m，应紧贴机库`); }
+  // ---- 2i. 闸内泊位船首不再有两根系缆钢桩（用户要求删除，V-016）：(3.5, 游艇 z ± 6.5) 周围 1.5 m 内没有圆柱碰撞体与竖直构件 ----
+  { const zs = [D.L.yacht.z - 6.5, D.L.yacht.z + 6.5];
+    for (const pz of zs) { if (D.COLL.circles.some(c => Math.hypot(c.x - 3.5, c.z - pz) < 1.5)) fails.push(`泊位 (3.5, ${pz}) 仍有系缆钢桩碰撞体`);
+      let hit = false; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || hit) return; const bb = new TH.Box3().setFromObject(o); if (bb.max.x - bb.min.x < 1.5 && bb.max.z - bb.min.z < 1.5 && bb.max.y - bb.min.y > 2 && Math.hypot((bb.min.x + bb.max.x) / 2 - 3.5, (bb.min.z + bb.max.z) / 2 - pz) < 1.5) hit = true; }));
+      if (hit) fails.push(`泊位 (3.5, ${pz}) 仍有竖直钢桩构件`); } }
   // ---- 2j. 躺椅按实物结构（V-017）：靠背向头端抬起（最高点 ≥ 0.8 m）、没有构件低于地面、头尾两端都有着地的支点（头端滚轮、脚端脚垫） ----
   { const g = new TH.Group(); D.lounger(g, 0, 0, 0, 0); g.updateMatrixWorld(true); const bb = new TH.Box3().setFromObject(g);
     if (bb.max.y < 0.8) fails.push(`躺椅最高点 ${r3(bb.max.y)} m，靠背没有抬起（应 ≥ 0.8）`);
