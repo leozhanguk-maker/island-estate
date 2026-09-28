@@ -57,11 +57,12 @@ JS = r'''
   // ---- 别墅正门（南立面雨篷下，双开外开门，门洞 x 180.2～182.9）：从雨篷下笔直走进首层大堂，门洞两侧与门内不被操作台挡住 ----
   out.v_entry = []; for (const x of [180.6, 181.55, 182.5]) { setp(x, -34.5); run([], 0.1); const r = walkTo(x, -42.5, 8); out.v_entry.push(+r.z.toFixed(2), r.feet); }
   // ---- 别墅：楼梯逐层上到屋顶 ----
-  setp(171.4, -39.4); run([], 0.1); out.v_gf = walkTo(171.4, -39.6);
-  out.v_1f = walkTo(171.4, -48.4); out.v_1fdoorApproach = walkTo(180, -50.5); out.v_balcony = walkTo(180, -55.2);
-  out.v_back = walkTo(180, -50.5); out.v_s2a = walkTo(176.2, -41.8); out.v_s2 = walkTo(174.8, -41.8); out.v_2f = walkTo(174.8, -50.3);
-  out.v_2fdoor = walkTo(178.5, -50.2); out.v_terrace = walkTo(178.5, -52.5); out.v_in2 = walkTo(178.5, -49.5);
-  out.v_s3a = walkTo(187.2, -41.8); out.v_s3 = walkTo(188.4, -41.8); out.v_roof = walkTo(188.4, -49.8); out.v_roofMid = walkTo(182, -46);
+  // 楼梯都在室内东侧（2026-09-29 调整）：S1 沿东墙由南向北上二层 → 楼梯厅北门到阳台 → 走廊绕到 S2 下端由南向北上三层 → 书房西北角北门到露台 → S3 由北向南上屋顶
+  setp(189.8, -39.4); run([], 0.1); out.v_gf = walkTo(189.8, -39.6);
+  out.v_1f = walkTo(189.8, -48.4); out.v_1fdoorApproach = walkTo(188.1, -53.0); out.v_balcony = walkTo(188.1, -55.2);
+  out.v_back = walkTo(188.1, -52.5); walkTo(187.1, -50.0); out.v_s2a = walkTo(187.1, -41.8); out.v_s2 = walkTo(188.45, -41.8); out.v_2f = walkTo(188.45, -49.3);
+  walkTo(186.3, -48.6); walkTo(182.25, -48.6); out.v_2fdoor = walkTo(182.25, -50.2); out.v_terrace = walkTo(182.25, -52.3); out.v_in2 = walkTo(182.25, -49.0);
+  out.v_s3a = walkTo(187.25, -49.6); out.v_s3 = walkTo(187.25, -42.5); out.v_roof = walkTo(187.25, -41.0); out.v_roofMid = walkTo(182, -46);
   // ---- 塔：东峰塔沿折返楼梯登顶 ----
   { const rot = -0.38, cx = L.eastTower.x, cz = L.eastTower.z, toW = (lx, lz) => [cx + lx * Math.cos(rot) + lz * Math.sin(rot), cz - lx * Math.sin(rot) + lz * Math.cos(rot)];
     const H = 20, Lf = 2.4, n0 = Math.ceil(H / (Lf * 0.72)), n = n0 % 2 ? n0 : n0 + 1, zA = -Lf / 2, zB = Lf / 2;
@@ -94,6 +95,7 @@ JS = r'''
   setp(170.1, -39.9); run([], 0.1); out.stairPrompt = lab(); E(); out.balcony = run([], 0.2);
   out.balconyRail = run(['KeyW'], 2, 0);
   E(); out.backDown = run([], 0.2);
+  if (st.seat) fp.standUp();   // 客厅西南角现在有阅读角沙发，上面按 E 可能坐下；站起来再做后面的测试
   // 机库：从开启的门扇进入
   setp(-223.38, -132.65); run([], 0.1); out.hangarOut = run([], 0.1); out.hangarIn = run(['KeyW'], 3, -0.873); out.hangarFloorVsGround = +(st.feet - gh(st.pos.x, st.pos.z)).toFixed(2);
   // 游艇

@@ -151,13 +151,13 @@ JS = r'''() => {
     if (boxes) fails.push(`葡萄园仍有 ${boxes} 个贴图方块`);
     let apple = null, fruit = 0; I.scene.traverse(o => { if (o.isInstancedMesh && Array.isArray(o.material) && o.count > 20 && o.count < 200 && o.geometry.groups.length === 2 && o.geometry.attributes.uv && o.geometry.groups[1].count === (20 + 8) * 6) apple = o; });
     if (!apple) fails.push('找不到苹果树冠（外层 20 + 内层 8 张面片、无实心内核）'); }
-  // ---- 2n. 别墅书房桌椅模型（assets/mac_desk.glb）已加载：桌脚落在三层楼板（18.8）上、整套在书房内不穿墙，桌椅碰撞与椅子座位已登记 ----
+  // ---- 2n. 别墅书房桌椅模型（assets/mac_desk.glb）已加载：桌脚落在三层楼板（18.8）上、整套在书房内不穿墙，桌椅碰撞与椅子座位已登记（书桌在开放式书房靠北窗正中，桌心 184.0, -50.2） ----
   { const K = D.DESK; if (!K || !K.loaded) fails.push('书房桌椅模型没有加载（退回了程序化书桌）');
     else { const bb = new TH.Box3().setFromObject(K.group);
       if (Math.abs(bb.min.y - 18.8) > 0.02) fails.push(`书房桌椅模型最低点 ${r3(bb.min.y)}，应落在三层楼板 18.8 上`);
       if (bb.min.x < 180 - 6.3 || bb.max.x > 180 + 7.8 || bb.min.z < -46 - 4.9 || bb.max.z > -46 + 5.5) fails.push(`书房桌椅模型超出书房范围：x ${r3(bb.min.x)}～${r3(bb.max.x)}，z ${r3(bb.min.z)}～${r3(bb.max.z)}`);
-      if (!D.COLL.rects.some(r => Math.abs(r.x - 182.5) < 0.05 && Math.abs(r.z + 49.6) < 0.05 && r.hw >= 1.19)) fails.push('书桌碰撞没有登记');
-      if (!D.SEATS.some(q => Math.abs(q.x - 182.95) < 0.05 && Math.abs(q.z + 48.84) < 0.05)) fails.push('书桌椅座位没有登记'); } }
+      if (!D.COLL.rects.some(r => Math.abs(r.x - 184.0) < 0.05 && Math.abs(r.z + 50.2) < 0.05 && r.hw >= 1.19)) fails.push('书桌碰撞没有登记');
+      if (!D.SEATS.some(q => Math.abs(q.x - 184.45) < 0.05 && Math.abs(q.z + 49.44) < 0.05)) fails.push('书桌椅座位没有登记'); } }
   // ---- 2o. 直升机细节（用户要求进一步细节化）：旋翼头三臂星形桨毂与变距拉杆、驾驶舱显示屏、尾部注册号都在，且细节件都挂在机体上（不超出原机体包围盒 0.3 m） ----
   { const Hg = D.HELI.g, rot = Hg.userData.rotor; let meshes = 0, emissive = 0, reg = 0; Hg.traverse(o => { if (!o.isMesh) return; meshes++; if (o.material.emissive && o.material.emissiveIntensity > 0.5 && o.material.emissive.getHex() !== 0) emissive++; if (o.material.map && o.material.transparent) reg++; });
     const arms = rot.children.filter(o => o.isGroup).length;
@@ -185,6 +185,15 @@ JS = r'''() => {
       if (D.COLL.segs.some(s => vy >= s.bottom && vy <= s.top && cross(s, 170, -46, 164, -46))) fails.push('别墅西门—连廊—厨房东门一线被墙线段挡住');
       const pads = D.L.kitchen.pads, inPad = (x, z) => pads.some(([x0, z0, x1, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
       const pots = D.POTS.filter(p => inPad(p.x, p.z)).length; if (pots) fails.push(`厨房馆基座内有 ${pots} 盆栽`); } }
+  // ---- 2r. 别墅调整（2026-09-29）：南门雨篷两根柱落到地面；三部楼梯都在室内东侧（坡面中线 x > 186）；公共卫生间与厨房馆之间是实墙（不互通） ----
+  { const TH2 = TH, cols = []; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || o.geometry.type !== 'CylinderGeometry') return; const bb = new TH2.Box3().setFromObject(o), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+      if (Math.abs(cz + 36.2) < 0.2 && (Math.abs(cx - 184.3) < 0.2 || Math.abs(cx - 179.7) < 0.2) && bb.max.y - bb.min.y > 2.5) cols.push(bb.min.y - D.gh(cx, cz)); }));
+    if (cols.length !== 2 || cols.some(d => d > 0)) fails.push(`南门雨篷柱底离地 ${cols.map(r3)}（应为 2 根、柱底不高于地面）`);
+    const ramps = D.COLL.walks.filter(w => w.kind === 'ramp' && Math.abs((w.x0 + w.x1) / 2 - 180) < 12 && Math.abs((w.z0 + w.z1) / 2 + 46) < 8);
+    if (ramps.some(w => (w.x0 + w.x1) / 2 < 186)) fails.push(`别墅楼梯应都在室内东侧：坡面中线 x = ${ramps.map(w => r3((w.x0 + w.x1) / 2))}`);
+    const K = D.KITCHEN, kz = K.z - 4.625;   // 厨房北墙外皮（卫生间背墙）
+    if (!D.COLL.segs.some(s => Math.abs(s.az - s.bz) < 1e-6 && Math.abs(s.az - (K.z - 4.5)) < 0.01 && Math.min(s.ax, s.bx) <= K.x - 4.4 && Math.max(s.ax, s.bx) >= K.x + 4.4)) fails.push('公共卫生间与厨房馆之间的北墙没有整段墙线段（不应互通）');
+    const doorsN = D.COLL.segs.filter(s => Math.abs(s.az - s.bz) < 1e-6 && Math.abs(s.az - (K.z - 9.225)) < 0.01).length; if (doorsN !== 3) fails.push(`公共卫生间北墙应为 3 段墙夹 2 扇门，实际 ${doorsN} 段`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

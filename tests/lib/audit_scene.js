@@ -116,16 +116,21 @@
       let start = null;
       for (let R = 6; R <= 40 && !start; R += 2) for (let k = 0; k < 16 && !start; k++) { const a = k / 16 * Math.PI * 2, x = s.x + Math.cos(a) * R, z = s.z + Math.sin(a) * R, g = gh(x, z); if (g < 0.3 || T.waterAt(x, z)) continue; const f = T.floorAt(x, z, g + 1.0); if (Math.abs(f - g) > 0.05 || S.insideSolid(x, z, g + 0.3)) continue; start = [x, z, g]; }
       if (!start) { unreach.push([si, '找不到室外起点']); continue; }
-      const seen = new Set(), qu = [start]; let found = null, n = 0;
+      // A* 搜索（按“已走路程 + 到座位的水平距离与高差”优先展开）：判定标准与 60000 个位置的预算不变，
+      // 只是不再先把 48 m 内的室外地面全部铺满（楼梯集中到别墅东侧后，广度搜索在铺满地面之前就用完了预算，三层座位被误报为不可达）
+      const seen = new Set(); let found = null, n = 0;
       const k3 = (x, z, f) => Math.round(x / G) + ',' + Math.round(z / G) + ',' + Math.round(f * 3);
-      seen.add(k3(...start));
-      while (qu.length && n < 60000 && !found) {
-        const [x, z, f] = qu.shift(); n++;
+      const hh = (x, z, f) => Math.hypot(x - s.x, z - s.z) + Math.abs(f - fy) * 2;
+      const heap = [], push = (e) => { heap.push(e); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= e[0]) break; heap[i] = heap[p]; i = p; } heap[i] = e; };
+      const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { let i = 0; for (;;) { const l = 2 * i + 1, r2i = l + 1; let m = i; if (l < heap.length && heap[l][0] < (m === i ? last[0] : heap[m][0])) m = l; if (r2i < heap.length && heap[r2i][0] < (m === i ? last[0] : heap[m][0])) m = r2i; if (m === i) break; heap[i] = heap[m]; i = m; } heap[i] = last; } return top; };
+      seen.add(k3(...start)); push([hh(...start), 0, ...start]);
+      while (heap.length && n < 60000 && !found) {
+        const [, g0, x, z, f] = pop(); n++;
         if (Math.hypot(x - s.x, z - s.z) < r * 0.9 && Math.abs(f - fy) < 1.7) { found = [x, z, f]; break; }
         for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, nx = x + Math.cos(a) * G, nz = z + Math.sin(a) * G;
           if (Math.hypot(nx - s.x, nz - s.z) > 48) continue;
           if (!T.canStep(x, z, nx, nz, f, false) || S.insideSolid(nx, nz, f + 0.3)) continue;
-          const nf = T.floorAt(nx, nz, f); const kk = k3(nx, nz, nf); if (seen.has(kk)) continue; seen.add(kk); qu.push([nx, nz, nf]); }
+          const nf = T.floorAt(nx, nz, f); const kk = k3(nx, nz, nf); if (seen.has(kk)) continue; seen.add(kk); push([g0 + G + hh(nx, nz, nf), g0 + G, nx, nz, nf]); }
       }
       if (!found) add('座位不可达', { x: r2(s.x), z: r2(s.z), y: r2(s.y), msg: `${s.type === 'lie' ? '躺椅/床' : '座位'}（朝向 ${Math.round(s.yaw * 57.3)}°）从室外步行搜索 ${n} 个位置仍无法进入交互范围`, from: [r2(start[0]), r2(start[1]), r2(start[2])] });
     }

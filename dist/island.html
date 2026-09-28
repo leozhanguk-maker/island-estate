@@ -242,7 +242,7 @@ const L = {
   upperLake: { x: 215, z: -82, a: 7.5, b: 5, level: 49.4 },
   villa: { x: 180, z: -46 },
   // 厨房馆：别墅西侧，经 3.75 m 连廊接别墅西门；pads 为一体化基座范围（东缘铺到别墅首层楼板边） [x0, z0, x1, z1]（馆体+连廊+南侧木平台、西侧后勤院），避开高尔夫 4 号洞果岭与 5 号洞发球台
-  kitchen: { x: 159, z: -46, pads: [[152.5, -51, 168.7, -37.5], [145, -47.5, 152.5, -41.5]] },
+  kitchen: { x: 159, z: -46, pads: [[152.5, -51, 168.7, -37.5], [145, -47.5, 152.5, -41.5], [153.5, -58, 167, -51]] },   // 第 3 块：北侧公共卫生间及门前小路
   duck: { x: 176, z: -95.5 },
   parking: { x: 216, z: 21 },
   // 山顶设施
@@ -1390,7 +1390,7 @@ const L = {
   upperLake: { x: 215, z: -82, a: 7.5, b: 5, level: 49.4 },
   villa: { x: 180, z: -46 },
   // 厨房馆：别墅西侧，经 3.75 m 连廊接别墅西门；pads 为一体化基座范围（东缘铺到别墅首层楼板边） [x0, z0, x1, z1]（馆体+连廊+南侧木平台、西侧后勤院），避开高尔夫 4 号洞果岭与 5 号洞发球台
-  kitchen: { x: 159, z: -46, pads: [[152.5, -51, 168.7, -37.5], [145, -47.5, 152.5, -41.5]] },
+  kitchen: { x: 159, z: -46, pads: [[152.5, -51, 168.7, -37.5], [145, -47.5, 152.5, -41.5], [153.5, -58, 167, -51]] },   // 第 3 块：北侧公共卫生间及门前小路
   duck: { x: 176, z: -95.5 },
   parking: { x: 216, z: 21 },
   // 山顶设施
@@ -3503,26 +3503,6 @@ function buildVilla() {
   box(V, 0.04, 2.7, 1.9, M.glassClear, -10.84, 1.5, 2.0); for (const z of [1.05, 2.95]) box(V, 0.07, 2.74, 0.05, M.metalDark, -10.84, 1.5, z);   // 推拉门扇（开启，收在门洞南侧落地窗内侧）
   // 南立面木格栅（外侧）
   for (let i = 0; i < 26; i++) box(V, 0.07, 3.2, 0.12, M.wood, 3.4 + i * 0.26, 1.7, 7.22);
-  // 室内：客厅（北侧面湖）——精细沙发、茶几、落地灯、地毯；座位可坐
-  box(V, 5.2, 0.02, 3.6, M.rug, -4.5, 0.14, -3.0);
-  sofaF(V, -4.5, 0.13, -1.35, Math.PI, 3.0); sofaF(V, -6.85, 0.13, -3.3, Math.PI / 2, 2.0, 0x8f949a, [0x6f7f8a, 0xc9b89a]);
-  tableF(V, -4.5, 0.13, -3.3, 0, 1.2, 0.7, 0.4, M.woodDark, M.metalDark); box(V, 0.3, 0.05, 0.2, M.stone, -4.7, 0.55, -3.3); cyl(V, 0.08, 0.06, 0.18, M.white, -4.2, 0.62, -3.35, 12);
-  lampF(V, -7.3, 0.13, -5.0);
-  // 餐区：实木餐桌 + 6 把餐椅
-  tableF(V, 3.2, 0.13, -3.2, 0, 2.4, 1.0, 0.76, M.woodDark, M.woodDark);
-  for (const x of [2.4, 3.2, 4.0]) { chair(V, x, 0.1, -3.95, 0); chair(V, x, 0.1, -2.45, Math.PI); }
-  cyl(V, 0.12, 0.08, 0.14, std(0xe8e2d6, 0.4), 3.2, 0.96, -3.2, 14);
-  // 厨房：岛台（石材台面、嵌入水槽、龙头）、吧凳、橱柜（门缝把手）、冰箱、吊柜
-  box(V, 3.6, 0.88, 1.1, std(0x3a3d40, 0.6), 5.5, 0.57, 1.8); box(V, 3.8, 0.05, 1.3, M.white, 5.5, 1.03, 1.8);
-  box(V, 0.6, 0.02, 0.4, M.metalMid, 6.2, 1.05, 1.9); { const f = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 6, 12, Math.PI), M.alu); f.position.set(6.2, 1.18, 2.12); g0(f); V.add(f); cyl(V, 0.012, 0.012, 0.18, M.alu, 6.08, 1.12, 2.12, 6); }
-  for (const x of [4.3, 5.5, 6.7]) { cyl(V, 0.19, 0.19, 0.06, M.cushionDark, x, 0.78 + 0.13, 0.85, 12); cyl(V, 0.02, 0.02, 0.72, M.alu, x, 0.49, 0.85, 6); cyl(V, 0.18, 0.18, 0.02, M.alu, x, 0.14, 0.85, 12); }
-  box(V, 4.4, 0.88, 0.62, std(0xf0ede6, 0.5), 5.2, 0.57, 5.6); box(V, 4.5, 0.04, 0.65, M.white, 5.2, 1.03, 5.55);   // 操作台从 x=3.0 起（不挡正门）
-  for (let i = 0; i < 6; i++) { box(V, 0.01, 0.8, 0.01, M.metalMid, 3.0 + i * 0.73, 0.55, 5.28); box(V, 0.2, 0.015, 0.02, M.alu, 3.37 + i * 0.73, 0.9, 5.27); }
-  box(V, 4.4, 0.8, 0.38, std(0xf0ede6, 0.5), 5.2, 2.6, 5.75); box(V, 0.9, 2.0, 0.7, M.alu, 7.9, 1.13, 5.5);
-  box(V, 5.5, 3.45, 0.1, M.wallWarm, 5.75, 0.13 + 3.45 / 2, 6.0);   // 厨房背墙：吊柜挂墙，封住操作台与南墙之间的空当（从正门门洞东侧 x=3.0 起，不挡门）
-  collS(180 + 3.0, -46 + 6.0, 180 + 8.5, -46 + 6.0, y0 - 0.3, y0 + 3.4);
-  // 电视墙（西墙）
-  box(V, 0.06, 0.9, 1.6, std(0x0b0d10, 0.2, 0.2), -10.8, 1.6, -3.3); box(V, 0.45, 0.4, 2.2, M.woodDark, -10.6, 0.33, -3.3);
   const wx = (x) => 180 + x, wz = (z) => -46 + z, toW = (x, z) => [wx(x), wz(z)];
   // 通用：墙段（w 实墙 / g 玻璃 / o 开口）+ 带高度带的碰撞；楼板挖洞 + 可行走面
   const walls = (yb, h, axis, fixed, runs) => {
@@ -3539,6 +3519,22 @@ function buildVilla() {
       }
     }
   };
+  // 室内隔墙（厚 0.15）：w 实墙、d 门洞（净高 2.3 m，门洞以上为墙；柚木门扇开启 90° 贴在门洞一侧的墙面上）
+  const part = (yb, h, axis, fixed, runs, leafSide = 1) => {
+    for (const [a0, a1, t] of runs) {
+      const len = a1 - a0, mid = (a0 + a1) / 2, B = (w, hh, y, at = mid, dd = 0.15, m = M.wallWarm) => axis === 'x' ? box(V, w, hh, dd, m, at, y, fixed) : box(V, dd, hh, w, m, fixed, y, at);
+      if (t === 'w') { B(len, h, yb + h / 2); const [ax, az, bx, bz] = axis === 'x' ? [a0, fixed, a1, fixed] : [fixed, a0, fixed, a1]; collS(wx(ax), wz(az), wx(bx), wz(bz), y0 + yb - 0.4, y0 + yb + h - 0.3); }
+      else {
+        B(len, h - 2.3, yb + 2.3 + (h - 2.3) / 2);                                             // 门楣
+        for (const e of [a0, a1]) B(0.04, 2.3, yb + 1.15, e, 0.17, M.woodDark);               // 门套
+        const leaf = axis === 'x' ? box(V, 0.04, 2.25, len - 0.06, M.woodDark, a0 + 0.02, yb + 1.14, fixed + leafSide * (len / 2)) : box(V, len - 0.06, 2.25, 0.04, M.woodDark, fixed + leafSide * (len / 2), yb + 1.14, a0 + 0.02);
+        const hx = axis === 'x' ? a0 + 0.02 : fixed + leafSide * (len - 0.1), hz = axis === 'x' ? fixed + leafSide * (len - 0.1) : a0 + 0.02;   // 门把手
+        box(V, 0.05, 0.03, 0.05, bathMats().gold, hx, yb + 1.0, hz);
+        const [lx0, lz0, lx1, lz1] = axis === 'x' ? [a0 + 0.02, fixed, a0 + 0.02, fixed + leafSide * len] : [fixed, a0 + 0.02, fixed + leafSide * len, a0 + 0.02];
+        collS(wx(lx0), wz(lz0), wx(lx1), wz(lz1), y0 + yb - 0.4, y0 + yb + 2.2);
+      }
+    }
+  };
   const slab = (x0, x1, z0, z1, y, t, mat, hole, walkY) => {
     const parts = hole ? [[x0, x1, z0, hole[2]], [x0, x1, hole[3], z1], [x0, hole[0], hole[2], hole[3]], [hole[1], x1, hole[2], hole[3]]] : [[x0, x1, z0, z1]];
     for (const [a0, a1, b0, b1] of parts) {
@@ -3547,54 +3543,103 @@ function buildVilla() {
       if (walkY !== undefined) COLL.walks.push({ kind: 'rect', x: wx((a0 + a1) / 2), z: wz((b0 + b1) / 2), hw: (a1 - a0) / 2, hd: (b1 - b0) / 2, rot: 0, y: y0 + walkY });
     }
   };
-  // 上层楼板洞口护栏（到达端 z0 敞开）；skip 中的 -1/1 表示不在 x0/x1 侧加
-  const wellRail = (S, fy, skip, vis = true) => {
-    for (const [x0, z0, x1, z1, side] of [[S[0], S[2], S[0], S[3], -1], [S[1], S[2], S[1], S[3], 1], [S[0], S[3], S[1], S[3], 0]]) {
+  // 上层楼板洞口护栏：两侧 + 楼梯下端一侧（far 为下端所在的 z，默认 S[3]）；到达端敞开；skip 中的 -1/1 表示不在 x0/x1 侧加
+  const wellRail = (S, fy, skip, vis = true, far = S[3]) => {
+    for (const [x0, z0, x1, z1, side] of [[S[0], S[2], S[0], S[3], -1], [S[1], S[2], S[1], S[3], 1], [S[0], far, S[1], far, 0]]) {
       if (skip.includes(side)) continue;
       collS(wx(x0), wz(z0), wx(x1), wz(z1), y0 + fy - 0.3, y0 + fy + 2);
       if (vis) box(V, Math.max(0.05, x1 - x0), 1.0, Math.max(0.05, z1 - z0), M.glassLight, (x0 + x1) / 2, fy + 0.5, (z0 + z1) / 2);
     }
   };
-  // ---- 楼梯 S1：首层 → 二层室内（沿西侧） ----
-  // 三部楼梯两端都离正对的墙 ≥ 2 m：起步离背后的南墙内皮（原先只有 0.6～0.7 m，要侧身挤进墙与第一级之间才能上楼），到顶离迎面的墙或屋顶栏板；首层楼梯西侧保持原位
-  const S1 = [-9.2, -8.0, -1.8, 4.8], S2 = [-5.75, -4.65, -2.75, 3.0], S3 = [7.9, 8.9, -3.25, 3.3];
-  stairs(V, toW, y0, -8.6, 4.8, -1.8, 0.13, 3.9, 1.1, { railSides: [1], openSides: [] });
+  // 沙发（统一款式 sofaF，长度按需）+ 座位 + 碰撞；face：'n' 'e' 'w' 's' 为人坐下后面朝的方向
+  const sofaAt = (x, fy, z, face, w, color, pillows) => {
+    const ry = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[face], yaw = { n: 0, s: Math.PI, e: -Math.PI / 2, w: Math.PI / 2 }[face];
+    sofaF(V, x, fy, z, ry, w, color, pillows);
+    const along = face === 'n' || face === 's', n = Math.max(1, Math.round(w / 0.8));
+    for (let i = 0; i < n; i++) { const t = -w / 2 + 0.15 + (w - 0.3) * (i + 0.5) / n; addSeat(wx(along ? x + t : x), y0 + fy + 0.42, wz(along ? z : z + t), yaw); }
+    collR(wx(x), wz(z), along ? w / 2 : 0.45, along ? 0.45 : w / 2, 0, y0 + fy + 2, y0 + fy - 0.5);
+  };
+  const rectC = (x0, x1, z0, z1, fy, h = 2) => collR(wx((x0 + x1) / 2), wz((z0 + z1) / 2), (x1 - x0) / 2, (z1 - z0) / 2, 0, y0 + fy + h, y0 + fy - 0.5);
+  // ---- 三部楼梯都在室内东侧，扶手在西侧；两端离正对的墙 ≥ 2 m（V-019） ----
+  // S1 首层 → 二层：沿东墙，由南向北上；S2 二层 → 三层：紧贴 S1 西侧，由南向北上；S3 三层 → 屋顶：再往西，由北向南上（与 S2 折返）
+  const S1 = [9.25, 10.35, -1.8, 4.8], S2 = [7.9, 9.0, -2.55, 3.1], S3 = [6.75, 7.75, -2.75, 3.75];
+  // ================= 首层：宽敞客厅（厨房设施已移到厨房馆），可容纳十多位客人 =================
+  // 两组会客区（西组 11 座、东组 10 座）面湖布置，中间与南侧留出 2 m 以上的通道；西南角为阅读角（两张单人沙发）
+  stairs(V, toW, y0, 9.8, 4.8, -1.8, 0.13, 3.9, 1.1, { railSides: [-1] });
+  const lounge = (cx, longW, sideW) => {
+    box(V, longW + 3.0, 0.02, 5.0, M.rug, cx, 0.14, -2.3);
+    sofaAt(cx, 0.13, 0.05, 'n', longW, 0x8f949a, [0xc9b89a, 0x6f7f8a]);                                            // 长沙发面湖
+    sofaAt(cx - longW / 2 - 0.95, 0.13, -2.45, 'e', sideW, 0x8f949a, [0x6f7f8a, 0xc9b89a]);                         // 两侧相对的沙发
+    sofaAt(cx + longW / 2 + 0.95, 0.13, -2.45, 'w', sideW, 0x8f949a, [0xc9b89a, 0x6f7f8a]);
+    for (const dx of [-0.8, 0.8]) tableF(V, cx + dx, 0.13, -2.4, 0, 1.3, 0.8, 0.4, M.woodDark, M.metalDark);           // 一对咖啡桌
+    rectC(cx - 1.45, cx + 1.45, -2.8, -2.0, 0.13, 0.6);
+    cyl(V, 0.12, 0.09, 0.2, M.white, cx - 0.8, 0.63, -2.4, 14); box(V, 0.35, 0.06, 0.25, M.stone, cx + 0.9, 0.56, -2.45);   // 花瓶、书
+    for (const s of [-1, 1]) { tableF(V, cx + s * (longW / 2 + 0.55), 0.13, 0.35, 0, 0.45, 0.45, 0.55, M.woodDark, M.alu); lampF(V, cx + s * (longW / 2 + 0.55), 0.13, 0.95); }   // 沙发两端边几 + 身后落地灯
+    box(V, 3.2, 0.05, 0.4, M.lamp, cx, 3.57, -2.3);                                                                 // 线性吊顶灯
+  };
+  lounge(-4.4, 4.2, 3.0); lounge(4.1, 3.6, 2.4);
+  // 西南阅读角：两张单人沙发相对 + 圆几 + 落地灯；南墙边柜（摆件）
+  sofaAt(-8.9, 0.13, 3.6, 'e', 1.0, 0xb7aa98, [0x6f7f8a]); sofaAt(-6.3, 0.13, 3.6, 'w', 1.0, 0xb7aa98, [0xc9b89a]);
+  cyl(V, 0.4, 0.4, 0.04, M.woodDark, -7.6, 0.6, 3.6, 24); cyl(V, 0.05, 0.05, 0.45, M.metalDark, -7.6, 0.36, 3.6, 8); cyl(V, 0.25, 0.25, 0.02, M.metalDark, -7.6, 0.14, 3.6, 16); collC(wx(-7.6), wz(3.6), 0.4);
+  lampF(V, -9.6, 0.13, 2.4);
+  box(V, 2.6, 0.75, 0.45, M.woodDark, -8.3, 0.505, 6.55); for (let i = 1; i < 4; i++) box(V, 0.01, 0.7, 0.01, std(0x2a1f18, 0.8), -9.6 + i * 0.65, 0.5, 6.32); rectC(-9.6, -7.0, 6.3, 6.875, 0.13, 1.2);
+  cyl(V, 0.14, 0.1, 0.45, std(0xe8e2d6, 0.4), -8.9, 1.1, 6.55, 16); box(V, 0.5, 0.35, 0.05, std(0x3a4c5c, 0.6), -7.8, 1.06, 6.7);   // 陶瓶、画框
+  for (const [x, z] of [[-7.6, 4.3], [3, 4.3], [-1.2, -5.2]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, 3.57, z);
   slab(-10.9, 10.9, -6.9, 6.9, 3.62, 0.04, M.ceiling, S1);                                   // 首层吊顶（楼梯处开洞）
-  for (const [x, z] of [[-4.5, -3], [3.2, -3.2], [5.5, 1.8], [-1, 3]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, 3.57, z);
   // 首层墙体碰撞
   const gt = y0 + 3.0;
   for (const [x0, x1] of [[-11, -6], [-3.4, 11]]) collS(wx(x0), wz(-7), wx(x1), wz(-7), -1e9, gt);
   for (const [x0, x1] of [[-11, 0.2], [2.9, 11]]) collS(wx(x0), wz(7), wx(x1), wz(7), -1e9, gt);   // 南墙：正门门洞 0.2～2.9
   collS(wx(11), wz(-7), wx(11), wz(7), -1e9, gt); collS(wx(-11), wz(-7), wx(-11), wz(-1), -1e9, gt); collS(wx(-11), wz(1), wx(-11), wz(7), -1e9, gt);   // 西墙：西门 -1～1 通连廊
-  const low = y0 + 3;
-  collR(wx(-4.5), wz(-1.35), 1.5, 0.45, 0, low); collR(wx(-6.85), wz(-3.3), 0.45, 1.0, 0, low); collR(wx(-4.5), wz(-3.3), 0.6, 0.35, 0, low); collR(wx(-10.6), wz(-3.3), 0.25, 1.1, 0, low);
-  collR(wx(3.2), wz(-3.2), 1.5, 1.0, 0, low); collR(wx(5.5), wz(1.8), 1.9, 0.6, 0, low); collR(wx(5.2), wz(5.6), 2.2, 0.35, 0, low); collR(wx(-7.3), wz(-5.0), 0.25, 0.25, 0, low); collR(wx(7.9), wz(5.5), 0.45, 0.35, 0, low);
   COLL.walks.push({ kind: 'rect', x: 180, z: -46, hw: 10.9, hd: 6.9, rot: 0, y: y0 + 0.13 });
-  for (const x of [-5.5, -4.5, -3.5]) addSeat(wx(x), y0 + 0.55, wz(-1.2), 0);
-  for (const z of [-3.8, -2.8]) addSeat(wx(-6.7), y0 + 0.55, wz(z), -Math.PI / 2);
-  for (const x of [2.4, 3.2, 4.0]) { addSeat(wx(x), y0 + 0.58, wz(-3.95), Math.PI); addSeat(wx(x), y0 + 0.58, wz(-2.45), 0); }
-  for (const x of [4.3, 5.5, 6.7]) addSeat(wx(x), y0 + 0.94, wz(0.85), Math.PI);
   // 外立面楼板檐口（环形，不遮楼梯洞）
   slab(-11.3, 11.3, -7.3, 7.3, 3.78, 0.2, M.metalDark, [-10.9, 10.9, -6.9, 6.9]);
-  // ---- 二层（向湖悬挑）：外壳 + 卧室；北侧门通阳台 ----
-  const F1 = 3.9, F1h = 3.3;
+  // ================= 二层：西半为主卧；东北洗浴室（西 3/4 主卫、东 1/4 客卫）；东南衣帽间；两者之间为通往主卧的宽过道；东侧楼梯厅 =================
+  const F1 = 3.9, F1h = 3.3, IH = F1h - 0.04;
   slab(-9.4, 10.6, -7.7, 5.3, F1, 0.14, M.floorWood, [S1[0], S1[1], S1[2], S1[3]], F1);
-  wellRail(S1, F1, [-1]);
-  walls(F1, F1h, 'x', -7.7, [[-9.4, -8, 'w'], [-8, -1.2, 'g'], [-1.2, 1.2, 'o'], [1.2, 9.2, 'g'], [9.2, 10.6, 'w']]);
-  box(V, 2.4, 0.4, 0.25, M.wallWarm, 0, F1 + F1h - 0.2, -7.7); slideDoor(V, 2.4, F1 + 1.2, -7.52, 2.4, 2.4);   // 二层北门推拉门（开启）
-  walls(F1, F1h, 'x', 5.3, [[-9.4, -6, 'w'], [-6, 6, 'g'], [6, 10.6, 'w']]);
+  wellRail(S1, F1, [1]);
+  walls(F1, F1h, 'x', -7.7, [[-9.4, -8, 'w'], [-8, 0.6, 'g'], [0.6, 7.2, 'w'], [7.2, 9.0, 'o'], [9.0, 10.6, 'w']]);   // 北：主卧面湖落地窗；洗浴室段为实墙；楼梯厅北门通阳台
+  box(V, 1.8, 0.4, 0.25, M.wallWarm, 8.1, F1 + F1h - 0.2, -7.7); slideDoor(V, 9.8, F1 + 1.2, -7.52, 1.6, 2.4);   // 二层北门推拉门（开启，门扇收在东侧墙内）
+  walls(F1, F1h, 'x', 5.3, [[-9.4, -6, 'w'], [-6, 0.6, 'g'], [0.6, 10.6, 'w']]);
   walls(F1, F1h, 'z', 10.6, [[-7.7, -6, 'w'], [-6, 3, 'g'], [3, 5.3, 'w']]);
   walls(F1, F1h, 'z', -9.4, [[-7.7, -5, 'w'], [-5, 1, 'g'], [1, 5.3, 'w']]);
+  // 隔墙：x=0.6 主卧东墙（主卫西门、主卧门）；z=-3.325 洗浴室南墙；x=5.1 主卫/客卫隔离墙；x=6.4 客卫东门、衣帽间东门；z=-0.8 衣帽间北墙
+  part(F1, IH, 'z', 0.6, [[-7.575, -4.45, 'w'], [-4.45, -3.55, 'd'], [-3.55, -2.7, 'w'], [-2.7, -1.5, 'd'], [-1.5, 5.175, 'w']], -1);
+  part(F1, IH, 'x', -3.325, [[0.675, 6.475, 'w']]);
+  part(F1, IH, 'z', 5.1, [[-7.575, -3.4, 'w']]);
+  part(F1, IH, 'z', 6.4, [[-7.575, -4.6, 'w'], [-4.6, -3.7, 'd'], [-3.7, -3.4, 'w'], [-0.8, -0.4, 'w'], [-0.4, 0.6, 'd'], [0.6, 5.175, 'w']], -1);   // 门扇向房间里开（不挡楼梯厅）
+  part(F1, IH, 'x', -0.8, [[0.675, 6.325, 'w']]);
   slab(-9.2, 10.4, -7.5, 5.1, F1 + F1h - 0.02, 0.04, M.ceiling, [S2[0], S2[1], S2[2], S2[3]]);
-  for (const [x, z] of [[4, -3], [4, 2], [-2, -3]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, F1 + F1h - 0.06, z);
-  // 卧室：双人床（床头朝南）、床头柜台灯、衣柜（门缝把手）、休闲沙发；床可躺、沙发可坐
-  bedF(V, 6.5, F1, -3.2, Math.PI, 1.8, 2.1);
-  box(V, 3.2, 2.3, 0.6, M.woodDark, 7.6, F1 + 1.15, 4.7); for (let i = 1; i < 4; i++) box(V, 0.01, 2.2, 0.01, std(0x2a1f18, 0.8), 6.0 + i * 0.8, F1 + 1.15, 4.39); for (let i = 0; i < 4; i++) box(V, 0.02, 0.35, 0.03, M.alu, 6.3 + i * 0.8, F1 + 1.15, 4.37);
-  sofaF(V, -1.5, F1, 3.9, Math.PI, 1.9, 0xb7aa98, [0x6f7f8a]); box(V, 1.4, 0.02, 1.8, M.rug, -1.5, F1 + 0.02, 2.6);
-  lampF(V, -3.2, F1, 4.6);
-  collR(wx(6.5), wz(-3.2), 1.2, 1.25, 0, y0 + F1 + 2, y0 + F1 - 0.5); collR(wx(7.6), wz(4.7), 1.7, 0.4, 0, y0 + F1 + 2, y0 + F1 - 0.5); collR(wx(-1.5), wz(3.9), 0.95, 0.5, 0, y0 + F1 + 2, y0 + F1 - 0.5);
-  addSeat(wx(6.5), y0 + F1 + 0.62, wz(-3.9), 0, 'lie'); addSeat(wx(-1.9), y0 + F1 + 0.42, wz(3.75), 0); addSeat(wx(-1.1), y0 + F1 + 0.42, wz(3.75), 0);
-  // 二层室内花盆（水仙）
+  for (const [x, z] of [[-4.5, -4], [-4.5, 2], [3.5, -2.05], [8.4, -5.5], [2.9, -5.4], [3.5, 2.2]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, F1 + F1h - 0.06, z);
+  // 主卧（私密：只经宽过道一扇门进入）：床头靠东墙、床头柜台灯；面湖休闲沙发、咖啡桌、地毯；西墙梳妆台
+  bedF(V, -0.64, F1, 2.2, -Math.PI / 2, 1.8, 2.1); box(V, 3.0, 0.02, 3.6, M.rug, -1.1, F1 + 0.02, 2.2);
+  collR(wx(-0.64), wz(2.2), 1.15, 1.5, 0, y0 + F1 + 2, y0 + F1 - 0.5); addSeat(wx(0.06), y0 + F1 + 0.62, wz(2.2), Math.PI / 2, 'lie');
+  sofaAt(-5.0, F1, -5.3, 'n', 2.8, 0xefe9dc, [0x5f8aa0, 0xd9c29a]); tableF(V, -5.0, F1, -6.4, 0, 1.2, 0.6, 0.4, M.woodDark, M.alu); rectC(-5.6, -4.4, -6.7, -6.1, F1, 0.6);
+  box(V, 3.6, 0.02, 2.6, M.rug, -5.0, F1 + 0.02, -5.6); lampF(V, -7.0, F1, -6.6);
+  box(V, 0.5, 0.78, 1.6, M.woodDark, -8.95, F1 + 0.39, 3.0); box(V, 0.03, 1.0, 0.9, bathMats().mirror, -9.24, F1 + 1.5, 3.0); officeChairF(V, -8.3, F1, 3.0, -Math.PI / 2); rectC(-9.2, -8.7, 2.2, 3.8, F1);   // 梳妆台、镜、椅
+  // 主卫（x 0.675～5.025，z -7.575～-3.4）：从西门进入，依次为马桶与洗手台、宽大浴缸、宽大淋浴室，东端为隔离墙
+  const bathReg = (ox, oz, sgn, fy) => (u0, u1, v0, v1) => collR(wx(ox + sgn * (u0 + u1) / 2), wz(oz + sgn * (v0 + v1) / 2), (u1 - u0) / 2, (v1 - v0) / 2, 0, y0 + fy + 2.2, y0 + fy - 0.5);
+  masterBathF(V, 0.675, F1, -7.575, 0, bathReg(0.675, -7.575, 1, F1));
+  // 客卫（x 5.175～6.325）：东门进入；马桶靠北墙，洗手台靠隔离墙
+  wcF(V, 5.75, F1, -7.575, 0, 1); rectC(5.43, 6.07, -7.575, -6.85, F1);
+  vanityF(V, 5.175, F1, -5.4, Math.PI / 2, 0.6, 1); rectC(5.175, 5.72, -5.72, -5.08, F1);
+  kPanel(V, 1.15, 4.175, bathMats().slab, 5.75, F1 + 0.005, -5.4875, -Math.PI / 2, 0, 1.2);
+  box(V, 0.5, 0.03, 0.12, bathMats().glow, 5.75, F1 + F1h - 0.35, -5.5);
+  // 衣帽间（x 0.675～6.325，z -0.725～5.175）：只从东门进入；西墙、南墙通高衣柜（门缝、金色拉手、开放格挂衣与鞋架），中岛首饰柜 + 全身镜 + 软凳
+  { const G = bathMats().gold, wood = M.woodDark, seam = std(0x2a1f18, 0.8);
+    box(V, 0.6, 2.4, 5.7, wood, 0.975, F1 + 1.2, 2.2); rectC(0.675, 1.275, -0.65, 5.1, F1, 2.6);
+    for (let i = 0; i <= 7; i++) { box(V, 0.01, 2.3, 0.01, seam, 1.28, F1 + 1.2, -0.55 + i * 0.8); if (i < 7) box(V, 0.02, 0.4, 0.03, G, 1.29, F1 + 1.2, -0.55 + i * 0.8 + 0.7); }
+    rectC(1.35, 6.25, 4.575, 5.175, F1, 2.6);
+    const cloth = [0xf1ede4, 0x2e4a6a, 0x8a3b2e, 0xc9b27a, 0x3d3f42].map(c => std(c, 0.9)), shoe = [std(0x6b4a33, 0.6), std(0x1c1c1c, 0.6)], back = std(0x1a1715, 0.9);
+    for (let i = 0; i < 6; i++) { const cx = 1.8 + i * 0.8;   // 南墙 6 格：中间两格为开放挂衣格（背板、顶底板、金色挂杆、衣物、鞋），其余为柜门
+      if (i === 2 || i === 3) { box(V, 0.78, 2.4, 0.04, back, cx, F1 + 1.2, 5.15); for (const y of [0.04, 2.38]) box(V, 0.78, 0.04, 0.6, wood, cx, F1 + y, 4.875); box(V, 0.76, 0.02, 0.02, G, cx, F1 + 1.95, 4.88);
+        for (let k = 0; k < 7; k++) box(V, 0.06, 0.9, 0.36, cloth[k % 5], cx - 0.3 + k * 0.1, F1 + 1.45, 4.9); for (let k = 0; k < 4; k++) box(V, 0.14, 0.08, 0.26, shoe[k % 2], cx - 0.27 + k * 0.18, F1 + 0.12, 4.95); }
+      else { box(V, 0.78, 2.4, 0.6, wood, cx, F1 + 1.2, 4.875); box(V, 0.01, 2.3, 0.01, seam, cx - 0.4, F1 + 1.2, 4.57); box(V, 0.03, 0.4, 0.02, G, cx + 0.3, F1 + 1.2, 4.565); } }
+    box(V, 1.8, 0.9, 0.9, wood, 3.9, F1 + 0.45, 2.0); box(V, 1.84, 0.02, 0.94, M.glassLight, 3.9, F1 + 0.91, 2.0); for (let k = 0; k < 3; k++) box(V, 1.7, 0.01, 0.01, G, 3.9, F1 + 0.2 + k * 0.25, 2.455); rectC(3.0, 4.8, 1.55, 2.45, F1, 1.2);
+    box(V, 0.9, 2.0, 0.03, bathMats().mirror, 3.6, F1 + 1.1, -0.69); box(V, 0.96, 2.06, 0.02, G, 3.6, F1 + 1.1, -0.71);   // 全身镜（金色边框）
+    cyl(V, 0.3, 0.3, 0.42, std(0xc9b89a, 0.95), 3.9, F1 + 0.21, 0.6, 20); rectC(3.6, 4.2, 0.3, 0.9, F1, 0.6);
+  }
+  // 楼梯厅：北门旁水仙花盆
   planter(V, 0.6, 0.6, 9.8, F1, -6.9, 0, 'narcissus', [180, y0, -46]);
   // 阳台（封闭式：只能经二层北门进入）
   box(V, 20.6, 0.25, 2.2, M.concrete, 0.6, 3.95, -8.6);
@@ -3606,8 +3651,8 @@ function buildVilla() {
   collS(wx(-9.7), wz(-9.6), wx(10.9), wz(-9.6), bb); collS(wx(-9.7), wz(-9.6), wx(-9.7), wz(-7.6), bb); collS(wx(10.9), wz(-9.6), wx(10.9), wz(-7.6), bb);
   collR(wx(-4), wz(-8.2), 1.2, 0.45, 0, bb + 2.5, bb); collR(wx(-2.4), wz(-8.2), 0.25, 0.25, 0, bb + 2.5, bb);
   for (const x of [-4.7, -3.9, -3.1]) addSeat(wx(x), y0 + 4.08 + 0.42, wz(-8.35), 0);
-  // ---- 楼梯 S2：二层 → 三层 ----
-  stairs(V, toW, y0, -5.2, 3.0, -2.75, F1, 7.45, 1.1, { railSides: [1, -1] });   // 二层层高 3.55 m、上下都要留 2 m，梯段 5.75 m（踏步 0.29 m）
+  // ---- 楼梯 S2：二层 → 三层（东侧，紧贴 S1 西侧；由南向北上，扶手在西侧） ----
+  stairs(V, toW, y0, 8.45, 3.1, -2.55, F1, 7.45, 1.1, { railSides: [-1] });   // 二层层高 3.55 m、上下都留 2 m，梯段 5.65 m
   slab(-9.9, 11.1, -8.2, 5.8, 7.445, 0.2, M.metalDark, [-9.4, 10.6, -7.7, 5.3]);          // 二层顶檐口（顶面比三层木地板低 5 mm，避免共面闪烁）
   // 二层屋面（三层外围露台）：北侧露台 + 东西两侧窄台
   slab(-9.4, 10.6, -7.7, -5.0, 7.45, 0.12, M.stone, null, 7.45);
@@ -3623,39 +3668,57 @@ function buildVilla() {
   planter(V, 5, 0.6, 5, 7.5, -7.1, 0, 'rose', [180, y0, -46]);
   collR(wx(-5.5), wz(-6.2), 1.6, 1.2, 0, y0 + 9.5, y0 + 7);
   for (const x of [-6.5, -5.5, -4.5]) { addSeat(wx(x), y0 + 7.5 + 0.48, wz(-7.0), Math.PI); addSeat(wx(x), y0 + 7.5 + 0.48, wz(-5.4), 0); } /* 三层玫瑰花池的碰撞由 planter() 登记 */
-  // ---- 三层（退台）：外壳 + 书房；北门通露台 ----
-  const F2 = 7.45, F2h = 3.25;
+  // ================= 三层：西侧南北两间卧室（布局一致、门靠近中间墙）；东北开放式书房；东南洗浴室（与主卫同尺寸同设施，门朝北） =================
+  const F2 = 7.45, F2h = 3.25, IH2 = F2h - 0.04;
   slab(-6.4, 9.2, -5.0, 5.6, F2, 0.12, M.floorWood, [S2[0], S2[1], S2[2], S2[3]], F2);
   wellRail(S2, F2, []);
-  walls(F2, F2h, 'x', -5.0, [[-6.4, -5, 'w'], [-5, -2.4, 'g'], [-2.4, -0.6, 'o'], [-0.6, 7.9, 'g'], [7.9, 9.2, 'w']]);
-  box(V, 1.8, 0.4, 0.25, M.wallWarm, -1.5, F2 + F2h - 0.2, -5.0); slideDoor(V, 0.3, F2 + 1.2, -4.83, 1.8, 2.4);   // 三层北门推拉门（开启）
-  walls(F2, F2h, 'x', 5.6, [[-6.4, -3, 'w'], [-3, 3, 'g'], [3, 9.2, 'w']]);
+  walls(F2, F2h, 'x', -5.0, [[-6.4, -5, 'w'], [-5, 1.4, 'g'], [1.4, 1.6, 'w'], [1.6, 2.9, 'o'], [2.9, 7.9, 'g'], [7.9, 9.2, 'w']]);   // 北门移到书房西北角，通露台
+  box(V, 1.3, 0.4, 0.25, M.wallWarm, 2.25, F2 + F2h - 0.2, -5.0); slideDoor(V, 3.6, F2 + 1.2, -4.83, 1.3, 2.4);   // 三层北门推拉门（开启）
+  walls(F2, F2h, 'x', 5.6, [[-6.4, -3, 'w'], [-3, 1.4, 'g'], [1.4, 9.2, 'w']]);
   walls(F2, F2h, 'z', 9.2, [[-5, -3, 'w'], [-3, 3, 'g'], [3, 5.6, 'w']]);
   walls(F2, F2h, 'z', -6.4, [[-5, -3, 'w'], [-3, 3, 'g'], [3, 5.6, 'w']]);
+  part(F2, IH2, 'z', 1.4, [[-4.875, -1.15, 'w'], [-1.15, -0.25, 'd'], [-0.25, 0.3, 'w'], [0.3, 1.1, 'd'], [1.1, 5.475, 'w']], -1);   // 卧室东墙：两扇门都靠近中间墙
+  part(F2, IH2, 'x', 0.1, [[-6.275, 1.325, 'w']]);                                                                                    // 两卧室之间的中间墙
+  part(F2, IH2, 'x', 1.225, [[1.475, 4.4, 'w'], [4.4, 5.3, 'd'], [5.3, 5.975, 'w']], 1);                                             // 洗浴室北墙（门朝北）
+  part(F2, IH2, 'z', 5.9, [[1.3, 5.475, 'w']]);
   slab(-6.2, 9.0, -4.8, 5.4, F2 + F2h - 0.02, 0.04, M.ceiling, [S3[0], S3[1], S3[2], S3[3]]);
-  for (const [x, z] of [[2, -2], [2, 2.5]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, F2 + F2h - 0.06, z);
-  // 书房：书桌与椅子为用户提供的模型（06d_desk，加载后单独加入场景，不参与烘焙）；书架（满架书）；沙发；红玫瑰盆栽
-  shelfF(V, 3.5, F2, 5.3, Math.PI, 2.6, 2.2); sofaF(V, -2, F2, 3.9, Math.PI, 2.2, 0x8f949a, [0xb54a3a, 0xe0d6c4]);
+  for (const [x, z] of [[-2.6, -2.6], [-2.6, 2.8], [4.0, -3.4], [3.3, -0.6], [3.6, 3.4], [8.2, -3.8]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, F2 + F2h - 0.06, z);
+  // 两间卧室（关于中间墙对称，布局一致）：床头靠东墙、床头柜台灯；靠中间墙的衣柜；窗边双人沙发
+  for (const sd of [-1, 1]) {
+    const cz = 0.1 + sd * 2.9;
+    bedF(V, 0.165, F2, cz, -Math.PI / 2, 1.8, 2.1); box(V, 2.8, 0.02, 3.2, M.rug, -0.3, F2 + 0.02, cz);
+    collR(wx(0.165), wz(cz), 1.15, 1.5, 0, y0 + F2 + 2, y0 + F2 - 0.5); addSeat(wx(0.865), y0 + F2 + 0.62, wz(cz), Math.PI / 2, 'lie');
+    const wz0 = 0.1 + sd * 0.375; box(V, 2.4, 2.3, 0.6, M.woodDark, -4.7, F2 + 1.15, wz0); rectC(-5.9, -3.5, wz0 - 0.3, wz0 + 0.3, F2, 2.6);
+    for (let i = 1; i < 3; i++) box(V, 0.01, 2.2, 0.01, std(0x2a1f18, 0.8), -5.9 + i * 0.8, F2 + 1.15, wz0 + sd * 0.305); for (let i = 0; i < 3; i++) box(V, 0.02, 0.35, 0.03, bathMats().gold, -5.5 + i * 0.8, F2 + 1.15, wz0 + sd * 0.315);
+    sofaAt(-4.0, F2, 0.1 + sd * 3.5, sd < 0 ? 'n' : 's', 1.6, 0xb7aa98, [0x6f7f8a]); lampF(V, -5.6, F2, 0.1 + sd * 3.6);
+  }
+  // 开放式书房：书桌与椅子为用户提供的模型（06d_desk，靠北窗正中）；楼梯一侧背靠背双面书柜；阅读沙发
+  shelfF(V, 6.02, F2, -0.7, -Math.PI / 2, 2.4, 2.2); shelfF(V, 6.4, F2, -0.7, Math.PI / 2, 2.4, 2.2); rectC(5.82, 6.6, -1.9, 0.5, F2, 2.6);
+  sofaAt(3.3, F2, -0.3, 'n', 2.2, 0x8f949a, [0xb54a3a, 0xe0d6c4]); box(V, 2.6, 0.02, 1.8, M.rug, 3.3, F2 + 0.02, -1.1);   // 沙发南侧留出南卧门口到洗浴室门的通道
+  addSeat(wx(DESK.at.x - 180 + DESK.chair.x), y0 + F2 + 0.5, wz(DESK.at.z + 46 + DESK.chair.z), 0);   // 书桌椅（座面高 0.46，面朝北窗与书桌）
+  collR(wx(DESK.at.x - 180 - 0.4), wz(DESK.at.z + 46), 1.2, 0.38, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(DESK.at.x - 180 + DESK.chair.x), wz(DESK.at.z + 46 + DESK.chair.z), 0.24, 0.23, 0, y0 + F2 + 1.2, y0 + F2 - 0.5);   // 书桌 2.4 × 0.75、椅子
   for (const [px, pz] of [[-5.7, -4.3], [8.4, -4.3], [-5.7, 4.9]]) planter(V, 0.55, 0.55, px, F2, pz, 0, 'rose', [180, y0, -46]);
-  addSeat(wx(2.9 + 0.05), y0 + F2 + 0.5, wz(-3.6 + 0.76), 0); addSeat(wx(-2.5), y0 + F2 + 0.42, wz(3.75), 0); addSeat(wx(-1.5), y0 + F2 + 0.42, wz(3.75), 0);   // 书桌椅（座面高 0.46，面朝书桌）、沙发
-  collR(wx(2.5), wz(-3.6), 1.2, 0.38, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(2.95), wz(-2.84), 0.24, 0.23, 0, y0 + F2 + 1.2, y0 + F2 - 0.5); collR(wx(3.5), wz(5.2), 1.6, 0.3, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(-2), wz(3.9), 1.1, 0.5, 0, y0 + F2 + 2, y0 + F2 - 0.5);   // 书桌 2.4 × 0.75、椅子、书架、沙发
-  // ---- 楼梯 S3：三层 → 屋顶 ----
-  stairs(V, toW, y0, 8.4, 3.3, -3.25, F2, 11.1, 1.0, { railSides: [-1] });
+  // 洗浴室（x 1.475～5.825，z 1.3～5.475）：与二层主卫同尺寸、同一套设施，背靠南墙，门在北墙
+  masterBathF(V, 5.825, F2, 5.475, Math.PI, bathReg(5.825, 5.475, -1, F2));
+  // ---- 楼梯 S3：三层 → 屋顶（由北向南上，扶手在西侧） ----
+  stairs(V, toW, y0, 7.25, -2.75, 3.75, F2, 11.1, 1.0, { railSides: [-1] });
   // ---- 屋面：屋顶平台（玻璃栏板）+ 应急停机标识（不停放直升机） ----
   slab(-6.8, 9.6, -5.4, 6.0, 11.1, 0.4, M.concrete, [S3[0], S3[1], S3[2], S3[3]], 11.1);
   slab(-6.9, 9.7, -5.5, 6.1, 10.72, 0.15, M.metalDark, [-6.4, 9.2, -5.0, 5.6]);
   for (const [x0, x1, z0, z1] of [[-6.8, 9.6, -5.4, -5.4], [-6.8, 9.6, 6.0, 6.0], [-6.8, -6.8, -5.4, 6.0], [9.6, 9.6, -5.4, 6.0]]) {
     box(V, Math.max(0.05, x1 - x0), 1.0, Math.max(0.05, z1 - z0), M.glassLight, (x0 + x1) / 2, 11.6, (z0 + z1) / 2); collS(wx(x0), wz(z0), wx(x1), wz(z1), y0 + 10.5);
   }
-  wellRail(S3, 11.1, [], true);
+  wellRail(S3, 11.1, [], true, S3[2]);   // S3 由北向南上：北端（下端）封栏板，南端到达口敞开
   const ring = new THREE.Mesh(new THREE.RingGeometry(4.25, 4.7, 56), M.yellow); ring.rotation.x = -Math.PI / 2; ring.position.set(1.4, 11.12, 0.3); V.add(ring);
   box(V, 0.55, 0.03, 3.6, M.white, 1.4 - 1.2, 11.12, 0.3); box(V, 0.55, 0.03, 3.6, M.white, 1.4 + 1.2, 11.12, 0.3); box(V, 2.0, 0.03, 0.55, M.white, 1.4, 11.12, 0.3);
   for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; box(V, 0.25, 0.08, 0.25, M.green, 1.4 + Math.cos(a) * 5.2, 11.13, 0.3 + Math.sin(a) * 5.2); }
   // ---- 入口雨篷 ----
-  box(V, 5, 0.2, 3, M.metalDark, 2, 3.2, 8.5); cyl(V, 0.07, 0.07, 3.1, M.metalDark, 4.3, 1.6, 9.8, 8); cyl(V, 0.07, 0.07, 3.1, M.metalDark, -0.3, 1.6, 9.8, 8);
+  box(V, 5, 0.2, 3, M.metalDark, 2, 3.2, 8.5);
+  for (const px of [4.3, -0.3]) { const gy = gh(180 + px, -46 + 9.8) - y0 - 0.25, h = 3.1 - gy;   // 雨篷柱落到柱下地面（埋入 0.25 m），柱脚加方形底座（原先柱底悬空约 0.4 m）
+    cyl(V, 0.07, 0.07, h, M.metalDark, px, gy + h / 2, 9.8, 8); box(V, 0.3, 0.1, 0.3, M.metalDark, px, gy + 0.3, 9.8); collC(180 + px, -46 + 9.8, 0.12); }
   for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
     planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
-  for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
+  for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
     for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
@@ -3838,8 +3901,8 @@ function buildGreenhouses() {
 // （透射要把整个场景额外渲染一遍）；网格简化到约 23 万三角面、贴图缩到 512、转 WebP、meshopt 压缩，得到 assets/mac_desk.glb（约 5 MB），
 // 构建时以 base64 内嵌为 ASSET_DESK_GLB。
 // 模型坐标：y 向上，桌面 x -1.6～0.8、z ±0.375、高 0.72，椅子在 +z 一侧面朝桌子（-z）；原点在地面。
-// 摆放：别墅三层书房北侧，桌子背靠北面落地窗（与原书桌同位），整张桌子中心在别墅局部 (2.5, F2, -3.6)。
-const DESK = { at: { x: 180 + 2.9, y: 11.35 + 7.45, z: -46 - 3.6 }, chair: { x: 0.05, z: 0.76 }, loaded: false, group: null };
+// 摆放：别墅三层开放式书房靠北窗正中（用户要求移位），整张桌子中心在别墅局部 (4.0, F2, -4.2)，人坐下面朝北窗。
+const DESK = { at: { x: 180 + 4.4, y: 11.35 + 7.45, z: -46 - 4.2 }, chair: { x: 0.05, z: 0.76 }, loaded: false, group: null };
 async function loadDeskModel(scene) {
   const bin = Uint8Array.from(atob(ASSET_DESK_GLB), c => c.charCodeAt(0)).buffer;
   const loader = new THREE.GLTFLoader().setMeshoptDecoder(THREE.MeshoptDecoder);
@@ -3951,16 +4014,22 @@ function buildKitchen() {
     kPanel(K, x1 - x0, z1 - z0, T.paver, (x0 + x1) / 2, PT, (z0 + z1) / 2, -Math.PI / 2, 0, 1.2);
     walk(x0, x1, z0, z1, PT);
   }
-  // 挡土墙：沿基座外轮廓，墙底埋入地面 0.3 m；人在地面上不能从墙下钻进基座（高度带只拦基座顶面以下 0.55 m 的人）
-  const [A, B] = PADS, edges = [
-    [A[0], A[2], A[1], A[2]], [A[1], A[2], A[1], A[3]], [A[1], A[3], A[0], A[3]], [A[0], A[3], A[0], B[3]], [A[0], B[2], A[0], A[2]],
-    [B[0], B[2], A[0], B[2]], [B[0], B[3], B[0], B[2]], [A[0], B[3], B[0], B[3]],
-  ];
-  for (const [ax, az, bx, bz] of edges) {
+  // 挡土墙：沿几块基座合并后的外轮廓（相邻基座的共用边不建墙），墙底埋入地面 0.3 m；人在地面上不能从墙下钻进基座（高度带只拦基座顶面以下 0.55 m 的人）
+  const [A, B] = PADS, inPad = (x, z) => PADS.some(([x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
+  const edges = [];
+  for (const [x0, x1, z0, z1] of PADS) for (const [ax, az, bx, bz, nx, nz] of [[x0, z0, x1, z0, 0, -1], [x1, z0, x1, z1, 1, 0], [x1, z1, x0, z1, 0, 1], [x0, z1, x0, z0, -1, 0]]) {
+    const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / 0.25)); let run = null;
+    for (let i = 0; i < n; i++) {
+      const t0 = i / n, t1 = (i + 1) / n, mx = ax + (bx - ax) * (t0 + t1) / 2, mz = az + (bz - az) * (t0 + t1) / 2, out = !inPad(mx + nx * 0.05, mz + nz * 0.05);
+      if (out && !run) run = [t0, t1]; else if (out) run[1] = t1;
+      if ((!out || i === n - 1) && run) { edges.push([ax + (bx - ax) * run[0], az + (bz - az) * run[0], ax + (bx - ax) * run[1], az + (bz - az) * run[1], nx, nz]); run = null; }
+    }
+  }
+  for (const [ax, az, bx, bz, onx, onz] of edges) {
     const len = Math.hypot(bx - ax, bz - az); if (len < 0.05) continue;
     let gmin = 1e9; for (let i = 0; i <= 8; i++) gmin = Math.min(gmin, gh(wx(ax + (bx - ax) * i / 8), wz(az + (bz - az) * i / 8)) - Y0);
     const yb = Math.min(gmin - 0.3, PT - 0.3), h = PT - 0.01 - yb, horiz = Math.abs(bz - az) < 1e-6;
-    const nx = horiz ? 0 : Math.sign(ax - (A[0] + A[1]) / 2) * 0.15, nz = horiz ? Math.sign(az - (A[2] + A[3]) / 2) * 0.15 : 0;   // 墙厚 0.3，外皮与基座边齐平
+    const nx = onx * 0.15, nz = onz * 0.15;   // 墙厚 0.3，外皮与基座边齐平
     box(K, horiz ? len + 0.3 : 0.3, h, horiz ? 0.3 : len + 0.3, T.stone, (ax + bx) / 2 - nx, yb + h / 2, (az + bz) / 2 - nz);
     box(K, horiz ? len + 0.34 : 0.34, 0.06, horiz ? 0.34 : len + 0.34, T.frame, (ax + bx) / 2 - nx, PT - 0.035, (az + bz) / 2 - nz);   // 深灰压顶线
     if (gmin < PT - 0.5) collS(wx(ax), wz(az), wx(bx), wz(bz), -1e9, Y0 + PT - 0.55);
@@ -4135,8 +4204,191 @@ function buildKitchen() {
     const gy = Math.min(gh(wx(ST[0]), wz(Z1 + 3.8)), gh(wx(ST[1]), wz(Z1 + 3.8))) - Y0, len = Math.max(1.2, Math.round((DY - gy) / 0.17) * 0.3);
     stairs(K, toW, Y0, (ST[0] + ST[1]) / 2, Z1 + len, Z1, gy, DY, ST[1] - ST[0], { solid: true, mat: T.stone, railMat: T.frame });
   }
+  // ---------------- 公共卫生间：厨房馆正北，背靠厨房北墙但两边不互通；男（西）女（东）分开，门都朝正北 ----------------
+  // 与别墅、厨房馆同一设计语言：暖白微水泥墙、平屋顶深挑檐（北挑 1 m 遮门口）、深灰金属封边、柚木竖格栅；洁具与别墅主卫同一套高端款式
+  { const BM = bathMats(), RZ0 = -HD - 0.125, RZ1 = -9.35, RX = 4.5, RH = 3.3, WN = RZ1 + 0.125;   // RZ0 厨房北墙外皮；WN 北墙中线
+    const seg = (ax, az, bx, bz, top = RH - 0.3) => collS(wx(ax), wz(az), wx(bx), wz(bz), Y0 - 0.3, Y0 + top);
+    // 楼板、岩板地面、吊顶灯带
+    box(K, RX * 2 - 0.02, 0.095, RZ0 - RZ1 - 0.01, M.concrete, 0, 0.0525, (RZ0 + RZ1 - 0.01) / 2 + 0.01);   // 楼板四边比外墙外皮缩进 1 cm（不共面）
+    for (const s of [-1, 1]) { kPanel(K, RX - 0.2, RZ0 - RZ1 - 0.25, BM.slab, s * RX / 2, FY, (RZ0 + WN) / 2 - 0.0625, -Math.PI / 2, 0, 1.2); walk(s < 0 ? -RX : 0.02, s < 0 ? -0.02 : RX, WN - 0.2, RZ0, FY);
+      kPanel(K, RX - 0.2, RH - 0.05, BM.slab, s * RX / 2, (RH - 0.05) / 2 + FY - 0.1, RZ0 - 0.005, 0, Math.PI, 1.2);                        // 背墙（厨房北墙）岩板饰面
+      kPanel(K, RX - 0.2, RZ0 - RZ1 - 0.25, M.ceiling, s * RX / 2, RH - 0.01, (RZ0 + WN) / 2 - 0.0625, Math.PI / 2, 0);
+      box(K, 2.2, 0.03, 0.12, BM.glow, s * RX / 2, RH - 0.03, -7.0); }
+    // 外墙：西、东实墙；北墙两扇 1.0 m 门（男 x -3.3～-2.3，女 x 2.3～3.3），门洞 2.4 m，门楣以上为墙
+    for (const s of [-1, 1]) { box(K, 0.25, RH, RZ0 - RZ1, T.wall, s * (RX - 0.125), RH / 2, (RZ0 + RZ1) / 2); seg(s * (RX - 0.125), RZ0, s * (RX - 0.125), RZ1); }
+    const doors = [[-3.3, -2.3], [2.3, 3.3]];
+    for (const [a0, a1] of [[-RX, -3.3], [-2.3, 2.3], [3.3, RX]]) { box(K, a1 - a0, RH, 0.25, T.wall, (a0 + a1) / 2, RH / 2, WN); seg(a0, WN, a1, WN); }
+    for (const [a0, a1] of doors) {
+      box(K, a1 - a0, RH - 2.4, 0.25, T.wall, (a0 + a1) / 2, 2.4 + (RH - 2.4) / 2, WN);
+      for (const e of [a0, a1]) box(K, 0.05, 2.4, 0.27, T.frame, e, 1.2, WN);
+      const hinge = a0 < 0 ? a0 : a1, sd = a0 < 0 ? 1 : -1;   // 柚木门扇向内开 90°，贴在门洞外侧的墙上
+      box(K, 0.04, 2.35, a1 - a0 - 0.05, T.teak, hinge + sd * 0.05, FY + 1.17, WN + 0.125 + (a1 - a0) / 2); box(K, 0.03, 0.35, 0.03, BM.gold, hinge + sd * 0.08, FY + 1.05, WN + 0.125 + (a1 - a0) - 0.12);
+      seg(hinge + sd * 0.05, WN + 0.125, hinge + sd * 0.05, WN + 0.125 + (a1 - a0));
+    }
+    // 中间隔墙（两边不互通）
+    box(K, 0.15, RH, RZ0 - WN - 0.125, T.wall, 0, RH / 2, (RZ0 + WN + 0.125) / 2); seg(0, RZ0, 0, WN + 0.125);
+    // 屋面：挑檐北 1 m、东西 0.3 m；深灰金属封边
+    const RZN = RZ1 - 1.0; box(K, RX * 2 + 0.6, 0.3, RZ0 - RZN, M.concrete, 0, RH + 0.15, (RZ0 + RZN) / 2);
+    box(K, RX * 2 + 0.66, 0.36, 0.03, T.frame, 0, RH + 0.15, RZN - 0.015); for (const s of [-1, 1]) box(K, 0.03, 0.36, RZ0 - RZN, T.frame, s * (RX + 0.315), RH + 0.15, (RZ0 + RZN) / 2);
+    box(K, RX * 2, 0.02, 1.0, M.ceiling, 0, RH - 0.01, RZ1 - 0.5);
+    // 北立面：两门之间柚木竖格栅、门旁金色男女标识牌与壁灯、挑檐下筒灯
+    for (let x = -2.1; x <= 2.1; x += 0.12) box(K, 0.04, RH - 0.3, 0.12, T.teak, x, (RH - 0.3) / 2 + 0.15, RZ1 - 0.08);
+    for (const [cx, woman] of [[-3.75, false], [3.75, true]]) {
+      box(K, 0.36, 0.5, 0.03, T.frame, cx, 1.7, RZ1 - 0.02);
+      cyl(K, 0.045, 0.045, 0.02, BM.gold, cx, 1.83, RZ1 - 0.04, 16, Math.PI / 2);
+      if (woman) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.09, 0.2, 3), BM.gold); d.position.set(cx, 1.66, RZ1 - 0.04); d.rotation.x = Math.PI / 2; d.rotation.y = Math.PI / 6; K.add(d); }   // 裙装
+      else box(K, 0.09, 0.2, 0.02, BM.gold, cx, 1.66, RZ1 - 0.04);
+      for (const s of [-1, 1]) box(K, 0.025, 0.12, 0.02, BM.gold, cx + s * 0.025, 1.51, RZ1 - 0.04);
+      box(K, 0.08, 0.35, 0.08, BM.glow, cx + (woman ? -0.45 : 0.45) * -1, 2.1, RZ1 - 0.05);
+    }
+    for (const x of [-2.8, 0, 2.8]) cyl(K, 0.08, 0.08, 0.02, BM.glow, x, RH - 0.03, RZ1 - 0.5, 16);
+    // 男卫：两个小便斗（背靠厨房北墙）、一个马桶隔间、西墙双盆洗手台
+    for (const x of [-4.0, -3.2]) { urinalF(K, x, FY, RZ0, Math.PI); rect(x - 0.25, x + 0.25, RZ0 - 0.45, RZ0); }
+    const stall = (x0, x1) => {   // 马桶隔间：深灰石材隔板 + 柚木门（向内开启）；马桶背靠厨房北墙
+      const zf = RZ0 - 1.7, BH = 2.1;
+      for (const x of [x0, x1]) { box(K, 0.04, BH, 1.7, BM.stoneDark, x, FY + 0.15 + BH / 2, RZ0 - 0.85); seg(x, RZ0, x, zf); }
+      box(K, 0.3, BH, 0.04, BM.stoneDark, x0 + 0.15, FY + 0.15 + BH / 2, zf); box(K, 0.3, BH, 0.04, BM.stoneDark, x1 - 0.15, FY + 0.15 + BH / 2, zf); seg(x0, zf, x0 + 0.3, zf); seg(x1 - 0.3, zf, x1, zf);
+      box(K, 0.04, BH - 0.05, x1 - x0 - 0.65, T.teak, x0 + 0.32, FY + 0.15 + BH / 2, zf + (x1 - x0 - 0.65) / 2); seg(x0 + 0.32, zf, x0 + 0.32, zf + (x1 - x0 - 0.65));   // 门扇向内开
+      wcF(K, (x0 + x1) / 2, FY, RZ0, Math.PI, 1); rect((x0 + x1) / 2 - 0.32, (x0 + x1) / 2 + 0.32, RZ0 - 0.72, RZ0);
+    };
+    stall(-2.45, -0.95);
+    vanityF(K, -RX + 0.125, FY, -7.5, Math.PI / 2, 1.5, 2); rect(-RX + 0.125, -RX + 0.7, -8.3, -6.7);
+    // 女卫：两个马桶隔间、东墙双盆洗手台、梳妆凳
+    stall(0.35, 1.85); stall(1.95, 3.45);
+    vanityF(K, RX - 0.125, FY, -7.5, -Math.PI / 2, 1.5, 2); rect(RX - 0.7, RX - 0.125, -8.3, -6.7);
+    cyl(K, 0.2, 0.2, 0.42, std(0xc9b89a, 0.95), 2.2, FY + 0.21, -8.2, 18);
+    // 挂墙擦手纸盒（金色）
+    for (const x of [-RX + 0.15, RX - 0.15]) box(K, 0.1, 0.32, 0.26, BM.gold, x, FY + 1.3, -8.55);
+  }
+  // ---------------- 小路：别墅与厨房之间的过道向北绕到卫生间门前；高尔夫球场沿厨房北侧也有小路（西端石阶下到球场） ----------------
+  { const pathM = std(0x8f8b83, 0.9), PY = PT + 0.012;
+    const strip = (x0, x1, z0, z1) => { box(K, x1 - x0, 0.024, z1 - z0, pathM, (x0 + x1) / 2, PY - 0.012 + 0.0005, (z0 + z1) / 2); };
+    for (let z = -2.08; z > -11.2; z -= 0.75) strip(6.45, 7.75, z - 0.6, z);                 // 过道北段：从连廊北沿沿厨房东侧向北（汀步；两块基座的接缝 z=-5 落在汀步间隙里）
+    for (let x = 7.75; x > -6.4; x -= 0.75) strip(x - 0.6, x, -11.35, -10.05);             // 卫生间门前东西向小路
+    const gy = gh(wx(-8.0), wz(-10.7)) - Y0, len = Math.max(0.9, Math.round((PT - gy) / 0.17) * 0.3);
+    const SG = new THREE.Group(); SG.position.set(-5.5, 0, -10.7); SG.rotation.y = Math.PI / 2; K.add(SG);
+    stairs(SG, (lx, lz) => [wx(-5.5 + lz), wz(-10.7 - lx)], Y0, 0, -len, 0, gy, PT, 1.4, { solid: true, mat: T.stone, railMat: T.frame });   // 西端石阶：下到高尔夫球场
+  }
   KITCHEN.group = K;
   K.position.set(KX, Y0, KZ); return K;
+}
+
+// ======================= 06f 高端卫浴洁具库（别墅主卫/客卫、三楼洗浴室、公共卫生间共用同一套款式） =======================
+// 统一风格：白色釉面陶瓷 + 拉丝香槟金五金 + 白色岩板台面/墙面 + 柚木浴室柜 + 背光镜（造型参照一线卫浴品牌的极简系列，不画任何品牌标识）。
+// 构件函数都在局部坐标里建模：背靠 -z 墙面、正面朝 +z，原点在墙面与地面交线的中点；ry 旋转后挂到父分组。
+let BX = null;
+function bathMats() {
+  if (BX) return BX;
+  const slab = kitchenMats().slab;
+  BX = {
+    china: std(0xf8f8f6, 0.16, 0, { envMapIntensity: 1.3 }),          // 釉面陶瓷
+    gold: std(0xc8a26a, 0.3, 1.0, { envMapIntensity: 1.4 }),          // 拉丝香槟金
+    goldDark: std(0x8e7148, 0.4, 1.0),
+    slab,                                                               // 白色岩板
+    stoneDark: std(0x3b3c3e, 0.35, 0.1),                                // 深灰石材（淋浴地台、隔板）
+    teak: kitchenMats().teak,
+    mirror: std(0xdfe6ea, 0.03, 1.0, { envMapIntensity: 1.7 }),
+    glow: std(0xffffff, 0.5, 0, { emissive: 0xfff0d8, emissiveIntensity: 1.6 }),
+    towel: std(0xf2eee6, 0.95), towelGrey: std(0xb9b6ae, 0.95),
+    water: std(0xcfe6ea, 0.05, 0, { transparent: true, opacity: 0.55, envMapIntensity: 1.5 }),
+    sensor: std(0x111315, 0.1, 0.3),
+  };
+  return BX;
+}
+// 旋转体（车削）几何：pts 为 [半径, 高] 列表；sx、sz 把圆截面拉成椭圆（几何体新建，不共用）
+function latheMesh(p, pts, mat, x, y, z, sx = 1, sz = 1, seg = 28) {
+  const g = new THREE.LatheGeometry(pts.map(([r, h]) => new THREE.Vector2(r, h)), seg);
+  const m = new THREE.Mesh(g, mat); m.position.set(x, y, z); m.scale.set(sx, 1, sz); p.add(m); return m;
+}
+// 壁挂式马桶：隐藏水箱（岩板包覆）+ 金色冲水面板（大小双键）+ 椭圆坐便 + 缓降盖板；侧墙纸巾架与马桶刷
+function wcF(p, x, y, z, ry, side = 1) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  box(g, 0.62, 1.12, 0.2, B.slab, 0, 0.56, 0.1);                                   // 隐藏水箱包覆
+  box(g, 0.24, 0.16, 0.012, B.gold, 0, 0.98, 0.206); box(g, 0.1, 0.12, 0.006, B.goldDark, -0.055, 0.98, 0.214); box(g, 0.1, 0.12, 0.006, B.goldDark, 0.055, 0.98, 0.214);
+  latheMesh(g, [[0.0, 0], [0.12, 0.0], [0.17, 0.08], [0.19, 0.2], [0.185, 0.24], [0.15, 0.245], [0.14, 0.2]], B.china, 0, 0.18, 0.46, 1, 1.45);   // 坐便（前后拉长的椭圆）
+  box(g, 0.34, 0.18, 0.12, B.china, 0, 0.33, 0.26);                                  // 与水箱相接的后段
+  latheMesh(g, [[0.15, 0], [0.19, 0.0], [0.19, 0.02], [0.15, 0.02]], B.china, 0, 0.43, 0.46, 1, 1.45);                    // 坐圈
+  { const lid = latheMesh(g, [[0, 0.02], [0.19, 0.02], [0.19, 0.0], [0, 0.0]], B.china, 0, 0.455, 0.46, 1, 1.45); lid.scale.y = 1; }   // 盖板（合上）
+  box(g, 0.02, 0.02, 0.14, B.gold, side * 0.45, 0.72, 0.14); cyl(g, 0.055, 0.055, 0.11, B.towel, side * 0.45, 0.66, 0.2, 14, 0, Math.PI / 2);   // 纸巾架与纸卷
+  cyl(g, 0.055, 0.05, 0.3, B.gold, side * 0.42, 0.15, 0.3, 12); cyl(g, 0.012, 0.012, 0.2, B.goldDark, side * 0.42, 0.4, 0.3, 6);   // 马桶刷筒
+  return g;
+}
+// 悬挂式浴室柜：柚木柜体（两抽屉、金色拉手）+ 岩板台面 + 台上盆 + 入墙式金色龙头 + 背光镜 + 两盏壁灯 + 皂液器、叠放毛巾
+function vanityF(p, x, y, z, ry, w = 1.2, basins = 1) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  box(g, w, 0.42, 0.5, B.teak, 0, 0.62, 0.25); box(g, w + 0.02, 0.03, 0.54, B.slab, 0, 0.845, 0.27);
+  for (const s of [-1, 1]) { box(g, w / 2 - 0.02, 0.4, 0.006, B.teak, s * w / 4, 0.62, 0.503); box(g, 0.16, 0.012, 0.02, B.gold, s * w / 4, 0.78, 0.515); }
+  for (let i = 0; i < basins; i++) {
+    const bx = basins === 1 ? 0 : (i - (basins - 1) / 2) * (w / basins);
+    latheMesh(g, [[0, 0], [0.16, 0.0], [0.2, 0.04], [0.22, 0.13], [0.21, 0.135], [0.19, 0.05], [0.0, 0.03]], B.china, bx, 0.86, 0.28, 1.3, 0.85);   // 台上盆（椭圆）
+    cyl(g, 0.02, 0.02, 0.2, B.gold, bx, 1.12, 0.1, 10, Math.PI / 2); cyl(g, 0.03, 0.03, 0.02, B.gold, bx, 1.12, 0.005, 12, Math.PI / 2);   // 入墙出水口
+    cyl(g, 0.018, 0.018, 0.08, B.gold, bx + 0.14, 1.12, 0.04, 10, Math.PI / 2);                                                           // 冷热调节杆
+    const mw = Math.min(0.9, w / basins - 0.1);
+    box(g, mw, 0.9, 0.03, B.mirror, bx, 1.72, 0.045); box(g, mw + 0.04, 0.94, 0.012, B.glow, bx, 1.72, 0.024);   // 背光镜（镜后灯带外溢；离开墙面饰板，不共面）
+  }
+  for (const s of [-1, 1]) { cyl(g, 0.035, 0.035, 0.26, B.glow, s * (w / 2 + 0.08), 1.72, 0.08, 12); cyl(g, 0.04, 0.04, 0.02, B.gold, s * (w / 2 + 0.08), 1.86, 0.08, 12); cyl(g, 0.04, 0.04, 0.02, B.gold, s * (w / 2 + 0.08), 1.58, 0.08, 12); }   // 壁灯
+  cyl(g, 0.03, 0.032, 0.14, B.goldDark, w / 2 - 0.12, 0.93, 0.18, 12); cyl(g, 0.006, 0.006, 0.05, B.gold, w / 2 - 0.12, 1.02, 0.18, 6);   // 皂液器
+  box(g, 0.28, 0.06, 0.2, B.towel, -w / 2 + 0.18, 0.89, 0.2); box(g, 0.26, 0.05, 0.19, B.towelGrey, -w / 2 + 0.18, 0.945, 0.2);           // 叠放毛巾
+  return g;
+}
+// 独立式浴缸（1.7 m 椭圆）+ 落地式金色龙头（带手持花洒）+ 柚木浴缸托盘 + 挂毛巾
+function tubF(p, x, y, z, ry) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  latheMesh(g, [[0, 0], [0.34, 0.0], [0.4, 0.1], [0.43, 0.5], [0.45, 0.58], [0.42, 0.6], [0.39, 0.52], [0.37, 0.14], [0.0, 0.1]], B.china, 0, 0, 0.5, 1.95, 1, 36);
+  { const w = new THREE.Mesh(new THREE.CircleGeometry(0.38, 28), B.water); w.rotation.x = -Math.PI / 2; w.position.set(0, 0.42, 0.5); w.scale.set(1.95, 1, 1); g.add(w); }   // 水面
+  box(g, 0.3, 0.02, 0.9, B.teak, 0.1, 0.61, 0.5);                                  // 横跨浴缸的柚木托盘
+  cyl(g, 0.02, 0.018, 0.1, B.glow, 0.05, 0.66, 0.35, 8); box(g, 0.14, 0.03, 0.1, B.towel, 0.18, 0.635, 0.6);   // 托盘上的蜡烛、小毛巾
+  const fx = 0.35, fz = 1.02; cyl(g, 0.025, 0.025, 0.95, B.gold, fx, 0.475, fz, 12); cyl(g, 0.07, 0.07, 0.01, B.gold, fx, 0.005, fz, 16);   // 落地龙头立柱与底座（浴缸正面外侧）
+  { const a = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 8, 16, Math.PI), B.gold); a.rotation.y = Math.PI / 2; a.position.set(fx, 0.95, fz - 0.12); g.add(a); }   // 鹅颈出水（越过缸沿）
+  box(g, 0.06, 0.03, 0.03, B.gold, fx + 0.05, 0.75, fz); box(g, 0.035, 0.16, 0.035, B.gold, fx - 0.05, 0.62, fz + 0.03);   // 调节杆、手持花洒
+  box(g, 0.45, 0.02, 0.03, B.gold, -0.2, 0.62, 0.02); box(g, 0.42, 0.5, 0.02, B.towel, -0.2, 0.37, 0.035);    // 墙上挂杆与浴巾
+  return g;
+}
+// 步入式淋浴房：深灰石材地台 + 线性地漏 + 无框玻璃（固定扇 + 开启口）+ 顶喷方形雨淋花洒 + 升降杆手持花洒 + 恒温阀面板 + 岩板壁龛（瓶罐）
+function showerF(p, x, y, z, ry, w = 1.1, d = 1.8, open = 1) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  box(g, w, 0.04, d, B.stoneDark, 0, 0.02, d / 2); box(g, w - 0.2, 0.006, 0.05, B.gold, 0, 0.042, 0.15);   // 地台、线性地漏
+  box(g, w, 2.2, 0.012, B.slab, 0, 1.14, 0.007); box(g, 0.012, 2.2, d, B.slab, w / 2 - 0.007, 1.14, d / 2);   // 岩板墙面（背墙、+x 侧墙）
+  box(g, 0.01, 2.0, d, M.glassClear, -w / 2 + 0.01, 1.04, d / 2); box(g, 0.02, 0.02, d, B.gold, -w / 2 + 0.01, 2.05, d / 2);   // -x 侧固定玻璃（与浴缸之间）
+  box(g, w * (open ? 0.55 : 1), 2.0, 0.01, M.glassClear, open ? -w * 0.225 : 0, 1.04, d - 0.005); box(g, w * (open ? 0.55 : 1), 0.02, 0.02, B.gold, open ? -w * 0.225 : 0, 2.05, d - 0.005);   // 正面固定玻璃（+x 端留约 0.5 m 入口）
+  cyl(g, 0.01, 0.01, 0.4, B.gold, 0, 2.3, 0.2, 6, Math.PI / 2); box(g, 0.32, 0.015, 0.32, B.gold, 0, 2.22, 0.45); box(g, 0.28, 0.004, 0.28, B.goldDark, 0, 2.203, 0.45);   // 顶喷雨淋（出水面板比花洒底面低 7 mm，不共面）
+  box(g, 0.02, 0.9, 0.02, B.gold, w / 2 - 0.023, 1.35, 0.9); box(g, 0.04, 0.2, 0.04, B.gold, w / 2 - 0.05, 1.6, 0.9); cyl(g, 0.035, 0.035, 0.02, B.gold, w / 2 - 0.08, 1.72, 0.9, 12, 0, Math.PI / 2);   // 升降杆（贴在岩板侧墙上）与手持花洒
+  box(g, 0.16, 0.3, 0.012, B.gold, 0.25, 1.1, 0.016); for (const h of [1.18, 1.02]) cyl(g, 0.028, 0.028, 0.04, B.goldDark, 0.25, h, 0.035, 12, Math.PI / 2);   // 恒温阀
+  box(g, 0.5, 0.3, 0.1, B.stoneDark, -0.15, 1.35, 0.065); for (const [bx, c] of [[-0.3, 0xf1ede4], [-0.18, 0x2e3a33], [-0.06, 0xc8a26a]]) cyl(g, 0.028, 0.028, 0.18, std(c, 0.4), bx, 1.29, 0.07, 10);   // 壁龛与瓶罐
+  return g;
+}
+// 小便斗（壁挂、感应冲水面板）与隔板
+function urinalF(p, x, y, z, ry) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  latheMesh(g, [[0, 0], [0.14, 0.02], [0.2, 0.2], [0.21, 0.55], [0.18, 0.62], [0.16, 0.6], [0.17, 0.25], [0.12, 0.08], [0, 0.07]], B.china, 0, 0.45, 0.16, 1, 0.8);
+  box(g, 0.12, 0.16, 0.012, B.gold, 0, 1.25, 0.006); box(g, 0.05, 0.03, 0.006, B.sensor, 0, 1.28, 0.014);
+  box(g, 0.03, 1.2, 0.5, B.stoneDark, 0.42, 1.0, 0.25);    // 小便斗隔板
+  return g;
+}
+// 毛巾电热架（金色）
+function towelRailF(p, x, y, z, ry) {
+  const B = bathMats(), g = furn(p, x, y, z, ry);
+  for (const s of [-1, 1]) { box(g, 0.025, 0.9, 0.025, B.gold, s * 0.25, 1.15, 0.08); for (const y of [0.78, 1.52]) { box(g, 0.02, 0.02, 0.07, B.gold, s * 0.25, y, 0.035); cyl(g, 0.025, 0.025, 0.012, B.gold, s * 0.25, y, 0.006, 12, Math.PI / 2); } }   // 立柱 + 墙上安装支座
+  for (let k = 0; k < 6; k++) box(g, 0.5, 0.018, 0.018, B.gold, 0, 0.75 + k * 0.16, 0.08);
+  box(g, 0.44, 0.5, 0.02, B.towel, 0, 1.05, 0.1);
+  return g;
+}
+// 主卫套间（二楼主卫与三楼洗浴室共用，尺寸与设施完全相同）：室内 4.35 × 4.175 m。
+// 局部坐标：u 沿背墙（0 → 4.35），v 离开背墙（0 → 4.175）；从 u=0 一端依次为马桶与洗手台、宽大浴缸、宽大淋浴室；
+// 地面白色岩板、背墙岩板；(ox, oy, oz) 为背墙一端的室内角点、rot 为分组朝向；碰撞体由调用方的 reg(u0, u1, v0, v1) 换算登记。
+function masterBathF(V, ox, oy, oz, rot, reg) {
+  const B = bathMats(), g = new THREE.Group(); g.position.set(ox, oy, oz); g.rotation.y = rot; V.add(g);
+  kPanel(g, 4.35, 4.175, B.slab, 2.175, 0.005, 2.0875, -Math.PI / 2, 0, 1.2);        // 岩板地面
+  kPanel(g, 4.35, 2.6, B.slab, 2.175, 1.3, 0.012, 0, 0, 1.2);                          // 背墙岩板（离墙面 12 mm，不共面）
+  wcF(g, 0.4, 0, 0, 0, -1); reg(0.08, 0.72, 0, 0.72);
+  vanityF(g, 1.1, 0, 0, 0, 0.7, 1); reg(0.74, 1.46, 0, 0.55);
+  tubF(g, 2.35, 0, 0.08, 0); reg(1.47, 3.23, 0.08, 1.2);
+  showerF(g, 3.8, 0, 0, 0, 1.1, 1.8, 1);
+  for (const [a0, a1, b0, b1] of [[3.25, 3.28, 0, 1.8], [3.25, 3.86, 1.78, 1.81]]) reg(a0, a1, b0, b1);   // 淋浴房玻璃：侧面整扇、正面留出靠墙一端约 0.5 m 入口
+  towelRailF(g, 2.45, 0, 4.175, Math.PI);
+  box(g, 1.2, 0.02, 0.8, B.towelGrey, 2.3, 0.015, 1.6);                                   // 浴缸前地垫
+  box(g, 1.6, 0.03, 0.12, B.glow, 2.175, 2.95, 0.4);                                    // 顶部灯带
+  return g;
 }
 
 // ======================= 06b 瞭望塔 / 水闸 / 机场 / 能源 / 栈桥 / 小品 =======================

@@ -4,8 +4,8 @@
 // （透射要把整个场景额外渲染一遍）；网格简化到约 23 万三角面、贴图缩到 512、转 WebP、meshopt 压缩，得到 assets/mac_desk.glb（约 5 MB），
 // 构建时以 base64 内嵌为 ASSET_DESK_GLB。
 // 模型坐标：y 向上，桌面 x -1.6～0.8、z ±0.375、高 0.72，椅子在 +z 一侧面朝桌子（-z）；原点在地面。
-// 摆放：别墅三层书房北侧，桌子背靠北面落地窗（与原书桌同位），整张桌子中心在别墅局部 (2.5, F2, -3.6)。
-const DESK = { at: { x: 180 + 2.9, y: 11.35 + 7.45, z: -46 - 3.6 }, chair: { x: 0.05, z: 0.76 }, loaded: false, group: null };
+// 摆放：别墅三层开放式书房靠北窗正中（用户要求移位），整张桌子中心在别墅局部 (4.0, F2, -4.2)，人坐下面朝北窗。
+const DESK = { at: { x: 180 + 4.4, y: 11.35 + 7.45, z: -46 - 4.2 }, chair: { x: 0.05, z: 0.76 }, loaded: false, group: null };
 async function loadDeskModel(scene) {
   const bin = Uint8Array.from(atob(ASSET_DESK_GLB), c => c.charCodeAt(0)).buffer;
   const loader = new THREE.GLTFLoader().setMeshoptDecoder(THREE.MeshoptDecoder);
