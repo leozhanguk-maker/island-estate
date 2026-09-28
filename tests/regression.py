@@ -6,12 +6,14 @@
 #   P-014 植被随机数按位置独立：把一小块林地挖成海，只有附近的树和灌木变化，12 m 以外的撒点完全不变
 #   载具喇叭：驾驶汽车、拖拉机、直升机、游艇时按 H 各自鸣笛（音色不同），ESC 暂停面板列出 H 键
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
+#   V-022 海面：外海满海面白色碎片（泡沫毯在无泡沫处仍出白斑）、登岸浮台旁水面网格贴着岩石翻折显示成一整片青绿色背面：固定时刻截图按像素统计
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
 import os, sys, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, 'lib'))
-from harness import Session
+from harness import Session, report_dir
+from views import RENDER_JS
 
 REPROS = [
     ('P-001 陡坡礁石不再吞人（陆地）', ['--seed=7', '--repro=walk-12']),
@@ -118,6 +120,21 @@ def main():
         errs = list(s.errors) + ([r['err']] if r['err'] else [])
     ok = not errs and r['frames'] > 0
     print(f"  {'✓' if ok else '✗'} P-012 主线程生成（无后台线程）时漫游正常：报错 {errs[:1] or '无'}，{r['secs']} 秒内主循环渲染 {r['frames']} 帧")
+    failed += 0 if ok else 1
+    # V-022：固定海面时刻 23 秒，外海俯视的下半幅（全是海面）近白像素（三通道都 > 200）< 0.5%（修复前 4.55%）；
+    # 登岸浮台机位里水面背面的青绿色（G、B 比 R 高 45 以上且 G > 150）< 5%（修复前 52%）
+    import numpy as np
+    from PIL import Image
+    rj = RENDER_JS.replace('window.__sea.update(I.renderer, c, 0)', '(__sea.mat.uniforms.uTime.value = 23, window.__sea.update(I.renderer, c, 23))')
+    out = report_dir('regression')
+    with Session('#fp,still,q=high,clean', size=(960, 540)) as s:
+        s.js("() => { const u = document.getElementById('fpui'); if (u) u.style.display = 'none'; }")
+        s.js(rj, [200, 25, 260, 240, 0, 300]); s.shot(os.path.join(out, 'v022_外海.png'))
+        s.js(rj, [66, 3.5, 79, 59.5, 0.4, 87]); s.shot(os.path.join(out, 'v022_浮台.png'))
+    a = np.asarray(Image.open(os.path.join(out, 'v022_外海.png')).convert('RGB')).astype(int); white = (a[a.shape[0] // 2:].min(axis=2) > 200).mean() * 100
+    b = np.asarray(Image.open(os.path.join(out, 'v022_浮台.png')).convert('RGB')).astype(int); teal = ((b[..., 1] - b[..., 0] > 45) & (b[..., 2] - b[..., 0] > 45) & (b[..., 1] > 150)).mean() * 100
+    ok = white < 0.5 and teal < 5
+    print(f"  {'✓' if ok else '✗'} V-022 外海没有满海面白色碎片（近白像素 {white:.2f}%，< 0.5%）；登岸浮台旁没有翻折的青绿色水面背面（{teal:.2f}%，< 5%）")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)
