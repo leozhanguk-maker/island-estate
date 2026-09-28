@@ -79,7 +79,7 @@ body.under #uw{opacity:1}
 <button id="showui" type="button">显示界面</button>
 <div id="uw"></div>
 <div id="fpui"><div class="cross"></div><div id="fphud"></div><div id="fpprompt"></div><canvas id="minimap" width="180" height="180"></canvas><div id="fpxyz"></div></div>
-<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
+<div id="fpgate"><div class="card"><h2>岛上漫游</h2><dl><dt>W A S D</dt><dd>前后左右移动</dd><dt>鼠标</dt><dd>调整朝向（无法锁定鼠标时按住拖动）</dd><dt>触屏</dt><dd>左半屏拖动移动，右半屏拖动转向</dd><dt>Shift</dt><dd>奔跑</dd><dt>空格</dt><dd>跳跃</dd><dt>V</dt><dd>第一人称与肩后视角切换</dd><dt>R</dt><dd>回到起点（别墅南门）</dd><dt>下水</dt><dd>水深没过头部时自动游泳，按住 C 下潜</dd><dt>E</dt><dd>交互：开关水闸、驾驶车辆与游艇</dd><dt>F</dt><dd>游艇：靠近船体按 F 登船；在船上站到船边按 F 离船（靠泊时落到浮台或岸上），航行中按 F 直接跳入附近海域</dd><dt>游艇舵位</dt><dd>E 手动驾驶，C 自动巡航（开闸、绕岛一周、回港）</dd><dt>H</dt><dd>鸣笛：驾驶汽车、拖拉机、直升机、游艇时按 H，各有音色；游艇驾驶台的红色按钮同效，在闸外鸣笛会召唤鲸群和鱼群</dd><dt>M</dt><dd>小地图缩放</dd><dt>Esc</dt><dd>暂停</dd></dl><div class="tpl">传送</div><div id="fptp"></div><div class="row"><button id="fpgo" type="button">开始漫游</button><button id="fpreset" type="button">回到起点</button><button id="fpback" type="button">返回鸟瞰</button></div></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script id="gensrc" type="text/plain">
 'use strict';
@@ -3288,7 +3288,7 @@ function bedF(p, x, y, z, ry, w = 1.8, L = 2.1, duvet = 0xf1ede4) {
   box(g, w + 0.1, 0.25, L + 0.1, wood, 0, 0.2, 0);
   box(g, w, 0.22, L, std(0xfafaf8, 0.9), 0, 0.43, 0);
   box(g, w + 0.06, 0.08, L * 0.7, std(duvet, 0.95), 0, 0.57, L * 0.15);
-  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.03);
+  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.045);   // 被尾垂边：外皮比床架尾端再出 1.5 cm，不与床架端面共面
   box(g, w * 0.95, 0.03, 0.35, std(0x9aa7b0, 0.9), 0, 0.62, L * 0.15 - L * 0.35 + 0.2);
   for (const sx of [-1, 1]) { const pl = box(g, w / 2 - 0.15, 0.14, 0.4, std(0xffffff, 0.9), sx * w / 4, 0.62, -L / 2 + 0.3); pl.rotation.x = -0.2; }
   box(g, w + 0.2, 1.0, 0.12, std(0xcbbfae, 0.95), 0, 0.85, -L / 2 - 0.05);
@@ -3544,8 +3544,9 @@ function buildVilla() {
     }
   };
   // ---- 楼梯 S1：首层 → 二层室内（沿西侧） ----
-  const S1 = [-9.2, -8.0, -0.3, 6.3], S2 = [-5.75, -4.65, -2.4, 4.6], S3 = [7.9, 8.9, -1.9, 4.8];
-  stairs(V, toW, y0, -8.6, 6.3, -0.3, 0.13, 3.9, 1.1, { railSides: [1], openSides: [] });
+  // 三部楼梯两端都离正对的墙 ≥ 2 m：起步离背后的南墙内皮（原先只有 0.6～0.7 m，要侧身挤进墙与第一级之间才能上楼），到顶离迎面的墙或屋顶栏板；首层楼梯西侧保持原位
+  const S1 = [-9.2, -8.0, -1.8, 4.8], S2 = [-5.75, -4.65, -2.75, 3.0], S3 = [7.9, 8.9, -3.25, 3.3];
+  stairs(V, toW, y0, -8.6, 4.8, -1.8, 0.13, 3.9, 1.1, { railSides: [1], openSides: [] });
   slab(-10.9, 10.9, -6.9, 6.9, 3.62, 0.04, M.ceiling, S1);                                   // 首层吊顶（楼梯处开洞）
   for (const [x, z] of [[-4.5, -3], [3.2, -3.2], [5.5, 1.8], [-1, 3]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, 3.57, z);
   // 首层墙体碰撞
@@ -3565,7 +3566,7 @@ function buildVilla() {
   slab(-11.3, 11.3, -7.3, 7.3, 3.78, 0.2, M.metalDark, [-10.9, 10.9, -6.9, 6.9]);
   // ---- 二层（向湖悬挑）：外壳 + 卧室；北侧门通阳台 ----
   const F1 = 3.9, F1h = 3.3;
-  slab(-9.4, 10.6, -7.7, 5.3, F1, 0.14, M.floorWood, [S1[0], S1[1], S1[2], 5.3], F1);
+  slab(-9.4, 10.6, -7.7, 5.3, F1, 0.14, M.floorWood, [S1[0], S1[1], S1[2], S1[3]], F1);
   wellRail(S1, F1, [-1]);
   walls(F1, F1h, 'x', -7.7, [[-9.4, -8, 'w'], [-8, -1.2, 'g'], [-1.2, 1.2, 'o'], [1.2, 9.2, 'g'], [9.2, 10.6, 'w']]);
   box(V, 2.4, 0.4, 0.25, M.wallWarm, 0, F1 + F1h - 0.2, -7.7); slideDoor(V, 2.4, F1 + 1.2, -7.52, 2.4, 2.4);   // 二层北门推拉门（开启）
@@ -3594,7 +3595,7 @@ function buildVilla() {
   collR(wx(-4), wz(-8.2), 1.2, 0.45, 0, bb + 2.5, bb); collR(wx(-2.4), wz(-8.2), 0.25, 0.25, 0, bb + 2.5, bb);
   for (const x of [-4.7, -3.9, -3.1]) addSeat(wx(x), y0 + 4.08 + 0.42, wz(-8.35), 0);
   // ---- 楼梯 S2：二层 → 三层 ----
-  stairs(V, toW, y0, -5.2, 4.6, -2.4, F1, 7.45, 1.1, { railSides: [1, -1] });
+  stairs(V, toW, y0, -5.2, 3.0, -2.75, F1, 7.45, 1.1, { railSides: [1, -1] });   // 二层层高 3.55 m、上下都要留 2 m，梯段 5.75 m（踏步 0.29 m）
   slab(-9.9, 11.1, -8.2, 5.8, 7.445, 0.2, M.metalDark, [-9.4, 10.6, -7.7, 5.3]);          // 二层顶檐口（顶面比三层木地板低 5 mm，避免共面闪烁）
   // 二层屋面（三层外围露台）：北侧露台 + 东西两侧窄台
   slab(-9.4, 10.6, -7.7, -5.0, 7.45, 0.12, M.stone, null, 7.45);
@@ -3630,7 +3631,7 @@ function buildVilla() {
   addSeat(wx(2.5), y0 + F2 + 0.5, wz(-2.85), 0); addSeat(wx(-2.5), y0 + F2 + 0.42, wz(3.75), 0); addSeat(wx(-1.5), y0 + F2 + 0.42, wz(3.75), 0);
   collR(wx(2.5), wz(-3.4), 1.0, 0.8, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(3.5), wz(5.2), 1.6, 0.3, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(-2), wz(3.9), 1.1, 0.5, 0, y0 + F2 + 2, y0 + F2 - 0.5);
   // ---- 楼梯 S3：三层 → 屋顶 ----
-  stairs(V, toW, y0, 8.4, 4.8, -1.9, F2, 11.1, 1.0, { railSides: [-1] });
+  stairs(V, toW, y0, 8.4, 3.3, -3.25, F2, 11.1, 1.0, { railSides: [-1] });
   // ---- 屋面：屋顶平台（玻璃栏板）+ 应急停机标识（不停放直升机） ----
   slab(-6.8, 9.6, -5.4, 6.0, 11.1, 0.4, M.concrete, [S3[0], S3[1], S3[2], S3[3]], 11.1);
   slab(-6.9, 9.7, -5.5, 6.1, 10.72, 0.15, M.metalDark, [-6.4, 9.2, -5.0, 5.6]);
@@ -3646,25 +3647,51 @@ function buildVilla() {
   for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
     planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
   for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
-  // 泳池旁（靠别墅一侧）两把沙滩椅 + 遮阳伞
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
-    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
+    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(V, 4.5, 0.05, -7.6, 1.35); collC(184.5, -53.6, 0.25); tableF(V, 4.5, 0.05, -8.9, 0, 0.35, 0.35, 0.45, M.teak, M.alu); }
   collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2);   // 泳池北侧水仙花池的碰撞由 planter() 登记
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
-function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {   // 精细躺椅：铝框、柚木板条、可调靠背、分段软垫、滚轮、浴巾
-  const g = new THREE.Group(), cu = std(cushion, 0.95);
-  for (const sx of [-1, 1]) { box(g, 0.04, 0.05, 1.95, M.alu, sx * 0.33, 0.3, 0.1); box(g, 0.04, 0.3, 0.04, M.alu, sx * 0.33, 0.15, 0.95); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 14), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.36, 0.07, -0.72); g.add(w); }
-  for (let i = 0; i < 11; i++) box(g, 0.64, 0.02, 0.1, M.teak, 0, 0.33, -0.15 + i * 0.105);
-  const back = new THREE.Group(); back.position.set(0, 0.33, -0.2); back.rotation.x = -0.75; g.add(back);
-  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.8, M.alu, sx * 0.33, 0, -0.4);
-  for (let i = 0; i < 7; i++) box(back, 0.64, 0.02, 0.1, M.teak, 0, 0.01, -0.06 - i * 0.11);
-  box(back, 0.6, 0.07, 0.78, cu, 0, 0.05, -0.4); box(back, 0.4, 0.1, 0.2, std(0xffffff, 0.9), 0, 0.12, -0.65);
-  box(g, 0.6, 0.07, 1.18, cu, 0, 0.38, 0.4); for (const zz of [-0.18, 0.99]) box(g, 0.61, 0.075, 0.015, std(0xd8d0c0, 0.9), 0, 0.38, zz);
-  box(g, 0.5, 0.03, 0.34, std(0x3e7fa6, 0.95), 0, 0.43, 0.7);
+// 躺椅（按实物结构）：头端在 -z、脚端在 +z，全长 2.0 m、宽 0.72 m；座面高 0.44（与 addSeat 的 +0.42 一致）
+// 铝合金框：两根纵梁 + 两端横梁，脚端两条腿（带橡胶脚垫），头端两条短腿各带一个滚轮（轮子着地，可推着走）
+// 柚木板条座面；靠背以铰轴与纵梁相连，向头端抬起约 40°，背后一根支撑杆顶在纵梁的卡槽上
+// 软垫：座垫、靠背垫分段并带滚边，头枕；脚端叠放一条条纹浴巾
+const LOUNGER_MAT = {}, LOUNGER_BACK = 0.7;   // 靠背抬起角（弧度，约 40°）；躺椅座位带 recline，漫游时按此角度半躺
+function loungerMat(c, r = 0.95) { const k = c + ':' + r; return LOUNGER_MAT[k] || (LOUNGER_MAT[k] = std(c, r)); }
+function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {
+  const g = new THREE.Group(), cu = loungerMat(cushion), pip = loungerMat(0xcfc6b4, 0.9), towelB = loungerMat(0x3e7fa6), towelW = loungerMat(0xf4f1ea);
+  const RY = 0.33, RH = 0.06, HX = 0.33;   // 纵梁中心高、截面高、半宽
+  for (const sx of [-1, 1]) {
+    box(g, 0.045, RH, 2.0, M.alu, sx * HX, RY, 0.05);                                  // 纵梁
+    box(g, 0.045, RY - RH / 2 - 0.02, 0.045, M.alu, sx * HX, (RY - RH / 2 - 0.02) / 2 + 0.02, 0.95);   // 脚端腿
+    box(g, 0.06, 0.02, 0.06, M.rubber, sx * HX, 0.01, 0.95);                           // 橡胶脚垫
+    box(g, 0.04, RY - RH / 2 - 0.09, 0.04, M.alu, sx * HX, (RY - RH / 2 + 0.09) / 2, -0.8);   // 头端短腿（下端接轮轴）
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.035, 16), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(w);   // 滚轮，着地
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.045, 10), M.alu); hub.rotation.z = Math.PI / 2; hub.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(hub);
+    for (const zz of [-0.72, -0.64, -0.56]) box(g, 0.05, 0.012, 0.02, M.metalDark, sx * HX, RY + RH / 2 + 0.006, zz);   // 靠背角度卡槽
+  }
+  for (const zz of [-0.93, 1.03]) box(g, 2 * HX + 0.045, 0.05, 0.04, M.alu, 0, RY, zz);   // 两端横梁
+  cyl(g, 0.012, 0.012, 2 * HX + 0.1, M.alu, 0, 0.09, -0.8, 6, 0, Math.PI / 2);          // 轮轴
+  for (let i = 0; i < 10; i++) box(g, 0.62, 0.02, 0.085, M.teak, 0, RY + RH / 2 + 0.012, -0.06 + i * 0.109);   // 座面板条
+  const sy = RY + RH / 2 + 0.022;   // 板条顶面
+  box(g, 0.6, 0.065, 1.07, cu, 0, sy + 0.005 + 0.0325, 0.46);                          // 座垫
+  for (const zz of [-0.075, 0.995]) box(g, 0.61, 0.018, 0.018, pip, 0, sy + 0.07, zz);    // 座垫滚边
+  // 靠背：铰轴在 z = -0.12，向头端（-z）抬起 40°
+  const back = new THREE.Group(); back.position.set(0, sy, -0.12); back.rotation.x = LOUNGER_BACK; g.add(back);
+  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.84, M.alu, sx * (HX - 0.03), -0.02, -0.42);
+  box(back, 2 * (HX - 0.03) + 0.04, 0.04, 0.04, M.alu, 0, -0.02, -0.82);
+  for (let i = 0; i < 7; i++) box(back, 0.58, 0.02, 0.095, M.teak, 0, 0.01, -0.08 - i * 0.11);
+  box(back, 0.58, 0.06, 0.8, cu, 0, 0.055, -0.43);                                     // 靠背垫
+  box(back, 0.59, 0.018, 0.018, pip, 0, 0.09, -0.83);
+  box(back, 0.44, 0.1, 0.2, loungerMat(0xffffff, 0.9), 0, 0.14, -0.7);                 // 头枕
+  // 支撑杆：从靠背背面（离铰轴 0.5 m 处）斜顶到纵梁中间的卡槽
+  const ca = Math.cos(LOUNGER_BACK), sa = Math.sin(LOUNGER_BACK), by = sy - 0.04 * ca + 0.5 * sa, bz = -0.12 - 0.5 * ca - 0.04 * sa;
+  for (const sx of [-1, 1]) rod(g, new THREE.Vector3(sx * (HX - 0.03), by, bz), new THREE.Vector3(sx * (HX - 0.03), RY + RH / 2, -0.64), 0.012, M.alu, 6);
+  // 脚端折叠浴巾（蓝白条纹）
+  for (let i = 0; i < 8; i++) box(g, 0.5, 0.03, 0.04, i % 2 ? towelW : towelB, 0, sy + 0.07 + 0.017, 0.62 + i * 0.04 + 0.02);
   g.position.set(x, y, z); g.rotation.y = ry; p.add(g); return g;
 }
 function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细遮阳伞：八角伞面 + 垂边 + 伞骨 + 摇柄 + 石材伞座
@@ -3677,53 +3704,7 @@ function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细
   cyl(g, 0.03, 0.05, 0.12, M.alu, 0, h + 0.27, 0, 8);
   g.position.set(x, y, z); p.add(g); return g;
 }
-// ---------------- 12 层住宅楼（两梯四户，南北通透） ----------------
-function buildDorm() {
-  const D = new THREE.Group(), fl = 3.0, n = L.dorm.floors, W = 30, Dp = 20, y0 = 0.9;
-  box(D, W + 1, y0, Dp + 1, M.concreteWarm, 0, y0 / 2, 0);                 // 石材基座
-  box(D, W, n * fl, Dp, M.wallLight, 0, n * fl / 2 + y0, 0);
-  const ux = [-11.85, -4.35, 4.35, 11.85];
-  for (let f = 0; f < n; f++) {
-    const y = y0 + f * fl;
-    box(D, W + 0.1, 0.18, Dp + 0.1, M.concreteDark, 0, y + fl, 0);
-    for (const cx of ux) {
-      if (f === 0) continue;
-      // 南向：落地窗 + 阳台
-      framedGlass(D, 5.2, 2.3, cx, y + 1.35, Dp / 2 + 0.03, 0, 4, 1);
-      box(D, 6.0, 0.16, 1.5, M.concrete, cx, y + 0.08, Dp / 2 + 0.75);
-      box(D, 6.0, 1.0, 0.05, M.glassLight, cx, y + 0.66, Dp / 2 + 1.48);
-      box(D, 6.0, 0.05, 0.08, M.metalDark, cx, y + 1.18, Dp / 2 + 1.48);
-      // 北向窗（对流）
-      framedGlass(D, 4.2, 1.6, cx, y + 1.55, -Dp / 2 - 0.03, Math.PI, 3, 1);
-      box(D, 4.5, 0.08, 0.3, M.metalDark, cx, y + 0.7, -Dp / 2 - 0.12);
-    }
-    for (const sx of [-1, 1]) framedGlass(D, 3.2, 1.5, sx * (W / 2 + 0.03), y + 1.5, 4, sx * Math.PI / 2, 2, 1);
-    if (f > 0) framedGlass(D, 3.0, 2.2, 0, y + 1.4, -Dp / 2 - 0.03, Math.PI, 2, 1);   // 交通核
-  }
-  // 南立面竖向分户墙鳍
-  for (const x of [-15, -8.1, 0, 8.1, 15]) box(D, 0.35, n * fl - fl, 1.7, M.wallGray, x, y0 + fl + (n - 1) * fl / 2, Dp / 2 + 0.85);
-  // 首层大堂与入口
-  framedGlass(D, 8, 2.7, 0, y0 + 1.4, Dp / 2 + 0.03, 0, 4, 1);
-  for (const cx of [-11.85, 11.85]) framedGlass(D, 5, 2.2, cx, y0 + 1.5, Dp / 2 + 0.03, 0, 3, 1);
-  box(D, 9, 0.22, 3.2, M.metalDark, 0, y0 + 3.0, Dp / 2 + 1.6);
-  for (const x of [-4.2, 4.2]) cyl(D, 0.08, 0.08, 3.0, M.metalDark, x, y0 + 1.5, Dp / 2 + 3.0, 8);
-  // 屋面
-  const top = y0 + n * fl;
-  box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, Dp / 2); box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, -Dp / 2);
-  box(D, 0.25, 1.0, Dp, M.wallLight, W / 2, top + 0.5, 0); box(D, 0.25, 1.0, Dp, M.wallLight, -W / 2, top + 0.5, 0);
-  box(D, W + 0.4, 0.1, Dp + 0.4, M.metalDark, 0, top + 1.02, 0);
-  box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
-  box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
-  // 前庭：绿篱、长椅、铺装步道
-  // 前庭：绿篱、长椅放在楼前平整地带（再往外是道路边坡，地面起伏 1.5 m），按所在地面最低点取高，避免悬空
-  const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
-  for (const sx of [-1, 1]) {
-    const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
-    planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
-    const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
-    box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
-  D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
-}
+// 12 层住宅楼见 06c_dorm.js（两梯四户，可进出）
 // ---------------- 双人网球场 ----------------
 function buildTennis() {
   const T = new THREE.Group(), w = L.tennis.w, d = L.tennis.d;
@@ -4230,8 +4211,7 @@ function buildBoardwalk() {
   COLL.walks.push({ kind: 'rect', x: lx, z: lz, hw: 3.05, hd: 6.55, rot: 0, y: 0.5 });
   path(BOARDWALK.south.concat([[51.0, 118.1]]), 0.5, 2.54);   // 南端伸进警戒塔塔基 0.2 m，桥面与塔基顶面（2.6）齐平
   path(BOARDWALK.east, 0.5, 'ground');                         // 北端落到沙面上
-  // 泊位系缆桩（船首两根钢桩）与缆绳
-  for (const dz of [-6.5, 6.5]) { const sb = gh(3.5, L.yacht.z + dz) - 0.3, top = 3.25; cyl(B, 0.35, 0.35, top - sb, M.metalDark, 3.5, (top + sb) / 2, L.yacht.z + dz, 10); collC(3.5, L.yacht.z + dz, 0.4); }   // 钢桩打到海底
+  // 浮台两根系缆柱（尾缆）
   for (const [a, b] of [[-2.8, -6.2], [-2.8, 6.2]]) collC(lx + a, lz + b, 0.35);
   return B;
 }
@@ -4241,7 +4221,7 @@ function buildBeachSets() {
   for (const [x, z] of [[30, 26], [42, 23]]) {
     const y = gh(x, z);
     // 正对闸内海面（朝南），可看海豚来回游
-    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); }
+    for (const dx of [-0.85, 0.85]) { lounger(B, x + dx, gh(x + dx, z + 0.6), z + 0.6, 0, 0xf2eee6); collR(x + dx, z + 0.6, 0.38, 1.05, 0, gh(x, z) + 1.5); addSeat(x + dx, gh(x + dx, z + 0.6) + 0.42, z + 0.6, Math.PI, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(B, x, y, z - 0.6, 1.4, 2.4, 0xeae3d2); collC(x, z - 0.6, 0.25);
   }
   return B;
@@ -4256,23 +4236,11 @@ function buildGolfFlags() {
   }
   return F;
 }
+// 葡萄园：只登记每行的碰撞；立柱、铁丝、葡萄藤、叶幕、果穗在 08_vegetation 的 buildVineyardPlants() 里按实例绘制
+function vineRows() { const vy = L.vineyard, out = []; for (let x = vy.x0 + 1.4; x < vy.x1 - 0.8; x += 2.6) out.push(x); return { xs: out, z0: vy.z0 + 1.8, z1: vy.z1 - 1.8 }; }
 function buildVineyard() {
-  const V = new THREE.Group(), vy = L.vineyard;
-  const vc = document.createElement('canvas'); vc.width = vc.height = 256; const g = vc.getContext('2d'); g.fillStyle = '#3c5e28'; g.fillRect(0, 0, 256, 256);
-  const R = mulberry32(333);
-  for (let i = 0; i < 420; i++) { const x = R() * 256, y = R() * 256, s = 7 + R() * 9, a = R() * TAU; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.save(); g.translate(x + dx, y + dy); g.rotate(a); g.fillStyle = `hsl(${85 + R() * 20},${40 + R() * 15}%,${30 + R() * 22}%)`; for (const d of [-0.9, 0, 0.9]) { g.save(); g.rotate(d); g.beginPath(); g.ellipse(s * 0.5, 0, s * 0.55, s * 0.28, 0, 0, TAU); g.fill(); g.restore(); } g.restore(); } }
-  for (let i = 0; i < 30; i++) { const x = R() * 256, y = R() * 256; g.fillStyle = 'rgba(70,40,70,0.85)'; for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(x + (k % 3) * 4, y + Math.floor(k / 3) * 4 + (k % 3), 2.4, 0, TAU); g.fill(); } }
-  const vt = new THREE.CanvasTexture(vc); vt.colorSpace = THREE.SRGBColorSpace; vt.wrapS = vt.wrapT = THREE.RepeatWrapping; vt.repeat.set(5, 1); vt.anisotropy = 8;
-  const mat = std(0xffffff, 0.85, 0, { map: vt }), matL = std(0xdfe8cf, 0.85, 0, { map: vt });
-  for (let x = vy.x0 + 1.4, i = 0; x < vy.x1 - 0.8; x += 2.6, i++) {
-    const z0 = vy.z0 + 1.8, z1 = vy.z1 - 1.8, n = 8;
-    collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1);
-    for (let s = 0; s < n; s++) {
-      const za = lerp(z0, z1, s / n), zb = lerp(z0, z1, (s + 1) / n), zm = (za + zb) / 2, y = gh(x, zm);
-      box(V, 0.75 + 0.1 * Math.sin(s * 3 + i), 1.25, zb - za - 0.15, (s + i) % 3 ? mat : matL, x, y + 0.95, zm);
-      box(V, 0.08, 1.6, 0.08, M.woodDark, x, y + 0.8, za + 0.1);
-    }
-  }
+  const V = new THREE.Group(), { xs, z0, z1 } = vineRows();
+  for (const x of xs) { collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1); }
   return V;
 }
 function buildDuckArea() {
@@ -4283,6 +4251,328 @@ function buildDuckArea() {
   D.add(fenceLoop([[L.duck.x - 12, L.duck.z + 3.5], [L.duck.x - 12, zN], [L.duck.x + 12, zN], [L.duck.x + 12, L.duck.z + 3.5]], 0.85, M.galv, M.galv, 2.5, false));
   return D;
 }
+
+// ======================= 06c 12 层住宅楼：两梯四户、可进出（楼道、电梯、户门、楼梯、屋顶） =======================
+// 平面（局部坐标，x 东、z 南，原点为楼中心；1 层地面高 0.9，层高 3.0）：
+//   东西向楼道 z ∈ [-1.25, 1.25] 贯通全楼；楼道北侧中间为交通核：楼梯间 x ∈ [-4, 0]、两部电梯 x ∈ [0, 4]；南侧中间为楼道采光厅（1 层为入户大堂）
+//   四户分居四角：西北、东北、西南、东南，每户 10.8 × 8.55 m，户型、门窗、内饰完全相同（按楼道与交通核镜像布置）
+//   1～12 层每层四户（1 层四户与楼上户型、门窗、内饰相同，另有入户大堂）；楼梯从 1 层一直通到屋顶（顶层楼道进楼梯间上屋顶）；电梯服务 1～12 层
+// 直升机按整栋楼体避让（窗是透明玻璃、窗洞 3～5 m，按构件逐个检查会从窗洞飞进楼里）：楼身（含阳台）一个实心盒，屋顶以上不限制（可以降落在屋顶）
+const HELI_SOLIDS = [];
+const DORM = { n: 12, fl: 3.0, y0: 0.9, W: 30, D: 20, doors: [], lifts: [], doorIM: null, handleIM: null, landIM: null, built: false };
+const dormY = (f) => DORM.y0 + f * DORM.fl;                       // 第 f 层（0 = 1 层）地面，局部高度
+const DWX = (x) => L.dorm.x + x, DWZ = (z) => L.dorm.z + z, DWY = (y) => 15.0 + y;   // 局部 → 世界
+const dormFloorName = (f) => `${f + 1} 层`;
+// 竖向墙：沿 x（axis 'x'，墙面在 z = c）或沿 z（'z'，墙面在 x = c），范围 a0→a1、高度 y0→y1，扣掉洞口 [a0, a1, yb, yt]
+function dWall(p, axis, c, a0, a1, y0, y1, t, mat, holes = []) {
+  const cuts = [a0, a1]; for (const h of holes) cuts.push(clamp(h[0], a0, a1), clamp(h[1], a0, a1)); cuts.sort((a, b) => a - b);
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const s0 = cuts[i], s1 = cuts[i + 1]; if (s1 - s0 < 1e-3) continue; const m = (s0 + s1) / 2;
+    const hs = holes.filter(h => h[0] <= m && h[1] >= m).map(h => [h[2], h[3]]).sort((a, b) => a[0] - b[0]);
+    let y = y0;
+    for (const [hb, ht] of hs.concat([[y1, y1]])) { if (hb - y > 1e-3) { const len = s1 - s0, hh = hb - y, cy = (y + hb) / 2; if (axis === 'x') box(p, len, hh, t, mat, m, cy, c); else box(p, t, hh, len, mat, c, cy, m); } y = Math.max(y, ht); }
+  }
+}
+// 水平板：矩形 [x0, x1] × [z0, z1] 扣掉矩形洞 [x0, x1, z0, z1]，按 x 切条后逐条扣洞
+function dSlab(p, x0, x1, z0, z1, y, t, mat, holes = []) {
+  const cuts = [x0, x1]; for (const h of holes) cuts.push(clamp(h[0], x0, x1), clamp(h[1], x0, x1)); cuts.sort((a, b) => a - b);
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const s0 = cuts[i], s1 = cuts[i + 1]; if (s1 - s0 < 1e-3) continue; const m = (s0 + s1) / 2;
+    const hs = holes.filter(h => h[0] <= m && h[1] >= m).map(h => [h[2], h[3]]).sort((a, b) => a[0] - b[0]);
+    let z = z0; for (const [hb, ht] of hs.concat([[z1, z1]])) { if (hb - z > 1e-3) box(p, s1 - s0, t, hb - z, mat, m, y - t / 2, (z + hb) / 2); z = Math.max(z, ht); }
+  }
+}
+// 窗：浅色透明玻璃 + 细铝框（室内外都能透过窗看到景色）
+function dWin(p, w, h, x, y, z, ry, nx = 2) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; p.add(g);
+  box(g, w, h, 0.02, M.glassLight, 0, 0, 0);
+  for (const s of [-1, 1]) { box(g, w + 0.06, 0.06, 0.1, M.metalDark, 0, s * h / 2, 0.005); box(g, 0.06, h, 0.1, M.metalDark, s * w / 2, 0, 0.005); }
+  for (let i = 1; i < nx; i++) box(g, 0.045, h, 0.08, M.metalDark, -w / 2 + i * w / nx, 0, 0.008);
+  return g;
+}
+// 碰撞：局部坐标的线段，高度带为第 f0～f1 层（含）
+const dSeg = (ax, az, bx, bz, f0 = 0, f1 = DORM.n, cond) => { const s = { ax: DWX(ax), az: DWZ(az), bx: DWX(bx), bz: DWZ(bz), bottom: DWY(dormY(f0)) - 0.6, top: DWY(dormY(f1)) + 2.4 }; if (cond) s.cond = cond; COLL.segs.push(s); return s; };
+// 沿线段的墙体碰撞，扣掉门洞 [a0, a1]
+function dSegRun(axis, c, a0, a1, f0, f1, gaps = []) {
+  const cuts = [[a0, a1]]; let out = cuts;
+  for (const [g0, g1] of gaps) out = out.flatMap(([s0, s1]) => (g1 <= s0 || g0 >= s1) ? [[s0, s1]] : [[s0, g0], [g1, s1]].filter(([a, b]) => b - a > 0.02));
+  for (const [s0, s1] of out) axis === 'x' ? dSeg(s0, c, s1, c, f0, f1) : dSeg(c, s0, c, s1, f0, f1);
+}
+const dRect = (x, z, hw, hd, f, h = 1.2) => collR(DWX(x), DWZ(z), hw, hd, 0, DWY(dormY(f)) + h, DWY(dormY(f)) - 0.5);
+
+function buildDorm() {
+  const D = new THREE.Group(), fl = DORM.fl, n = DORM.n, W = DORM.W, Dp = DORM.D, y0 = DORM.y0, top = dormY(n);
+  const HW = W / 2, HD = Dp / 2, IW = HW - 0.2, ID = HD - 0.2;        // 外墙外皮 / 内皮
+  const CZ = 1.25;                                                       // 楼道半宽
+  const STAIR = { x0: -3.9, x1: -0.1, zL: -2.85, zF: -5.65, zM: -7.25 }; // 楼梯间：楼层平台 z∈[zL, -CZ]，梯段 zL→zF，中间平台 zF→zM
+  const LIFT = [{ cx: 1.0 }, { cx: 3.0 }], LZ0 = -4.6;                  // 电梯井 z∈[LZ0, -CZ]，轿厢中心 z = -3.0
+  // 楼板洞：可行走面的洞按梯段/井道净空；可见楼板的洞边放在墙体中线（藏进墙里，洞边侧面不与墙面共面）
+  const holes = (f) => f === 0 ? [[0.05, 3.95, LZ0, -CZ]] : [[STAIR.x0, STAIR.x1, STAIR.zM, STAIR.zL], [0.05, 3.95, LZ0, -CZ]];
+  const holesV = (f) => f === 0 ? [[0, 4, LZ0, -CZ]] : [[-4, 0, STAIR.zM, STAIR.zL], [0, 4, LZ0, -CZ]];
+  box(D, W + 1, y0, Dp + 1, M.concreteWarm, 0, y0 / 2, 0);                 // 石材基座
+  // ---------------- 楼板、天花与可行走面 ----------------
+  for (let f = 0; f <= n; f++) {
+    const y = dormY(f), hs = holesV(f);
+    if (f > 0) dSlab(D, -HW, HW, -HD, HD, y, 0.2, M.concreteDark, hs);                // 结构楼板（外露一圈即外立面的层间线）
+    // 面层（厚 1 cm，底面高出结构板 2.5 cm，墙体从结构板起穿过面层，底面不共面）：户内木地板；楼道、采光厅（1 层大堂）、楼梯平台为石材；屋顶混凝土
+    const pub = f === n ? [] : [[-IW, IW, -CZ - 0.06, CZ + 0.06], [-4, 4, CZ + 0.06, ID], [-4, 0, STAIR.zL, -CZ - 0.06]];   // 边界在墙体中线，彼此不重叠
+    dSlab(D, -IW, IW, -ID, ID, y + 0.035, 0.01, f === n ? M.concrete : M.floorWood, hs.concat(pub));
+    for (const [x0, x1, z0, z1] of pub) dSlab(D, x0, x1, z0, z1, y + 0.035, 0.01, M.stone, hs);
+    if (f > 0) dSlab(D, -IW, IW, -ID, ID, y - 0.22, 0.008, M.ceiling, hs);                 // 下层天花（低于墙顶 2 cm，墙穿过天花层，顶面不共面）
+    const pts = [[-IW, -ID], [IW, -ID], [IW, ID], [-IW, ID]].map(([x, z]) => [DWX(x), DWZ(z)]);
+    const holesW = holes(f).map(([x0, x1, z0, z1]) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(([x, z]) => [DWX(x), DWZ(z)]));
+    COLL.walks.push({ kind: 'poly', pts, holes: holesW, y: DWY(y + 0.035) });
+  }
+  // ---------------- 外墙与窗（每层相同：四户同样的门窗） ----------------
+  const unitsX = (sx) => [sx * 4, sx * IW];
+  for (let f = 0; f < n; f++) {
+    const y = dormY(f), yb = y, yt = y + fl - 0.2, wh = [y + 0.1, y + 2.55];   // 外墙到上层楼板底为止（避免墙顶与楼板顶面共面闪烁）
+    for (const sz of [-1, 1]) {
+      // 南北立面：每户客厅落地窗（通阳台）＋主卧窗；中间：南侧为楼道采光厅（1 层为大堂入口），北侧为楼梯间窗
+      const c = sz * (HD - 0.125), hl = [];
+      for (const sx of [-1, 1]) { const [a, b] = unitsX(sx), u = (k) => a + (b - a) * k / 10.8; hl.push([Math.min(u(0.8), u(5.8)), Math.max(u(0.8), u(5.8)), wh[0], wh[1]], [Math.min(u(7.2), u(10.2)), Math.max(u(7.2), u(10.2)), y + 0.9, y + 2.4]); }
+      if (sz > 0) hl.push(f === 0 ? [-3.6, 3.6, y + 0.01, y + 2.7] : [-3.4, 3.4, y + 0.6, y + 2.5]); else hl.push([-3.2, -0.8, y + 1.0, y + 2.3]);
+      dWall(D, 'x', c, -HW, HW, yb, yt, 0.25, M.wallLight, hl);
+      for (const h of hl) { const w = h[1] - h[0], hh = h[3] - h[2]; if (f === 0 && sz > 0 && Math.abs(h[0]) < 4) continue; dWin(D, w, hh, (h[0] + h[1]) / 2, (h[2] + h[3]) / 2, c, sz > 0 ? 0 : Math.PI, Math.max(1, Math.round(w / 1.3))); }
+    }
+    for (const sx of [-1, 1]) {
+      // 东西山墙：次卧窗、主卧侧窗；楼道尽端窗
+      const c = sx * (HW - 0.125), hl = [];
+      for (const sz of [-1, 1]) { const v = (k) => sz * (CZ + k); hl.push([Math.min(v(1.0), v(3.4)), Math.max(v(1.0), v(3.4)), y + 1.45, y + 2.45], [Math.min(v(5.2), v(7.6)), Math.max(v(5.2), v(7.6)), y + 1.45, y + 2.45]); }   // 卧室侧窗在床头板以上
+      hl.push([-0.8, 0.8, y + 0.8, y + 2.4]);
+      dWall(D, 'z', c, -HD + 0.25, HD - 0.25, yb, yt, 0.25, M.wallLight, hl);
+      for (const h of hl) dWin(D, h[1] - h[0], h[3] - h[2], c, (h[2] + h[3]) / 2, (h[0] + h[1]) / 2, sx * Math.PI / 2);
+    }
+  }
+  // 外墙碰撞（玻璃同样不可穿越）；1 层南面大堂入口留门洞
+  dSeg(-HW, -HD, HW, -HD); dSeg(-HW, -HD, -HW, HD); dSeg(HW, -HD, HW, HD);
+  dSeg(-HW, HD, -1.6, HD); dSeg(1.6, HD, HW, HD); dSeg(-1.6, HD, 1.6, HD, 1, n);
+  // ---------------- 阳台：每户南北各一处（户型相同），玻璃栏板 ----------------
+  for (let f = 1; f < n; f++) for (const sz of [-1, 1]) for (const sx of [-1, 1]) {
+    const y = dormY(f), cx = sx * (4 + 3.3), cz = sz * (HD + 0.75);
+    box(D, 6.0, 0.16, 1.5, M.concrete, cx, y + 0.02, cz);
+    box(D, 6.0, 1.0, 0.05, M.glassLight, cx, y + 0.62, sz * (HD + 1.48)); box(D, 6.06, 0.05, 0.08, M.metalDark, cx, y + 1.14, sz * (HD + 1.48));
+    for (const s of [-1, 1]) box(D, 0.05, 1.0, 1.46, M.glassLight, cx + s * 3.0, y + 0.62, cz);
+  }
+  for (const sz of [-1, 1]) for (const x of [-HW, -4, 4, HW]) box(D, 0.35, (n - 1) * fl, 1.7, M.wallGray, x, dormY(1) + (n - 1) * fl / 2, sz * (HD + 0.85));   // 分户墙鳍
+  // ---------------- 交通核：楼梯间、电梯井、设备间 ----------------
+  const CW = 0.2;
+  for (let f = 0; f <= n; f++) {
+    const y = dormY(f), h = f === n ? 2.8 : fl - 0.2;
+    // 楼梯间：东西墙、北墙；南侧敞开接楼道（屋顶层为楼梯出屋面间，南墙开门通屋面）
+    dWall(D, 'z', -4, STAIR.zM, -CZ, y, y + h, CW, M.wallWarm);
+    dWall(D, 'z', 0, STAIR.zM, -CZ, y, y + h, CW, M.wallWarm);
+    dWall(D, 'x', STAIR.zM, -4, 0, y, y + h, CW, M.wallWarm);
+    if (f === n) dWall(D, 'x', -CZ, -4, 0, y, y + h, CW, M.wallWarm, [[-3.0, -1.0, y, y + 2.2]]);
+    // 电梯井：前墙开两个门洞，中间分隔墙，后墙
+    if (f < n) dWall(D, 'x', -CZ, 0, 4, y, y + h, CW, M.wallWarm, LIFT.map(L_ => [L_.cx - 0.55, L_.cx + 0.55, y, y + 2.15]));
+    if (f < n) { dWall(D, 'z', 2.0, LZ0, -CZ, y, y + h, 0.12, M.wallGray); dWall(D, 'z', 4, LZ0, -CZ, y, y + h, CW, M.wallWarm); dWall(D, 'x', LZ0, 0, 4, y, y + h, CW, M.wallWarm); }   // 屋顶层井道由电梯机房围合
+    if (f < n) {
+      // 设备间（电梯井北侧、楼梯间北侧）：封闭
+      dWall(D, 'z', 4, -ID, LZ0, y, y + fl - 0.2, CW, M.wallWarm); dWall(D, 'z', -4, -ID, STAIR.zM, y, y + fl - 0.2, CW, M.wallWarm);
+      // 电梯厅：门套、楼层号牌
+      for (const L_ of LIFT) { box(D, 1.3, 0.12, 0.06, M.alu, L_.cx, y + 2.2, -CZ + 0.13); for (const s of [-1, 1]) box(D, 0.08, 2.2, 0.06, M.alu, L_.cx + s * 0.6, y + 1.1, -CZ + 0.13); box(D, 0.1, 0.18, 0.03, M.metalDark, L_.cx + 0.78, y + 1.15, -CZ + 0.12); box(D, 0.05, 0.05, 0.02, M.red, L_.cx + 0.78, y + 1.18, -CZ + 0.1); }
+    }
+  }
+  // 交通核碰撞（全高）
+  dSeg(-4, STAIR.zM, -4, -CZ); dSeg(0, STAIR.zM, 0, -CZ); dSeg(-4, STAIR.zM, 0, STAIR.zM);
+  dSeg(0, -CZ, LIFT[0].cx - 0.55, -CZ); dSeg(LIFT[0].cx + 0.55, -CZ, LIFT[1].cx - 0.55, -CZ); dSeg(LIFT[1].cx + 0.55, -CZ, 4, -CZ);
+  dSeg(2.0, LZ0, 2.0, -CZ); dSeg(4, LZ0, 4, -CZ); dSeg(0, LZ0, 4, LZ0);
+  dSeg(4, -ID, 4, LZ0); dSeg(-4, -ID, -4, STAIR.zM);
+  dSeg(-4, -CZ, -3.0, -CZ, n, n); dSeg(-1.0, -CZ, 0, -CZ, n, n);            // 屋面楼梯间南墙（门洞 x∈[-3, -1]）
+  // ---------------- 楼梯：两跑折返，1 层直通屋顶 ----------------
+  const laneE = -1.05, laneWs = -2.95, lw = 0.8;
+  for (let f = 0; f < n; f++) {
+    const y = dormY(f), ym = y + fl / 2, y2 = dormY(f + 1);
+    // 第一跑（东侧）：楼层平台 → 中间平台；第二跑（西侧）：中间平台 → 上一层平台
+    for (const [lx, za, zb, ya, yb2] of [[laneE, STAIR.zL, STAIR.zF, y, ym], [laneWs, STAIR.zF, STAIR.zL, ym, y2]]) {
+      const N = 10; for (let k = 0; k < N; k++) { const t0 = k / N, t1 = (k + 1) / N, zz = za + (zb - za) * (t0 + t1) / 2, hy = ya + (yb2 - ya) * t1; box(D, 1.7, 0.19, Math.abs(zb - za) / N + 0.01, M.stone, lx, hy + 0.035 - 0.095, zz); }
+      rod(D, new THREE.Vector3(-2.0 + (lx === laneE ? 0.06 : -0.06), ya + 0.95, za), new THREE.Vector3(-2.0 + (lx === laneE ? 0.06 : -0.06), yb2 + 0.95, zb), 0.025, M.metalDark);
+      const a = DWZ(za), b = DWZ(zb); COLL.walks.push({ kind: 'ramp', x0: DWX(lx), z0: a, x1: DWX(lx), z1: b, hw: lw, y0: DWY(ya + 0.035), y1: DWY(yb2 + 0.035) });
+    }
+    box(D, 3.8, 0.2, STAIR.zF - STAIR.zM, M.stone, -2.0, ym + 0.035 - 0.1, (STAIR.zF + STAIR.zM) / 2);          // 中间平台
+    COLL.walks.push({ kind: 'rect', x: DWX(-2.0), z: DWZ((STAIR.zF + STAIR.zM) / 2), hw: 1.9, hd: (STAIR.zF - STAIR.zM) / 2, rot: 0, y: DWY(ym + 0.035) });
+    // 两跑之间的隔墙（梯段段落 zL→zF），1 层西跑下方封闭
+    // 顶层上屋面的一跑：隔墙加高到屋面以上 1.25 m（比扶手高 0.3 m），人从屋面楼梯间不会翻落到下面的梯井
+    const hDiv = fl - 0.03 + (f === n - 1 ? 0.03 + 0.035 + 1.25 : 0);
+    box(D, 0.12, hDiv, STAIR.zL - STAIR.zF, M.wallWarm, -2.0, y + hDiv / 2, (STAIR.zL + STAIR.zF) / 2);
+    dSeg(-2.0, STAIR.zL, -2.0, STAIR.zF, f, f);
+  }
+  dSeg(-3.9, STAIR.zL, -2.05, STAIR.zL, 0, 0);
+  // 屋面楼梯间：东侧梯井（下一层第一跑与中间平台上方）临空边补 1.25 m 高的实墙，与加高的隔墙连成一体
+  { const yr = dormY(n), hw = 0.035 + 1.25; box(D, 1.9, hw, 0.12, M.wallWarm, -1.05, yr + hw / 2, STAIR.zL); dSeg(-2.06, STAIR.zL, 0, STAIR.zL, n, n); dSeg(-2.0, STAIR.zL, -2.0, STAIR.zF, n, n); }                                              // 1 层西跑底下（净高不足）不可进入
+  // ---------------- 楼道与户门：1～12 层每层四户 ----------------
+  const doorGeo = new THREE.BoxGeometry(0.95, 2.1, 0.045); doorGeo.translate(0.475, 1.05, 0);   // 专用几何体（不改共享几何体）
+  const handleGeo = new THREE.BoxGeometry(0.14, 0.03, 0.12); handleGeo.translate(0.82, 1.0, 0);
+  const doorMat = std(0x7a5a3e, 0.6), total = n * 4;
+  DORM.doorIM = new THREE.InstancedMesh(doorGeo, doorMat, total); DORM.handleIM = new THREE.InstancedMesh(handleGeo, M.alu, total);
+  for (const im of [DORM.doorIM, DORM.handleIM]) { im.userData.live = true; im.castShadow = true; im.frustumCulled = false; D.add(im); }
+  for (let f = 0; f < n; f++) {
+    const y = dormY(f), yt = y + fl - 0.2;
+    for (const sz of [-1, 1]) {
+      const c = sz * CZ;
+      // 楼道墙：每户一樘户门（门洞 u ∈ [0.525, 1.475]，即 |x| ∈ [4.525, 5.475]）；1 层与楼上相同
+      const gaps = [[-5.475, -4.525], [4.525, 5.475]];
+      for (const sx of [-1, 1]) {
+        dWall(D, 'x', c + sz * 0.06, sx < 0 ? -IW : 4, sx < 0 ? -4 : IW, y, yt, 0.12, M.wallWarm, [[sx * 4.525, sx * 5.475].sort((a, b) => a - b).concat([y, y + 2.15])]);
+        { const x0 = sx * 4.525, x1 = sx * 5.475; box(D, 1.07, 0.1, 0.16, M.woodDark, (x0 + x1) / 2, y + 2.17, c + sz * 0.06); for (const x of [x0, x1]) box(D, 0.06, 2.15, 0.16, M.woodDark, x, y + 1.075, c + sz * 0.06);
+          box(D, 0.18, 0.1, 0.02, M.alu, (x0 + x1) / 2, y + 1.65, c - sz * 0.01); }   // 门套、门牌
+      }
+      dSegRun('x', c, -IW, -4, f, f, gaps); dSegRun('x', c, 4, IW, f, f, gaps);
+      if (sz > 0) { dWall(D, 'z', -4, CZ, ID, y, yt, 0.12, M.wallWarm); dWall(D, 'z', 4, CZ, ID, y, yt, 0.12, M.wallWarm); dSeg(-4, CZ, -4, HD, f, f); dSeg(4, CZ, 4, HD, f, f); }
+    }
+    for (const sz of [-1, 1]) for (const sx of [-1, 1]) {
+      const i = DORM.doors.length, hx = sx * 4.525, hz = sz * CZ, d = { i, f, sx, sz, open: false, ang: 0, hx, hz, name: `${dormFloorName(f)}${sz < 0 ? '北' : '南'}${sx < 0 ? '西' : '东'}户` };
+      DORM.doors.push(d);
+      dSeg(hx, hz, sx * 5.475, hz, f, f, () => d.ang < 0.35);
+      INTERACT.push({ x: DWX(sx * 5.0), z: DWZ(hz), y: DWY(y), r: 1.4, label: () => d.open ? `关上 ${d.name} 的门` : `开门进入 ${d.name}`, fn: () => { d.open = !d.open; } });
+      dormUnit(D, f, sx, sz, CZ, IW, ID);
+    }
+  }
+  dormDoorsUpdate(0);
+  // ---------------- 电梯：两部，服务 1～12 层；厅门、轿厢门随停靠开合 ----------------
+  const leafGeo = new THREE.BoxGeometry(0.56, 2.1, 0.04); leafGeo.translate(0, 1.05, 0);
+  DORM.landIM = new THREE.InstancedMesh(leafGeo, M.alu, n * 2 * 2); DORM.landIM.userData.live = true; DORM.landIM.frustumCulled = false; D.add(DORM.landIM);
+  for (const [k, L_] of LIFT.entries()) {
+    const c = { k, cx: L_.cx, cz: -3.0, y: dormY(0), at: 0, target: 0, queue: [], state: 'idle', door: 0, hold: 0, sel: 0, selT: 0, g: null };
+    const g = new THREE.Group(); g.userData.live = true; g.position.set(L_.cx, c.y, c.cz); D.add(g); c.g = g;
+    const liv = (m) => { m.userData.live = true; return m; };
+    liv(box(g, 1.7, 0.06, 2.9, M.stone, 0, 0.005, -0.05)); liv(box(g, 1.7, 0.06, 2.9, M.ceiling, 0, 2.33, -0.05));
+    for (const s of [-1, 1]) liv(box(g, 0.05, 2.3, 2.9, M.alu, s * 0.85, 1.15, -0.05)); liv(box(g, 1.7, 2.3, 0.05, M.alu, 0, 1.15, -1.47));
+    liv(box(g, 1.2, 1.6, 0.01, std(0xcfd8dc, 0.08, 0.9), 0, 1.3, -1.44));   // 镜面后壁
+    liv(box(g, 1.6, 0.04, 0.05, M.metalDark, 0, 0.9, -1.42)); liv(box(g, 0.3, 0.02, 0.3, M.lamp, 0, 2.29, -0.1));
+    liv(box(g, 0.05, 0.9, 0.22, M.metalDark, 0.8, 1.25, 1.05)); for (let b = 0; b < 12; b++) liv(box(g, 0.02, 0.04, 0.04, b % 3 ? M.alu : M.yellow, 0.77, 0.9 + b * 0.055, 1.02 + (b % 2) * 0.07));
+    c.leaves = [-1, 1].map(s => liv(box(g, 0.56, 2.1, 0.04, M.alu, s * 0.28, 1.05, 1.36)));
+    // 轿厢可行走面（跟随轿厢高度）与轿厢墙、轿厢门碰撞（高度带随轿厢）
+    const wx = DWX(L_.cx), wz = DWZ(c.cz);
+    COLL.walks.push({ kind: 'rect', x: wx, z: DWZ(-2.85), hw: 0.82, hd: 1.62, rot: 0, get y() { return DWY(c.y + 0.035); } });
+    const band = (s) => Object.defineProperties(s, { bottom: { get: () => DWY(c.y) - 0.6 }, top: { get: () => DWY(c.y) + 2.2 } });
+    for (const sg of [[-0.85, -1.45, -0.85, 1.4], [0.85, -1.45, 0.85, 1.4], [-0.85, -1.45, 0.85, -1.45]]) COLL.segs.push(band({ ax: wx + sg[0], az: wz + sg[1], bx: wx + sg[2], bz: wz + sg[3] }));
+    COLL.segs.push(band({ ax: wx - 0.55, az: DWZ(-1.62), bx: wx + 0.55, bz: DWZ(-1.62), cond: () => c.door < 0.9 }));
+    // 各层厅门：轿厢停在本层且门开足时才可通过
+    for (let f = 0; f < n; f++) {
+      dSeg(L_.cx - 0.55, -CZ, L_.cx + 0.55, -CZ, f, f, () => !(c.at === f && c.door > 0.9));
+      INTERACT.push({ x: DWX(L_.cx + 0.78), z: DWZ(-CZ + 0.6), y: DWY(dormY(f)), r: 0.9, label: () => c.at === f && c.door > 0.5 ? `电梯已到 ${dormFloorName(f)}` : `按电梯按钮（${k ? '东' : '西'}梯，现在 ${c.at === null ? '运行中' : dormFloorName(c.at)}）`, fn: () => dormCall(c, f) });
+    }
+    // 轿厢内按钮：按 E 切换目标楼层，停手 1.5 秒后出发
+    INTERACT.push({ get x() { return wx + 0.5; }, get z() { return DWZ(-2.2); }, get y() { return DWY(c.y); }, r: 1.1, label: () => `选择楼层：${dormFloorName(c.sel)}（再按 E 切换，停手 1.5 秒后出发）`, fn: () => { if (c.state === 'moving') return; c.sel = (c.sel + 1) % n; if (c.sel === c.at) c.sel = (c.sel + 1) % n; c.selT = 1.5; } });
+    DORM.lifts.push(c);
+  }
+  dormLiftsUpdate(0);
+  // ---------------- 屋顶：女儿墙、出屋面楼梯间、电梯机房、空调外机 ----------------
+  box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, HD); box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, -HD);
+  box(D, 0.25, 1.0, Dp, M.wallLight, HW, top + 0.5, 0); box(D, 0.25, 1.0, Dp, M.wallLight, -HW, top + 0.5, 0);
+  for (const [a, b, c2, d2] of [[-HW, -HD, HW, -HD], [HW, -HD, HW, HD], [HW, HD, -HW, HD], [-HW, HD, -HW, -HD]]) COLL.segs.push({ ax: DWX(a), az: DWZ(b), bx: DWX(c2), bz: DWZ(d2), bottom: DWY(top) - 0.5, top: DWY(top) + 3 });
+  box(D, 4.4, 0.2, -STAIR.zM - CZ + 0.4, M.metalDark, -2.0, top + 2.9, (STAIR.zM - CZ) / 2);        // 楼梯间屋面
+  box(D, 4.05, 3.2, -LZ0 - CZ + 0.3, M.wallGray, 2.125, top + 1.6, (LZ0 - CZ) / 2);                  // 电梯机房（西侧贴楼梯间外墙，其余外皮略大于井道墙，不共面）
+  box(D, 4.5, 0.2, -LZ0 - CZ + 0.5, M.metalDark, 2.0, top + 3.3, (LZ0 - CZ) / 2);
+  for (const sx of [-1, 1]) { box(D, 3, 1.4, 2, M.metalMid, sx * 8, top + 0.7, 5); dRect(sx * 8, 5, 1.6, 1.1, n, 1.6); }
+  // ---------------- 1 层大堂与入口 ----------------
+  box(D, 9, 0.22, 3.2, M.metalDark, 0, y0 + 3.0, HD + 1.6);
+  for (const x of [-4.2, 4.2]) { const gy = gh(DWX(x), DWZ(HD + 3.0)) - 15.0 - 0.15, yt = y0 + 3.0 - 0.11, h = yt - gy;   // 雨篷柱落到柱下地面以下 0.15 m，柱脚加方形底座
+    cyl(D, 0.08, 0.08, h, M.metalDark, x, gy + h / 2, HD + 3.0, 8); box(D, 0.32, 0.25, 0.32, M.concreteWarm, x, gy + 0.15 + 0.125 - 0.1, HD + 3.0); collC(DWX(x), DWZ(HD + 3.0), 0.18); }
+  for (const s of [-1, 1]) dWin(D, 1.9, 2.7, s * 2.6, y0 + 1.36, HD - 0.12, 0, 2);                    // 大堂玻璃（入口两侧，门洞 x∈[-1.6, 1.6] 敞开）
+  { const gz = DWZ(HD + 0.5), g0 = gh(0, DWZ(HD + 2.6)) - 15.0, N = Math.max(1, Math.round((y0 - g0) / 0.15));   // 入口台阶：基座高出地面 y0 - g0
+    for (let k = 0; k < N; k++) box(D, 3.4, 0.15 * (k + 1), 0.3, M.concreteWarm, 0, g0 + 0.075 * (k + 1), HD + 0.5 + 0.3 * (N - k));
+    COLL.walks.push({ kind: 'ramp', x0: DWX(0), z0: DWZ(HD + 0.5 + 0.3 * N + 0.15), x1: DWX(0), z1: gz - 0.2, hw: 1.7, y0: DWY(g0), y1: DWY(y0 + 0.035) }); }
+  // 大堂：信报箱、沙发、绿植
+  box(D, 0.35, 1.6, 3.0, M.alu, -3.75, y0 + 0.035 + 0.8, 5.0); dRect(-3.75, 5.0, 0.2, 1.5, 0, 1.6);                 // 信报箱（靠大堂西墙）
+  sofaF(D, 2.3, y0 + 0.035, 6.8, -Math.PI / 2, 2.0); dRect(2.3, 6.8, 0.5, 1.05, 0, 1.0);
+  // ---------------- 前庭：绿篱、长椅（按所在地面最低点取高，避免悬空） ----------------
+  const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
+  for (const sx of [-1, 1]) {
+    const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
+    collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3); planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4, 0, 'narcissus', [L.dorm.x, DY, L.dorm.z]);   // 花池种水仙（碰撞已登记，planter 不重复登记）
+    const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
+    box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
+  HELI_SOLIDS.push({ x0: DWX(-HW - 0.2), x1: DWX(HW + 0.2), y0: DWY(0), y1: DWY(top + 1.0), z0: DWZ(-HD - 1.6), z1: DWZ(HD + 1.6) });
+  DORM.built = true;
+  D.position.set(L.dorm.x, 15.0, L.dorm.z); return D;
+}
+// 一户的隔墙与内饰（户型坐标 u：离交通核墙的距离 0→10.8；v：离楼道墙的距离 0→8.55；四户按 sx、sz 镜像，完全相同）
+function dormUnit(D, f, sx, sz, CZ, IW, ID) {
+  const y = dormY(f), X = (u) => sx * (4 + u), Z = (v) => sz * (CZ + v), ry = (du, dv) => Math.atan2(sx * du, sz * dv);
+  const T = 0.12, H = DORM.fl - 0.2;
+  const wallU = (u, v0, v1, gaps = []) => { const a = Math.min(Z(v0), Z(v1)), b = Math.max(Z(v0), Z(v1)); dWall(D, 'z', X(u), a, b, y, y + H, T, M.wallWarm, gaps.map(([g0, g1]) => [Math.min(Z(g0), Z(g1)), Math.max(Z(g0), Z(g1)), y, y + 2.1]));
+    dSegRun('z', X(u), a, b, f, f, gaps.map(([g0, g1]) => [Math.min(Z(g0), Z(g1)), Math.max(Z(g0), Z(g1))])); };
+  const wallV = (v, u0, u1, gaps = []) => { const a = Math.min(X(u0), X(u1)), b = Math.max(X(u0), X(u1)); dWall(D, 'x', Z(v), a, b, y, y + H, T, M.wallWarm, gaps.map(([g0, g1]) => [Math.min(X(g0), X(g1)), Math.max(X(g0), X(g1)), y, y + 2.1]));
+    dSegRun('x', Z(v), a, b, f, f, gaps.map(([g0, g1]) => [Math.min(X(g0), X(g1)), Math.max(X(g0), X(g1))])); };
+  // 隔墙：卧室区（u ≥ 6.6，次卧、主卧），卫生间（u 4.2～6.6，v 0～2.4）
+  wallU(6.6, 0, 8.55, [[2.6, 3.5], [5.0, 5.9]]); wallV(4.25, 6.6, 10.8); wallU(4.2, 0, 2.4); wallV(2.4, 4.2, 6.6, [[4.6, 5.5]]);
+  const yF = y + 0.035;                                                      // 面层顶面：家具放在面层上
+  const rect = (u, v, hu, hv, h = 1.0) => dRect((X(u - hu) + X(u + hu)) / 2, (Z(v - hv) + Z(v + hv)) / 2, hu, hv, f, h);
+  // 玄关鞋柜
+  box(D, 0.9, 1.0, 0.35, M.woodDark, X(2.3), yF + 0.5, Z(0.25)); rect(2.3, 0.25, 0.45, 0.18);
+  // 厨房：沿交通核墙的一字形橱柜（台面、水槽、灶台、吊柜）与冰箱
+  box(D, 0.62, 0.88, 2.8, M.white, X(0.31), yF + 0.44, Z(4.0)); box(D, 0.66, 0.04, 2.84, M.stone, X(0.33), yF + 0.9, Z(4.0));
+  box(D, 0.4, 0.02, 0.5, M.alu, X(0.33), yF + 0.925, Z(3.3)); box(D, 0.5, 0.015, 0.6, M.dark, X(0.33), yF + 0.925, Z(4.8));
+  box(D, 0.36, 0.7, 2.8, M.white, X(0.18), yF + 1.95, Z(4.0)); box(D, 0.72, 1.9, 0.72, M.aluWhite, X(0.36), yF + 0.95, Z(2.0));
+  rect(0.33, 4.0, 0.33, 1.42); rect(0.36, 2.0, 0.36, 0.36, 1.9);
+  // 餐桌与四把椅子
+  tableF(D, X(2.6), yF, Z(4.0), ry(0, 1), 1.5, 0.9, 0.75); rect(2.6, 4.0, 0.45, 0.75, 0.8);
+  for (const [du, dv] of [[-0.62, -0.3], [-0.62, 0.35], [0.62, -0.3], [0.62, 0.35]]) chair(D, X(2.6 + du), yF, Z(4.0 + dv), ry(-Math.sign(du), 0));
+  // 客厅：电视柜（交通核墙）、沙发（背靠卧室墙方向）、茶几、地毯、落地灯
+  box(D, 0.45, 0.45, 2.0, M.woodDark, X(0.25), yF + 0.225, Z(7.1)); box(D, 0.06, 0.7, 1.3, M.dark, X(0.1), yF + 1.3, Z(7.1));
+  sofaF(D, X(4.4), yF, Z(7.1), ry(-1, 0), 2.4); rect(4.4, 7.1, 0.46, 1.22, 0.9);
+  rect(0.25, 7.1, 0.23, 1.0, 0.6); rect(3.0, 7.1, 0.5, 0.3, 0.5);   // 电视柜、茶几：矮于 0.65 m，登记碰撞体（不能踩上去）
+  tableF(D, X(3.0), yF, Z(7.1), ry(0, 1), 1.0, 0.6, 0.4, M.woodDark); box(D, 2.6, 0.01, 2.0, M.rug, X(3.5), yF + 0.027, Z(7.1)); lampF(D, X(5.4), yF, Z(8.1));
+  // 卫生间：马桶、台盆柜与镜子、淋浴间
+  box(D, 0.4, 0.4, 0.55, M.white, X(6.2), yF + 0.2, Z(0.45)); box(D, 0.42, 0.45, 0.16, M.white, X(6.2), yF + 0.6, Z(0.18));
+  box(D, 1.0, 0.8, 0.5, M.woodDark, X(4.9), yF + 0.4, Z(0.3)); box(D, 0.5, 0.05, 0.4, M.white, X(4.9), yF + 0.83, Z(0.3)); box(D, 0.8, 0.7, 0.02, std(0xcfd8dc, 0.08, 0.9), X(4.9), yF + 1.5, Z(0.07));
+  box(D, 0.02, 2.0, 1.0, M.glassLight, X(5.3), yF + 1.0, Z(1.4)); box(D, 0.9, 0.04, 1.0, M.stone, X(5.9), yF + 0.03, Z(1.4));
+  rect(6.2, 0.4, 0.22, 0.35, 0.8); rect(4.9, 0.3, 0.5, 0.26, 0.9);
+  // 次卧（v 0～4.25）：1.5 m 床（床头靠山墙）、床头柜、衣柜
+  bedF(D, X(9.7), yF, Z(2.1), ry(-1, 0), 1.5, 2.0); rect(9.7, 2.1, 1.1, 1.0, 1.0);
+  box(D, 1.8, 2.2, 0.6, M.woodDark, X(8.1), yF + 1.1, Z(0.36)); rect(8.1, 0.36, 0.9, 0.3, 2.2);
+  // 主卧（v 4.25～8.55）：1.8 m 床、床头柜、衣柜、书桌
+  bedF(D, X(9.6), yF, Z(6.7), ry(-1, 0), 1.8, 2.1); rect(9.6, 6.7, 1.15, 1.15, 1.0);
+  box(D, 2.2, 2.2, 0.6, M.woodDark, X(8.6), yF + 1.1, Z(4.66)); rect(8.6, 4.66, 1.1, 0.3, 2.2);
+  tableF(D, X(7.1), yF, Z(7.9), ry(0, -1), 1.2, 0.55, 0.75); chair(D, X(7.1), yF, Z(7.4), ry(0, 1));
+}
+// 呼叫：已停在本层且门开着就延长开门时间，否则排队
+function dormCall(c, f) {
+  if (c.at === f && (c.state === 'open' || c.state === 'opening')) { c.hold = 5; return; }
+  if (c.at === f && c.state === 'idle') { c.queue.unshift(f); return; }
+  if (!c.queue.includes(f) && !(c.state === 'moving' && c.target === f)) c.queue.push(f);
+}
+// 状态：idle（门关、停在 at 层）→ moving（at = null）→ opening → open（保持 5 秒；有排队则缩短）→ closing → idle
+function dormLiftTick(c, dt) {
+  if (c.selT > 0) { c.selT -= dt; if (c.selT <= 0 && c.sel !== c.at && !c.queue.includes(c.sel)) c.queue.push(c.sel); }
+  if (c.state === 'idle') { if (c.queue.length) { c.target = c.queue.shift(); c.state = c.target === c.at ? 'opening' : 'moving'; if (c.state === 'moving') c.at = null; } }
+  else if (c.state === 'closing') { c.door = Math.max(0, c.door - dt / 0.9); if (c.door === 0) c.state = 'idle'; }
+  else if (c.state === 'moving') {
+    const ty = dormY(c.target), d = ty - c.y, v = Math.min(Math.abs(d) * 1.6 + 0.25, 2.2) * dt;
+    if (Math.abs(d) <= v) { c.y = ty; c.at = c.target; c.state = 'opening'; } else c.y += Math.sign(d) * v;
+  }
+  else if (c.state === 'opening') { c.door = Math.min(1, c.door + dt / 0.9); if (c.door === 1) { c.state = 'open'; c.hold = 5; } }
+  else if (c.state === 'open') { if (c.queue.length || c.selT > 0) c.hold = Math.min(c.hold, 1.0); c.hold -= dt; if (c.hold <= 0 && !(c.selT > 0)) c.state = 'closing'; }
+}
+const DORM_M4 = new THREE.Matrix4(), DORM_Q = new THREE.Quaternion(), DORM_V = new THREE.Vector3(), DORM_S = new THREE.Vector3(1, 1, 1), DORM_E = new THREE.Euler();
+function dormDoorsUpdate(dt) {
+  if (!DORM.doorIM) return; let dirty = false;
+  for (const d of DORM.doors) {
+    const want = d.open ? 1.45 : 0, a0 = d.ang; d.ang = dt ? clamp(d.ang + Math.sign(want - d.ang) * dt * 2.6, Math.min(a0, want), Math.max(a0, want)) : want;
+    if (d.ang === a0 && dt) continue; dirty = true;
+    const rot = d.sx > 0 ? -d.sz * d.ang : Math.PI + d.sz * d.ang;       // 向户内开
+    DORM_M4.compose(DORM_V.set(d.hx, dormY(d.f) + 0.012, d.hz), DORM_Q.setFromEuler(DORM_E.set(0, rot, 0)), DORM_S); DORM.doorIM.setMatrixAt(d.i, DORM_M4); DORM.handleIM.setMatrixAt(d.i, DORM_M4);
+  }
+  if (dirty) { DORM.doorIM.instanceMatrix.needsUpdate = true; DORM.handleIM.instanceMatrix.needsUpdate = true; }
+}
+function dormLiftsUpdate(dt) {
+  const n = DORM.n;
+  for (const c of DORM.lifts) {
+    if (dt) dormLiftTick(c, dt);
+    // 轿厢（已挂到场景根下时按世界坐标摆放）
+    if (c.g.parent && c.g.parent.isScene) c.g.position.set(DWX(c.cx), DWY(c.y), DWZ(c.cz)); else c.g.position.set(c.cx, c.y, c.cz);
+    c.leaves.forEach((m, s) => { m.position.x = (s ? 1 : -1) * (0.28 + 0.56 * c.door); });
+    for (let f = 0; f < n; f++) {
+      const o = c.at === f ? c.door : 0;
+      for (const s of [0, 1]) { const x = c.cx + (s ? 1 : -1) * (0.28 + 0.56 * o); DORM_M4.compose(DORM_V.set(x, dormY(f) + 0.012, -1.25 + 0.03), DORM_Q.identity(), DORM_S); DORM.landIM.setMatrixAt((f * 2 + c.k) * 2 + s, DORM_M4); }
+    }
+  }
+  if (DORM.landIM) DORM.landIM.instanceMatrix.needsUpdate = true;
+}
+function updateDorm(dt) { if (!DORM.built) return; dormDoorsUpdate(Math.min(dt, 0.05)); dormLiftsUpdate(Math.min(dt, 0.05)); }
 
 // ======================= 07 载具：Heesen 50m 游艇 / H125 / Cybertruck / Solectrac e70N =======================
 function planShape(pts) { const s = new THREE.Shape(); pts.forEach((p, i) => i ? s.lineTo(p[0], -p[1]) : s.moveTo(p[0], -p[1])); s.closePath(); return s; }
@@ -4382,7 +4672,7 @@ function buildYacht() {
   box(Y, 1.2, 2.2, 0.35, M.yachtWhite, 1.5, 11.6, 0); box(Y, 0.3, 0.2, 3.2, M.metalDark, 1.5, 12.7, 0);
   cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, 0.9, 12); cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, -0.9, 12);
   // 日光甲板躺椅（后段遮阳顶上）
-  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); }
+  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); YL.seats.at(-1).recline = LOUNGER_BACK; }
   // 日光甲板按摩池
   cyl(Y, 1.25, 1.3, 0.55, M.white, -9.5, 7.93, 0, 24); cyl(Y, 1.1, 1.1, 0.05, M.pool, -9.5, 8.2, 0, 24); YL.rects.push({ x: -9.5, z: 0, hw: 1.3, hd: 1.3, rot: 0, bottom: 7.3, top: 9 });
   // ---- 楼梯：主甲板 → 上甲板、上甲板后部 → 日光甲板；船尾游泳平台 → 后甲板（下甲板已改为舱盖） ----
@@ -4438,7 +4728,7 @@ function buildYacht() {
   YL.walks.push({ kind: 'poly', pts: rectPts(-24.7, -18.8, -4.2, 4.2), y: 2.26 });
   for (const sz of [-1, 1]) YL.walks.push({ kind: 'ramp', x0: -19.2, z0: sz * 4.2, x1: 13.8, z1: sz * 4.15, hw: 0.33, y0: 2.26, y1: 3.05 });
   YL.walks.push({ kind: 'ramp', x0: 13.4, z0: 0, x1: 21, z1: 0, hw: 3.2, y0: 3.05, y1: 3.55 });
-  YL.walks.push({ kind: 'poly', pts: rectPts(-27.4, -24.9, -4.1, 4.1), y: 0.9 });
+  YL.walks.push({ kind: 'poly', pts: rectPts(-27.55, -24.9, -4.1, 4.1), y: 0.9 });   // 伸出尾缘挡墙（-27.45）之外：原先止于 -27.4，挡墙前 5 cm 的缝里脚下只有浮台（0.5），人会掉到浮台上、离开游艇
   // 后甲板：左右两组沙发 + 柚木茶几
   sofaF(Y, -21.2, 2.26, -3.5, 0, 3.0, 0xefe9dc, [0x2f5f86, 0xd9c29a]); sofaF(Y, -21.2, 2.26, 3.5, Math.PI, 3.0, 0xefe9dc, [0x2f5f86, 0xd9c29a]); tableF(Y, -21.2, 2.26, 0, 0, 1.6, 0.8, 0.42, M.teak, M.alu);
   YL.rects.push({ x: -21.2, z: -3.5, hw: 1.5, hd: 0.45, rot: 0, bottom: 1.8, top: 3.5 }, { x: -21.2, z: 3.5, hw: 1.5, hd: 0.45, rot: 0, bottom: 1.8, top: 3.5 }, { x: -21.2, z: 0, hw: 0.8, hd: 0.4, rot: 0, bottom: 1.8, top: 3.5 });
@@ -4558,7 +4848,7 @@ function buildCybertruck() {
   { const roof = new THREE.Mesh(new THREE.PlaneGeometry(1.7, Wb * 0.82), std(0x14202a, 0.1, 0.2, { transparent: true, opacity: 0.55, side: THREE.DoubleSide })); roof.rotation.set(Math.PI / 2, 0, 0); roof.rotateY(Math.atan2(1.78 - 1.4, 1.65)); roof.position.set(-1.05, 1.6, 0); cab.add(roof); }
   box(cab, 0.55, 0.5, 0.55, std(0xf0ede6, 0.8), -0.2, 0.75, 0.42); box(cab, 0.12, 0.7, 0.55, std(0xf0ede6, 0.8), -0.5, 1.1, 0.42);
   box(cab, 1.5, 0.05, Wb * 0.9, dark, 0.2, 0.55, 0);
-  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
+  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', horn: 'car', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
   C.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return C;
 }
@@ -4580,7 +4870,7 @@ function buildTractor() {
     cyl(T, r * 0.6, r * 0.6, w + 0.02, M.yellow, x, r, z, 12, Math.PI / 2);
   }
   box(T, 0.3, 0.2, 0.7, dark, -1.35, 0.55, 0);          // 三点悬挂
-  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
+  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', horn: 'tractor', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
   T.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return T;
 }
@@ -4663,19 +4953,25 @@ function leafMaterial(atlas) {
 }
 // 树冠：低面数内核（组 0）+ 外壳叶簇面片（组 1）。法线按球面外向，获得柔和体积感
 function crownCardsGeo(seed, opt) {
-  const { lobes = 2, detail = 1, flat = 0.85, cards = 16, cell = 0, cardSize = 0.95, shell = 0.78 } = opt;
-  const core = crownGeo(seed, lobes, flat, detail); core.scale(0.82, 0.82, 0.82);
-  const cp = core.attributes.position, cc = core.attributes.color;
-  const pos = Array.from(cp.array), nrm = Array.from(core.attributes.normal.array), col = Array.from(cc.array), uv = new Array(cp.count * 2).fill(0.5);
-  const idx = Array.from(core.index.array), coreCount = idx.length;
-  for (let i = 0; i < col.length; i++) col[i] = 0.4 + col[i] * 0.45;   // 内核偏暗但底部不至于死黑
+  // core = false：不要实心内核（灌木的叶片面片少，实心内核会露出一大块光滑绿包），改为内外两层叶片面片（inner 为内层面片数）
+  const { lobes = 2, detail = 1, flat = 0.85, cards = 16, cell = 0, cardSize = 0.95, shell = 0.78, core: withCore = true, inner = 0 } = opt;
+  let pos = [], nrm = [], col = [], uv = [], idx = [];
+  if (withCore) {
+    const core = crownGeo(seed, lobes, flat, detail); core.scale(0.82, 0.82, 0.82);
+    const cp = core.attributes.position, cc = core.attributes.color;
+    pos = Array.from(cp.array); nrm = Array.from(core.attributes.normal.array); col = Array.from(cc.array); uv = new Array(cp.count * 2).fill(0.5);
+    idx = Array.from(core.index.array);
+    for (let i = 0; i < col.length; i++) col[i] = 0.4 + col[i] * 0.45;   // 内核偏暗但底部不至于死黑
+  }
+  const coreCount = idx.length;
   const R = mulberry32(Math.floor(seed * 977)), [u0, v0, u1, v1] = ATLAS_UV(cell);
   const n = new THREE.Vector3(), t = new THREE.Vector3(), b = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  for (let k = 0; k < cards; k++) {
-    // 球面近似均匀分布（上半球略多）
-    const yy = 1 - 1.85 * (k + 0.5) / cards, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), ph = k * 2.39996 + R() * 0.4;
+  for (let k = 0; k < cards + inner; k++) {
+    // 球面近似均匀分布（上半球略多）；内层面片单独一轮分布，半径取外层的一半
+    const inn = k >= cards, kk = inn ? k - cards : k, nn = inn ? inner : cards;
+    const yy = 1 - 1.85 * (kk + 0.5) / nn, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), ph = kk * 2.39996 + R() * 0.4 + (inn ? 1.3 : 0);
     n.set(Math.cos(ph) * rr, clamp(yy, -0.85, 1), Math.sin(ph) * rr).normalize();
-    const c = n.clone().multiplyScalar(shell); c.y *= flat;
+    const c = n.clone().multiplyScalar(inn ? shell * 0.5 : shell); c.y *= flat;
     t.crossVectors(Math.abs(n.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : up, n).normalize(); b.crossVectors(n, t).normalize();
     const roll = R() * TAU, cr = Math.cos(roll), sr = Math.sin(roll), T = t.clone().multiplyScalar(cr).addScaledVector(b, sr), B = b.clone().multiplyScalar(cr).addScaledVector(t, -sr);
     const s = cardSize * (0.8 + R() * 0.4), base = pos.length / 3;
@@ -4938,6 +5234,25 @@ function vegScatter(X, H, NR, QS) {
   }
   return { trees, shrubs, excl };
 }
+// 草莓植株（原点在地面，约 0.3 m 高、0.6 m 宽）：6 片复叶的低矮叶丛 + 4 颗果（3 红 1 青白，锥形、带绿色萼片）+ 2 朵白花
+let VEG_STRAW = null;
+function strawberryPlantGeo() {
+  const leaves = frondGeo(6, 0.3, 7, 0.15, 0.03);
+  const solidC = (g, c) => { g = g.index ? g.toNonIndexed() : g; const C = new THREE.Color(c), a = []; for (let i = 0; i < g.attributes.position.count; i++) a.push(C.r, C.g, C.b); g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); if (g.attributes.uv) g.deleteAttribute('uv'); return g; };
+  const parts = [];
+  [[0.17, 0.3, 0xd41c24], [0.2, 2.4, 0xc81822], [0.14, 4.3, 0xdc2a26], [0.19, 5.5, 0xe6e2b0]].forEach(([d, a, c], k) => {
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, y = 0.055 + (k % 2) * 0.02;
+    const b = new THREE.ConeGeometry(0.032, 0.065, 5, 1, true); b.rotateX(Math.PI); b.translate(x, y - 0.03, z); parts.push(solidC(b, c));   // 果实尖端朝下
+    const cx = new THREE.ConeGeometry(0.036, 0.014, 4, 1, true); cx.translate(x, y + 0.005, z); parts.push(solidC(cx, 0x3f7a2a));          // 萼片
+  });
+  for (const [d, a] of [[0.1, 1.3], [0.22, 3.6]]) {
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, f = new THREE.CircleGeometry(0.022, 5); f.rotateX(-Math.PI / 2); f.translate(x, 0.1, z); parts.push(solidC(f, 0xfbfaf4));
+    const c = new THREE.CircleGeometry(0.008, 4); c.rotateX(-Math.PI / 2); c.translate(x, 0.101, z); parts.push(solidC(c, 0xe8c230));
+  }
+  parts.forEach(g => { if (g.attributes.normal) g.deleteAttribute('normal'); });
+  const fruit = THREE.BufferGeometryUtils.mergeGeometries(parts); fruit.computeVertexNormals();
+  return { leaves, fruit, fruitMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide }) };
+}
 function buildVegetation(X, scene, QS) {
   const H = X.H, NR = X.normals;
   const cell = (x, z) => Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1));
@@ -4956,7 +5271,7 @@ function buildVegetation(X, scene, QS) {
     banyan: [banyanTreeGeo(1, { clumps: 10, flat: 0.42, spread: 0.82, cell: 10, hb: 0.68, roots: 9 }), banyanTreeGeo(2, { clumps: 9, flat: 0.38, spread: 0.85, cell: 10, hb: 0.72, roots: 7 })],
     ficusRound: [banyanTreeGeo(3, { clumps: 8, flat: 0.75, spread: 0.55, cell: 10, cards: 7, hb: 0.72, roots: 1 })],
     ficusWeep: [banyanTreeGeo(4, { clumps: 9, flat: 0.6, spread: 0.65, cell: 11, cards: 7, hb: 0.8, roots: 2 })],
-    shrub: [crownCardsGeo(3.3, { lobes: 2, detail: 0, flat: 0.7, cards: 8, cell: 2, cardSize: 1.15 })],
+    shrub: [crownCardsGeo(3.3, { flat: 0.7, cards: 16, inner: 6, cell: 2, cardSize: 1.0, core: false })],   // 不要实心内核（原来 8 张面片围着一个光滑绿球，近看是一大块绿包）
   };
   const WOOD = { banyan: [banyanWoodGeo(1, 14), banyanWoodGeo(2, 10)], ficus: [banyanWoodGeo(3, 3)] };
   const lists = { palm: [[], [], [], []], banyan: [[], []], ficusRound: [[]], ficusWeep: [[]], shrub: [[]] }, wood = { banyan: [[], []], ficus: [[]] };
@@ -4977,7 +5292,12 @@ function buildVegetation(X, scene, QS) {
     lists[kind][v].push({ x: t[0], y: t[1], z: t[2], sx: Rc, sy: Rc * (0.92 + R() * 0.16), rot, tint });    // 整株：地面为原点，均匀缩放
     treeColl.push([t[0], t[2], 0.1 * Rc + 0.08]);
   }
-  for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3]; lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
+  const straw = []; let strawPatches = 0;
+  for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3];
+    // 随机三分之一的灌木换成一丛野草莓（按格点单独取随机数，不影响其余灌木的布置）
+    { const Rs = vegCell(t[0], t[2], 13); if (Rs() < 1 / 3) { const k = 4 + Math.floor(r * 1.5), rad = 0.2 + r * 0.15;   // 植株挨得很近，叶片相互交叠成一丛
+      for (let i = 0; i < k; i++) { const a = i * 2.39996 + Rs() * 0.6, d = rad * Math.sqrt((i + 0.5) / k), x = t[0] + Math.cos(a) * d, z = t[2] + Math.sin(a) * d; straw.push([x, gh(x, z), z, Rs()]); } strawPatches++; continue; } }
+    lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
   const out = [];
   for (const k in lists) lists[k].forEach((L_, vi) => {
     if (!L_.length) return;
@@ -4991,6 +5311,22 @@ function buildVegetation(X, scene, QS) {
     L_.forEach((o, i) => { eu.set(0, o.rot, 0); q.setFromEuler(eu); m4.compose(ps.set(o.x, o.y, o.z), q, sc.set(o.sx, o.sy, o.sx)); tm.setMatrixAt(i, m4); });
     tm.castShadow = true; tm.receiveShadow = true; scene.add(tm);
   });
+  // 野草莓：每株一丛三出复叶 + 垂在叶下的红果（成熟）与青白果、几朵白花
+  // 按 32 m 网格分块，每块一对实例网格；每次渲染前只显示离相机 90 m 以内的块（草莓高约 0.3 m，90 m 外已不足一个像素），全岛近 8000 株不必每帧全画
+  if (straw.length) {
+    const sg = strawberryPlantGeo(), cells = new Map(), CS = 32;
+    for (const p of straw) { const k = Math.floor(p[0] / CS) + ',' + Math.floor(p[2] / CS); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(p); }
+    VEG_STRAW = { n: straw.length, chunks: [], range: 90 };
+    for (const [k, arr] of cells) {
+      const lm = new THREE.InstancedMesh(sg.leaves, leafMat, arr.length), fm = new THREE.InstancedMesh(sg.fruit, sg.fruitMat, arr.length); let cx = 0, cz = 0;
+      arr.forEach((p, i) => { const s = 0.9 + p[3] * 0.45; eu.set(0, p[3] * 40, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] - 0.01, p[2]), q, sc.set(s, s, s)); lm.setMatrixAt(i, m4); fm.setMatrixAt(i, m4); lm.setColorAt(i, col.setRGB(0.8 + p[3] * 0.2, 1.0, 0.75)); cx += p[0]; cz += p[2]; });
+      lm.castShadow = false; lm.receiveShadow = true; fm.receiveShadow = true; lm.computeBoundingSphere(); fm.computeBoundingSphere(); scene.add(lm); scene.add(fm);
+      VEG_STRAW.chunks.push({ x: cx / arr.length, z: cz / arr.length, leaves: lm, fruit: fm, n: arr.length });
+    }
+    const prev = scene.onBeforeRender;
+    scene.onBeforeRender = function (r, sc_, cam, rt) { prev.call(this, r, sc_, cam, rt); if (rt) return;   // 离屏渲染（海面 FFT 等）不改
+      const R2 = (VEG_STRAW.range + CS * 0.72) ** 2, c = cam.position; for (const ch of VEG_STRAW.chunks) { const v = (ch.x - c.x) ** 2 + (ch.z - c.z) ** 2 < R2; ch.leaves.visible = ch.fruit.visible = v; } };
+  }
   // 别墅北门扶桑（开红花）
   if (typeof HIBISCUS !== 'undefined' && HIBISCUS.length) {
     const hm = new THREE.InstancedMesh(crownCardsGeo(9.9, { lobes: 2, detail: 0, flat: 0.85, cards: 12, cell: 9, cardSize: 1.1 }), mats, HIBISCUS.length);
@@ -5040,7 +5376,7 @@ function buildVegetation(X, scene, QS) {
   rocks.forEach((r, i) => { const R = vegCell(r[0], r[2], 9); m4.compose(ps.set(r[0], r[1] + r[3] * 0.15, r[2]), q.setFromEuler(new THREE.Euler(R() * 0.5, R() * TAU, R() * 0.5)), sc.set(r[3], r[3] * (0.7 + R() * 0.5), r[3] * (0.8 + R() * 0.4))); rm.setMatrixAt(i, m4); rm.setColorAt(i, col.setHex(0x6e675c).lerp(new THREE.Color(0x9a9282), R())); });
   rm.castShadow = true; rm.receiveShadow = true; scene.add(rm);
   for (const r of rocks) if (r[3] > 0.7) collC(r[0], r[2], r[3] * 0.85);
-  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, rocks: rocks.length, ferns: ferns.length };
+  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, strawberries: straw.length, strawPatches, rocks: rocks.length, ferns: ferns.length };
 }
 // 盆地内空地判定（不压占任何功能区）
 function basinFree(x, z) {
@@ -5078,6 +5414,36 @@ function bananaGeo() {
   const merged = THREE.BufferGeometryUtils.mergeGeometries(parts.map(p => { if (p.attributes.normal) p.deleteAttribute('normal'); return p; }));
   merged.computeVertexNormals(); return merged;
 }
+// 香蕉果串：从假茎顶部（2.3 m）弯出的果轴，向下挂 6 梳香蕉（每梳 7 根，果指向上翘），果轴末端垂一个紫红色蕉蕾
+function bananaBunchGeo() {
+  const parts = [], R = mulberry32(711);
+  const colr = (g, c) => { g = g.index ? g.toNonIndexed() : g; const C = new THREE.Color(c), a = []; for (let i = 0; i < g.attributes.position.count; i++) { const k = 0.9 + R() * 0.2; a.push(C.r * k, C.g * k, C.b * k); } g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const seg = (a, b, r0, r1, c, n = 5) => { const d = new THREE.Vector3().subVectors(b, a), L0 = d.length(), g = new THREE.CylinderGeometry(r1, r0, L0, n, 1); g.translate(0, L0 / 2, 0);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(a.x, a.y, a.z); parts.push(colr(g, c)); };
+  const V = (x, y, z) => new THREE.Vector3(x, y, z), top = V(0.05, 2.3, 0), bend = V(0.34, 2.18, 0), a0 = V(0.4, 1.95, 0), a1 = V(0.42, 1.22, 0), tip = V(0.43, 0.98, 0);
+  seg(top, bend, 0.035, 0.03, 0x6d7a3a); seg(bend, a0, 0.03, 0.028, 0x6d7a3a); seg(a0, a1, 0.028, 0.02, 0x7a8a40); seg(a1, tip, 0.012, 0.01, 0x6d6a3a);
+  for (let h = 0; h < 6; h++) { const y = 1.9 - h * 0.12, rr = 0.075 - h * 0.004;
+    for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + h * 0.45, dx = Math.cos(a), dz = Math.sin(a), b = V(0.41 + dx * 0.035, y, dz * 0.035), m = V(0.41 + dx * rr, y + 0.06, dz * rr), e = V(0.41 + dx * (rr + 0.03), y + 0.15, dz * (rr + 0.03));
+      seg(b, m, 0.012, 0.017, 0x7fa23a, 4); seg(m, e, 0.017, 0.008, 0x8fb040, 4); } }
+  const bell = new THREE.ConeGeometry(0.065, 0.2, 7); bell.rotateX(Math.PI); bell.translate(0.43, 0.9, 0); parts.push(colr(bell, 0x6a2140));
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+// 苹果树干：主干 1.4 m，顶部分出三根主枝斜伸进树冠（原点在地面）
+function appleTrunkGeo() {
+  const parts = [], t = new THREE.CylinderGeometry(0.12, 0.16, 1.5, 7); t.translate(0, 0.75, 0); parts.push(t.toNonIndexed());
+  for (let k = 0; k < 3; k++) { const a = k / 3 * TAU + 0.4, d = new THREE.Vector3(Math.cos(a) * 0.9, 1.3, Math.sin(a) * 0.9), L0 = d.length(), g = new THREE.CylinderGeometry(0.05, 0.1, L0, 6);
+    g.translate(0, L0 / 2, 0); g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(0, 1.35, 0); parts.push(g.toNonIndexed()); }
+  parts.forEach(g => { g.deleteAttribute('uv'); g.deleteAttribute('normal'); });
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+// 苹果：18 个挂在树冠外表面（中下部为主），按树冠半径 1.8 m 摆放、实例缩放随树冠；红色为主，少量黄绿
+function appleFruitGeo() {
+  const parts = [], R = mulberry32(712);
+  for (let k = 0; k < 18; k++) { const a = k * 2.39996, yy = -0.55 + 0.9 * (k + 0.5) / 18 + (R() - 0.5) * 0.1, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), sh = 0.8 * 1.8;
+    const x = Math.cos(a) * rr * sh, z = Math.sin(a) * rr * sh, y = yy * sh * 0.8, f = new THREE.IcosahedronGeometry(0.055, 1); f.scale(1, 0.9, 1); f.translate(x, y, z);
+    const c = new THREE.Color(R() < 0.8 ? 0xc0202a : 0xb8b040).multiplyScalar(0.85 + R() * 0.25), ca = []; for (let i = 0; i < f.attributes.position.count; i++) ca.push(c.r, c.g, c.b); f.setAttribute('color', new THREE.Float32BufferAttribute(ca, 3)); f.deleteAttribute('uv'); parts.push(f); }
+  return THREE.BufferGeometryUtils.mergeGeometries(parts);
+}
 function buildCrops(scene) {
   const R = mulberry32(99), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), col = new THREE.Color();
   // 香蕉
@@ -5087,16 +5453,19 @@ function buildCrops(scene) {
   const bi = new THREE.InstancedMesh(bananaGeo(), bm, pts.length);
   pts.forEach((p, i) => { const s = 0.85 + R() * 0.4; m4.compose(ps.set(p[0], gh(p[0], p[1]), p[1]), q.setFromEuler(new THREE.Euler(0, R() * TAU, 0)), sc.set(s, s, s)); bi.setMatrixAt(i, m4); bi.setColorAt(i, col.setRGB(0.85 + R() * 0.25, 0.95 + R() * 0.15, 0.7 + R() * 0.15)); });
   bi.castShadow = true; bi.receiveShadow = true; scene.add(bi);
+  { const bb = new THREE.InstancedMesh(bananaBunchGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }), pts.length), mm = new THREE.Matrix4();   // 果串与蕉蕾：与植株同一变换
+    for (let i = 0; i < pts.length; i++) { bi.getMatrixAt(i, mm); bb.setMatrixAt(i, mm); } bb.castShadow = true; bb.receiveShadow = true; scene.add(bb); }
   for (const p of pts) collC(p[0], p[1], 0.3);
   // 苹果树
   const orch = L.orchard, apples = [];
   for (let x = 56; x < 132; x += 5) for (let z = -122; z < -99; z += 5) if (pointInPoly(x, z, orch.map(p => [p[0] + (p[0] > 90 ? 0 : 0), p[1]])) && Math.hypot(x - 100, z + 110) < 60) apples.push([x + (R() - 0.5), z + (R() - 0.5)]);
   const acore = foliageMaterial(); acore.color.setHex(0x345c26);
-  const am = new THREE.InstancedMesh(crownCardsGeo(5.5, { lobes: 2, cards: 14, cell: 4, cardSize: 1.05 }), [acore, leafMaterial(VEG_ATLAS)], apples.length);
-  const tg = new THREE.CylinderGeometry(0.12, 0.16, 1.4, 6); tg.translate(0, 0.7, 0);
-  const at = new THREE.InstancedMesh(tg, std(0x5b4636, 0.9), apples.length);
-  apples.forEach((p, i) => { const y = gh(p[0], p[1]), r = 1.6 + R() * 0.4; m4.compose(ps.set(p[0], y + 2.3, p[1]), q.setFromEuler(new THREE.Euler(0, R() * TAU, 0)), sc.set(r, r * 0.95, r)); am.setMatrixAt(i, m4); am.setColorAt(i, col.setRGB(0.9, 1, 0.85)); m4.compose(ps.set(p[0], y, p[1]), q.identity(), sc.set(1, 1, 1)); at.setMatrixAt(i, m4); });
-  am.castShadow = at.castShadow = true; am.receiveShadow = true; scene.add(am); scene.add(at);
+  // 树冠不要实心内核（与灌木同理，面片之间会露出一块光滑绿包）；树干分出三根主枝伸进树冠；冠面挂满红苹果
+  const am = new THREE.InstancedMesh(crownCardsGeo(5.5, { cards: 20, inner: 8, cell: 4, cardSize: 1.0, core: false }), [acore, leafMaterial(VEG_ATLAS)], apples.length);
+  const at = new THREE.InstancedMesh(appleTrunkGeo(), std(0x5b4636, 0.9), apples.length), af = new THREE.InstancedMesh(appleFruitGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42 }), apples.length);
+  apples.forEach((p, i) => { const y = gh(p[0], p[1]), r = 1.6 + R() * 0.4, rot = R() * TAU; q.setFromEuler(new THREE.Euler(0, rot, 0)); m4.compose(ps.set(p[0], y + 2.3, p[1]), q, sc.set(r, r * 0.95, r)); am.setMatrixAt(i, m4); am.setColorAt(i, col.setRGB(0.9, 1, 0.85));
+    m4.compose(ps.set(p[0], y, p[1]), q, sc.set(1, 1, 1)); at.setMatrixAt(i, m4); m4.compose(ps.set(p[0], y + 2.3, p[1]), q, sc.set(r / 1.8, r * 0.95 / 1.8, r / 1.8)); af.setMatrixAt(i, m4); });
+  am.castShadow = at.castShadow = af.castShadow = true; am.receiveShadow = true; af.receiveShadow = true; scene.add(am); scene.add(at); scene.add(af);
   for (const p of apples) collC(p[0], p[1], 0.25);
   // ---------------- 蔬菜基地：按畦种植七种作物；大棚内番茄吊蔓与草莓 ----------------
   const VT = ['lettuce', 'cabbage', 'tomato', 'carrot', 'corn', 'eggplant', 'scallion'], lists = {}; VT.forEach(k => lists[k] = []);
@@ -5143,8 +5512,105 @@ function buildCrops(scene) {
   inst(solid(new THREE.IcosahedronGeometry(0.025, 0).translate(0.08, 0.14, 0.03), 0xe0202a), vcMat, ghS, p => ({ y: g_(p[0], p[1]), rot: p[2] * 7, sx: 1, sy: 1 }));
   for (let i = 0; i < gh0.n; i++) if (i % 2 === 0) for (let r = 0; r < 4; r++) { const x = gh0.x0 + i * (gh0.w + gh0.gap) + 1.35 + r * 1.9; const g = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, gh0.len - 2, 4), M.galv); g.rotation.x = Math.PI / 2; g.position.set(x, 5.9 + 2.1, gh0.z0 + gh0.len / 2); scene.add(g); }
   const vp = []; for (const k of VT) vp.push(...lists[k]);
-  return { bananas: pts.length, apples: apples.length, veg: vp.length, greenhouse: ghT.length + ghS.length };
+  const vines = buildVineyardPlants(scene);
+  return { bananas: pts.length, apples: apples.length, veg: vp.length, greenhouse: ghT.length + ghS.length, vines };
 }
+// ======================= 葡萄园：篱架式栽培（按实物结构） =======================
+// 每行：木立柱（约 6.4 m 一根，两端为加粗的斜撑端柱 + 地锚拉线）+ 四道铁丝（0.85 m 结果铁丝、1.2/1.55/1.9 m 护蔓铁丝）
+// 每 1.45 m 一株葡萄：弯曲老藤主干 + 沿结果铁丝左右伸出的两条单臂 + 竖直新梢；叶幕为 0.95～2.0 m 高的一堵葡萄叶墙（掌状三裂叶）；
+// 结果区（0.55～0.85 m）叶片已摘除，紫黑色果穗挂在主蔓下方，行间可以直接看见
+function vineTrunkGeo() {   // 原点在地面，主蔓沿 ±z（沿行方向）
+  const parts = [], R = mulberry32(611), bark = new THREE.Color(0x5a4432), shoot = new THREE.Color(0x6f8f3a);
+  const col = (g, c) => { g = g.index ? g.toNonIndexed() : g; const a = []; for (let i = 0; i < g.attributes.position.count; i++) { const k = 0.85 + R() * 0.3; a.push(c.r * k, c.g * k, c.b * k); } g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const seg = (a, b, r0, r1, c, n = 6) => { const d = new THREE.Vector3().subVectors(b, a), L0 = d.length(), g = new THREE.CylinderGeometry(r1, r0, L0, n, 1, true); g.translate(0, L0 / 2, 0);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(a.x, a.y, a.z); parts.push(col(g, c)); };
+  // 弯曲主干：地面 → 0.3 → 0.6 → 0.82，略微扭动
+  const P = [[0, -0.02, 0], [0.03, 0.3, 0.02], [-0.02, 0.6, -0.03], [0, 0.84, 0]].map(p => new THREE.Vector3(...p));
+  for (let i = 0; i < 3; i++) seg(P[i], P[i + 1], 0.05 - i * 0.006, 0.044 - i * 0.006, bark);
+  const knob = new THREE.SphereGeometry(0.045, 6, 4); knob.translate(0, 0.84, 0); parts.push(col(knob, bark));
+  // 左右单臂：沿结果铁丝（0.85）水平伸出 0.68 m，末端略下垂；臂上每 0.17 m 一根新梢竖直向上穿过护蔓铁丝
+  for (const s of [-1, 1]) {
+    const A = [[0, 0.84, 0], [0, 0.87, s * 0.25], [0.01, 0.86, s * 0.5], [0, 0.84, s * 0.68]].map(p => new THREE.Vector3(...p));
+    for (let i = 0; i < 3; i++) seg(A[i], A[i + 1], 0.03 - i * 0.005, 0.025 - i * 0.005, bark, 5);
+    for (let k = 1; k <= 4; k++) { const z = s * k * 0.17, x0 = (R() - 0.5) * 0.04; seg(new THREE.Vector3(x0, 0.86, z), new THREE.Vector3(x0 + (R() - 0.5) * 0.12, 1.95 + R() * 0.1, z + (R() - 0.5) * 0.1), 0.009, 0.006, shoot, 3); }
+  }
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+function vineCanopyGeo() {   // 叶幕：叶片面片竖直排成一堵叶墙（两侧外表面 + 中间一层），覆盖 1.45 m 行长
+  const pos = [], nrm = [], col = [], uv = [], idx = [], R = mulberry32(612), [u0, v0, u1, v1] = ATLAS_UV(6);
+  const quad = (c, n, s) => { const up = new THREE.Vector3(0, 1, 0), t = new THREE.Vector3().crossVectors(up, n).normalize(), b = new THREE.Vector3().crossVectors(n, t).normalize(), base = pos.length / 3, roll = (R() - 0.5) * 1.2;
+    const T = t.clone().multiplyScalar(Math.cos(roll)).addScaledVector(b, Math.sin(roll)), B = b.clone().multiplyScalar(Math.cos(roll)).addScaledVector(t, -Math.sin(roll));
+    for (const [a, bb, uu, vv] of [[-1, -1, u0, v0], [1, -1, u1, v0], [1, 1, u1, v1], [-1, 1, u0, v1]]) { const p = c.clone().addScaledVector(T, a * s / 2).addScaledVector(B, bb * s / 2); pos.push(p.x, p.y, p.z); nrm.push(n.x * 0.7, 0.5, n.z * 0.7); const sh = 0.6 + 0.45 * clamp((p.y - 0.9) / 1.1, 0, 1); col.push(sh, sh, sh); uv.push(uu, vv); }
+    idx.push(base, base + 1, base + 2, base, base + 2, base + 3); };
+  for (let k = 0; k < 30; k++) {
+    const side = k % 3 === 2 ? 0 : (k % 3 ? 1 : -1), y = 1.0 + R() * 1.0, z = (R() - 0.5) * 1.45;
+    const x = side * (0.16 + R() * 0.1) + (side ? 0 : (R() - 0.5) * 0.1), n = new THREE.Vector3(side || (R() < 0.5 ? -1 : 1), (R() - 0.3) * 0.8, (R() - 0.5) * 0.9).normalize();
+    quad(new THREE.Vector3(x, y, z), n, 0.42 + R() * 0.18);
+  }
+  // 叶幕顶部几片向上翻的叶片，免得从高处看到一条直线
+  for (let k = 0; k < 6; k++) quad(new THREE.Vector3((R() - 0.5) * 0.3, 2.0 + R() * 0.08, (R() - 0.5) * 1.3), new THREE.Vector3((R() - 0.5) * 0.6, 1, (R() - 0.5) * 0.6).normalize(), 0.4);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.normalizeNormals?.(); return g;
+}
+function grapeBunchGeo() {   // 果穗：原点在穗梗顶端，向下呈倒圆锥，长约 0.2 m；果粒为法线取径向的小八面体（看上去是圆的）
+  const parts = [], R = mulberry32(613);
+  const stem = new THREE.CylinderGeometry(0.004, 0.004, 0.08, 3, 1, true); stem.translate(0, -0.04, 0); { const a = []; for (let i = 0; i < stem.attributes.position.count; i++) a.push(0.35, 0.42, 0.2); stem.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); stem.deleteAttribute('uv'); parts.push(stem.toNonIndexed()); }
+  const layers = [[-0.07, 0.045, 7], [-0.1, 0.05, 7], [-0.13, 0.042, 6], [-0.16, 0.032, 5], [-0.19, 0.02, 3], [-0.215, 0, 1]];
+  layers.forEach(([y, r, n], li) => { for (let k = 0; k < n; k++) {
+    const a = k / n * TAU + li * 0.7, b = new THREE.OctahedronGeometry(0.0165, 0), cx = Math.cos(a) * r, cz = Math.sin(a) * r, cy = y + (R() - 0.5) * 0.01;
+    const p = b.attributes.position, nr = []; for (let i = 0; i < p.count; i++) { const v = new THREE.Vector3(p.getX(i), p.getY(i), p.getZ(i)).normalize(); nr.push(v.x, v.y, v.z); }
+    b.setAttribute('normal', new THREE.Float32BufferAttribute(nr, 3)); b.scale(1, 1.12, 1); b.translate(cx, cy, cz); b.deleteAttribute('uv');
+    const sh = 0.8 + R() * 0.35, a2 = []; for (let i = 0; i < p.count; i++) a2.push(0.36 * sh, 0.2 * sh, 0.42 * sh); b.setAttribute('color', new THREE.Float32BufferAttribute(a2, 3)); parts.push(b);
+  } });
+  parts.forEach(g => { if (!g.attributes.normal) g.computeVertexNormals(); });
+  return THREE.BufferGeometryUtils.mergeGeometries(parts);
+}
+function buildVineyardPlants(scene) {
+  const { xs, z0, z1 } = vineRows(), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), R = mulberry32(614);
+  const posts = [], wires = [], vines = [], bunches = [], anchors = [];
+  const nP = 10, WY = [0.85, 1.2, 1.55, 1.9];
+  for (const x of xs) {
+    const P = []; for (let k = 0; k <= nP; k++) { const z = lerp(z0, z1, k / nP); P.push([x, gh(x, z), z, k === 0 || k === nP]); }
+    for (const p of P) posts.push(p);
+    for (const e of [P[0], P[nP]]) { const dz = e === P[0] ? -1.4 : 1.4, az = e[2] + dz; anchors.push([[e[0], e[1] + 1.85, e[2]], [e[0], gh(e[0], az) + 0.02, az]]); }
+    for (let k = 0; k < nP; k++) for (const wy of WY) wires.push([[x, P[k][1] + wy, P[k][2]], [x, P[k + 1][1] + wy, P[k + 1][2]]]);
+    for (let z = z0 + 0.8; z < z1 - 0.6; z += 1.45) {
+      const y = gh(x, z), flip = R() < 0.5; vines.push([x, y, z, flip ? Math.PI : 0, 0.95 + R() * 0.1]);
+      for (let b = 0; b < 3; b++) { const bz = z + (b - 1) * 0.42 + (R() - 0.5) * 0.12, bx = x + (R() < 0.5 ? -1 : 1) * (0.05 + R() * 0.07); bunches.push([bx, y + 0.8 - R() * 0.05, bz, R() * TAU, 0.85 + R() * 0.35]); }
+    }
+  }
+  const wood = new THREE.MeshStandardMaterial({ color: 0x7a6248, roughness: 0.9 });
+  // 立柱：普通柱 0.09 方，端柱 0.14 方并向外斜 8°
+  const pg = new THREE.BoxGeometry(1, 1, 1); pg.translate(0, 0.5, 0);
+  const pm = new THREE.InstancedMesh(pg, wood, posts.length);
+  posts.forEach((p, i) => { const end = p[3], w = end ? 0.14 : 0.09, h = end ? 2.25 : 2.15, tilt = end ? (p[2] < (z0 + z1) / 2 ? -0.14 : 0.14) : 0;
+    q.setFromEuler(new THREE.Euler(tilt, 0, 0)); m4.compose(ps.set(p[0], p[1] - 0.25, p[2]), q, sc.set(w, h, w)); pm.setMatrixAt(i, m4); });
+  pm.castShadow = true; pm.receiveShadow = true; scene.add(pm);
+  // 铁丝与地锚拉线：单位长度细圆柱，按两端点定向
+  const wg = new THREE.CylinderGeometry(0.004, 0.004, 1, 3, 1, true); wg.translate(0, 0.5, 0);
+  const segs = wires.concat(anchors), wm = new THREE.InstancedMesh(wg, new THREE.MeshStandardMaterial({ color: 0x9aa0a4, roughness: 0.4, metalness: 0.7 }), segs.length), d = new THREE.Vector3();
+  segs.forEach(([a, b], i) => { d.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L0 = d.length(); q.setFromUnitVectors(up, d.normalize()); m4.compose(ps.set(...a), q, sc.set(1, L0, 1)); wm.setMatrixAt(i, m4); });
+  scene.add(wm);
+  const astake = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.25, 0.05).translate(0, 0.05, 0), wood, anchors.length);
+  anchors.forEach(([, b], i) => { m4.compose(ps.set(...b), q.identity(), sc.set(1, 1, 1)); astake.setMatrixAt(i, m4); }); scene.add(astake);
+  // 葡萄藤：主干 + 单臂 + 新梢（顶点色），叶幕（葡萄叶贴图），果穗
+  const cm = new THREE.InstancedMesh(vineCanopyGeo(), leafMaterial(VEG_ATLAS), vines.length), col = new THREE.Color();
+  vines.forEach((v, i) => { q.setFromEuler(new THREE.Euler(0, v[3], 0)); m4.compose(ps.set(v[0], v[1], v[2]), q, sc.set(1, 1, 1)); cm.setMatrixAt(i, m4); cm.setColorAt(i, col.setRGB(0.82 + R() * 0.2, 0.95 + R() * 0.1, 0.72 + R() * 0.12)); });
+  cm.castShadow = true; cm.receiveShadow = true; scene.add(cm);
+  // 主干与果穗藏在叶幕下、尺寸小（果穗约 0.2 m），按 24 m 网格分块，渲染前只显示离相机 120 m 以内的块；叶幕、立柱、铁丝全程显示，远看葡萄园外观不变
+  const lod = [], tgeo = vineTrunkGeo(), tmat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), bgeo = grapeBunchGeo(), bmat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.0 });
+  const chunked = (arr, geo, mat, mtx) => { const cells = new Map(); for (const a of arr) { const k = Math.floor(a[0] / 24) + ',' + Math.floor(a[2] / 24); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(a); }
+    for (const list of cells.values()) { const im = new THREE.InstancedMesh(geo, mat, list.length); let cx = 0, cz = 0; list.forEach((a, i) => { im.setMatrixAt(i, mtx(a)); cx += a[0]; cz += a[2]; });
+      im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); scene.add(im); lod.push({ m: im, x: cx / list.length, z: cz / list.length }); } };
+  chunked(vines, tgeo, tmat, v => m4.compose(ps.set(v[0], v[1], v[2]), q.setFromEuler(new THREE.Euler(0, v[3], 0)), sc.set(1, v[4], 1)));
+  chunked(bunches, bgeo, bmat, b => m4.compose(ps.set(b[0], b[1], b[2]), q.setFromEuler(new THREE.Euler((R() - 0.5) * 0.2, b[3], (R() - 0.5) * 0.2)), sc.set(b[4], b[4], b[4])));
+  VINEYARD = { rows: xs.length, posts: posts.length, wires: wires.length, vines: vines.length, bunches: bunches.length, range: 120, lod, meshes: { posts: pm, wires: wm, canopy: cm } };
+  const prev = scene.onBeforeRender;
+  scene.onBeforeRender = function (r, sc_, cam, rt) { prev.call(this, r, sc_, cam, rt); if (rt) return;
+    const R2 = (VINEYARD.range + 17) ** 2, c = cam.position; for (const o of lod) o.m.visible = (o.x - c.x) ** 2 + (o.z - c.z) ** 2 < R2; };
+  return VINEYARD;
+}
+let VINEYARD = null;
 // ======================= 水田：水面 + 成行稻丛 =======================
 function riceTexture() {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d'), R = mulberry32(4411);
@@ -5446,7 +5912,7 @@ function setupFP(ctx) {
   // ---- 碰撞数据：固定实体 + 各构件登记 ----
   const rects = COLL.rects.slice(), circles = COLL.circles, segs = COLL.segs;
   const R_ = (x, z, hw, hd, rot = 0, top = 1e9, bottom = -1e9) => rects.push({ x, z, hw, hd, rot, top, bottom });
-  R_(L.dorm.x, L.dorm.z, 15.5, 10.5);
+  // 住宅楼改为可进出：外墙、隔墙、户门、电梯在 06c_dorm.js 里逐段登记碰撞，不再整体当作实心矩形
   R_(L.barn.x, L.barn.z, 13.3, 6.3);
   const gh0 = L.greenhouses; for (let i = 0; i < gh0.n; i++) R_(gh0.x0 + i * (gh0.w + gh0.gap) + gh0.w / 2, gh0.z0 + gh0.len / 2, gh0.w / 2 + 0.2, gh0.len / 2 + 0.2);
   for (const pen of [L.pig, L.chicken]) R_(pen.x, pen.z, pen.w / 2 + 0.1, pen.d / 2 + 0.1);
@@ -5499,6 +5965,8 @@ function setupFP(ctx) {
     // 陆地漫游边界；在船上时不限制（游艇巡航会驶出该范围，否则人在船上寸步难行）
     if (!st.onBoat && (x1 < -372 || x1 > 372 || z1 < -222 || z1 > 222)) return false;
     if (st.onBoat) for (const o of DYN.segs) if (inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
+    // 游艇船体空气墙：船上船下都不能直接跨过船体轮廓（只能按 F 登船、离船）
+    for (const o of DYN.hull || []) if (cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     for (const o of near(x1, z1)) if (o.t === 's' && inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     const f = floorAt(x1, z1, feet), d = Math.hypot(x1 - x0, z1 - z0) + 1e-6;
     const w = waterAt(x1, z1);
@@ -5602,7 +6070,7 @@ function setupFP(ctx) {
   const tend = (e) => { for (const t of e.changedTouches) { if (st.touchMove && t.identifier === st.touchMove.id) st.touchMove = null; if (st.touchLook && t.identifier === st.touchLook.id) st.touchLook = null; } };
   cvs.addEventListener('touchend', tend); cvs.addEventListener('touchcancel', tend);
   // ---- 座位：坐下 / 躺下 ----
-  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? 0.9 : -0.05; st.keys.clear(); }
+  function sitDown(seat) { if (seat.boat) st.onBoat = true; st.seat = seat; st.seatStand = { x: st.pos.x, z: st.pos.z, feet: st.feet }; st.yaw = seat.yaw; st.pitch = seat.type === 'lie' ? (seat.recline ? -0.2 : 0.9) : -0.05; st.keys.clear(); }
   function standUp() { if (!st.seat) return; const sv = st.seat, s0 = sv.boat ? { x: sv.x - Math.sin(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), z: sv.z - Math.cos(sv.yaw) * (sv.type === 'lie' ? 1.3 : 0.8), feet: sv.y - (sv.type === 'lie' ? 0.62 : 0.45) } : st.seatStand; if (sv.boat) st.onBoat = true; st.seat = null; st.pos.x = s0.x; st.pos.z = s0.z; st.feet = s0.feet; st.vy = 0; st.grounded = true; st.pitch = -0.1; }
   for (const seat of SEATS) INTERACT.push({ x: seat.x, z: seat.z, r: seat.type === 'lie' ? 1.8 : 1.35, y: seat.y - (seat.type === 'lie' ? 0.45 : 0.5), label: seat.type === 'lie' ? '躺下休息' : '坐下', fn: () => sitDown(seat) });
   // ---- 传送、交互、小地图 ----
@@ -5629,10 +6097,11 @@ function setupFP(ctx) {
   function findInteract() {
     act = null; let best = 1e9;
     for (const it of (DYN.interact.length ? INTERACT.concat(DYN.interact) : INTERACT)) { const d = Math.hypot(st.pos.x - it.x, st.pos.z - it.z); const fy = it.y !== undefined ? it.y : gh(it.x, it.z); if (d < it.r && d < best && Math.abs(st.feet - fy) < 1.8) { best = d; act = it; } }
-    prompt.textContent = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : ''; prompt.style.opacity = act ? 1 : 0;
+    const fa = boatFAction(st), pe = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : '', pf = fa ? '按 F ' + fa.label : '';
+    prompt.textContent = pe && pf ? pe + '　' + pf : pe || pf; prompt.style.opacity = act || fa ? 1 : 0;
   }
-  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
-  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
+  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyH') hornSound('heli'); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
+  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyF' && DRIVE.active === BOAT) { const fa = boatFAction(st); if (fa) fa.fn(); return; } if (e.code === 'KeyH') { hornSound(DRIVE.active.sp && DRIVE.active.sp.horn || 'car'); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyF') { const fa = boatFAction(st); if (fa) { fa.fn(); return; } } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
   st.mapR = 150;
   const mm = document.getElementById('minimap'), mctx = mm.getContext('2d');
   let mapBase = null, lastMap = 0;
@@ -5664,7 +6133,15 @@ function setupFP(ctx) {
     if (st.seat) {                                              // 坐/躺：固定身体，只转动视线
       const sv = st.seat, f = new THREE.Vector3(-Math.sin(sv.yaw), 0, -Math.cos(sv.yaw)), u = person.userData;
       person.rotation.order = 'YXZ'; person.rotation.y = sv.yaw + Math.PI;
-      if (sv.type === 'lie') {
+      if (sv.type === 'lie' && sv.recline) {
+        // 躺椅：半躺。上身顺着靠背（与水平面成 recline 角）向头端仰靠，大腿平放在座垫上、小腿伸直，头枕在头枕上；
+        // 髋关节（人物模型 y 0.9）落在座面（座位高 sv.y）以上 0.1 m、靠背铰轴略前
+        const th = Math.PI / 2 - sv.recline, hx = sv.x + f.x * 0.02, hz = sv.z + f.z * 0.02, hy = sv.y + 0.1;
+        person.rotation.x = -th; person.position.set(hx + f.x * 0.9 * Math.sin(th), hy - 0.9 * Math.cos(th), hz + f.z * 0.9 * Math.sin(th));
+        for (const k of ['legL', 'legR']) u[k].rotation.x = -(Math.PI / 2 - th); u.shinL.rotation.x = u.shinR.rotation.x = 0.08;
+        u.armL.rotation.x = u.armR.rotation.x = -0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.35;
+        person.updateMatrixWorld(true); camera.position.copy(person.localToWorld(new THREE.Vector3(0, 1.8, 0.12)));
+      } else if (sv.type === 'lie') {
         person.rotation.x = -Math.PI / 2; person.position.set(sv.x + f.x * 0.9, sv.y + 0.13, sv.z + f.z * 0.9);
         for (const k of ['legL', 'legR', 'shinL', 'shinR']) u[k].rotation.x = 0; u.armL.rotation.x = u.armR.rotation.x = 0.15; u.foreL.rotation.x = u.foreR.rotation.x = -0.2;
         camera.position.set(sv.x - f.x * 0.55, sv.y + 0.42, sv.z - f.z * 0.55);
@@ -5774,7 +6251,7 @@ function setupFP(ctx) {
       if (o.t === 's' && segDist(x, z, o.ax, o.az, o.bx, o.bz)[0] < 0.25) return true; }
     return false;
   }
-  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
+  return { standUp, sitDown, update, enter, exit, setMapBase, teleport, hitsSolid, mapTick: (t) => mapDraw(t), get on() { return st.on; }, get third() { return st.third; }, get yaw() { return st.yaw; }, get pos() { return st.pos; }, _st: st, _person: person, _test: { canStep, floorAt, waterAt, pushOut, rects, circles, segs } };
 }
 
 // ======================= 12 近景草叶（仅漫游模式） =======================
@@ -5925,20 +6402,52 @@ function updateDrive(dt, keys, camera, fpApi) {
   return { kmh: Math.round(car.v * 3.6), hit };
 }
 
+// ======================= 13b 载具喇叭：汽车、拖拉机、直升机、游艇各自的音色（WebAudio 现场合成，不引入音频文件） =======================
+// 驾驶任意载具时按 H 鸣笛；游艇另有驾驶台红色按钮，且在闸外鸣笛会召唤鲸群与鱼群（17f boatHorn）
+const HORN = { ac: null, last: null, count: 0 };
+const HORN_KIND = {
+  car: 'Cybertruck 电子双音喇叭',
+  tractor: '拖拉机单音喇叭（两短声）',
+  heli: '直升机机外警示音（高低双音）',
+  boat: '游艇汽笛（低沉长鸣）',
+};
+function hornSound(kind) {
+  HORN.last = { kind, t: performance.now() }; HORN.count++;
+  try {
+    const A = HORN.ac || (HORN.ac = new (window.AudioContext || window.webkitAudioContext)()); if (A.state === 'suspended') A.resume();
+    const t0 = A.currentTime + 0.01;
+    // 一段音：若干振荡器 → 滤波 → 包络（起音、保持、释放）
+    const tone = (freqs, type, start, dur, vol, filt) => {
+      const g = A.createGain(), f = A.createBiquadFilter(); f.type = filt.type; f.frequency.value = filt.f; f.Q.value = filt.q || 0.7;
+      g.gain.setValueAtTime(0.0001, start); g.gain.exponentialRampToValueAtTime(vol, start + 0.015); g.gain.setValueAtTime(vol, start + dur - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      f.connect(g); g.connect(A.destination);
+      for (const fr of freqs) { const o = A.createOscillator(); o.type = type; o.frequency.value = fr; o.connect(f); o.start(start); o.stop(start + dur + 0.02); }
+    };
+    if (kind === 'car') tone([415, 520], 'square', t0, 0.55, 0.12, { type: 'bandpass', f: 1300, q: 0.9 });                 // 电子双音，略带鼻音
+    else if (kind === 'tractor') { for (const s of [0, 0.3]) tone([330, 333], 'sawtooth', t0 + s, 0.2, 0.14, { type: 'lowpass', f: 1500 }); }   // 两短声，微拍频显得粗糙
+    else if (kind === 'heli') { [950, 740, 950, 740].forEach((fr, i) => tone([fr], 'triangle', t0 + i * 0.26, 0.24, 0.12, { type: 'lowpass', f: 3000 })); }
+    else {   // 游艇汽笛：三个锯齿波叠成低沉和弦，长鸣约 2.3 秒
+      const g = A.createGain(), f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.08); g.gain.setValueAtTime(0.32, t0 + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.3);
+      f.connect(g); g.connect(A.destination);
+      for (const fr of [110, 138.6, 165]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t0); o.stop(t0 + 2.4); }
+    }
+  } catch (e) { /* 浏览器不支持或未允许播放声音时静默 */ }
+}
+
 let FP_API = null;
 // ======================= 14 游艇：移动平台 + 驾驶 =======================
 const BOAT = { g: null, x: 0, z: 0, yaw: Math.PI, y: 0, v: 0, thr: 0, rud: 0, home: null, lines: [], moved: false, prev: null };
 function setupBoat(scene, Y) {
   BOAT.g = Y; BOAT.x = L.yacht.x; BOAT.z = L.yacht.z; BOAT.yaw = Math.PI; BOAT.home = { x: BOAT.x, z: BOAT.z, yaw: BOAT.yaw };
   BOAT.YL = Y.userData.YL; BOAT.type = 'boat';
-  // 缆绳：首缆接系缆钢桩，尾缆接登岸浮台（离开泊位时自动解缆）
+  // 缆绳：尾缆接登岸浮台（离开泊位时自动解缆）
   const lineMat = std(0x2a2622, 0.9);
-  for (const [lx, lz, ly, wx, wz, wy] of [[22, -1.2, 3.8, 3.5, L.yacht.z - 6.5, 2.6], [22, 1.2, 3.8, 3.5, L.yacht.z + 6.5, 2.6], [-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
+  for (const [lx, lz, ly, wx, wz, wy] of [[-24.6, -3.6, 2.4, L.landing.x - 2.8, L.landing.z + 6.2, 2.2], [-24.6, 3.6, 2.4, L.landing.x - 2.8, L.landing.z - 6.2, 2.2]]) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), lineMat); scene.add(m); BOAT.lines.push({ m, l: [lx, ly, lz], w: new THREE.Vector3(wx, wy, wz) });
   }
-  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
-  // 靠近游艇按 E 登船（直接到后甲板）；船上按 E 下船（仅靠泊时）
-  INTERACT.push({ get x() { return BOAT.atHome ? L.landing.x - 0.5 : 1e9; }, z: L.landing.z, r: 3.5, y: 0.5, label: '登上游艇（到达后甲板）', fn: () => { const [x, z] = boatToW(-24.2, 1.6); FP_API.teleport(x, z, BOAT.yaw, 2.26 + BOAT.y, true); } });
+  BOAT.seats = BOAT.YL.seats.map(s0 => ({ type: s0.type, recline: s0.recline, boat: true, get x() { return boatToW(s0.x, s0.z)[0]; }, get z() { return boatToW(s0.x, s0.z)[1]; }, get y() { return s0.y + BOAT.y; }, get yaw() { return s0.yaw + BOAT.yaw; } }));
+  // 登船、离船改为 F 键（boatFAction）：船体四周是空气墙，不能直接走上走下
   syncBoat(0);
 }
 const boatToW = (lx, lz, x = BOAT.x, z = BOAT.z, yaw = BOAT.yaw) => [x + lx * Math.cos(yaw) + lz * Math.sin(yaw), z - lx * Math.sin(yaw) + lz * Math.cos(yaw)];
@@ -5951,9 +6460,9 @@ function syncBoat(t) {
   DYN.walks = YL.walks.map(w => w.kind === 'poly' ? { kind: 'poly', boat: true, pts: w.pts.map(T), holes: (w.holes || []).map(h => h.map(T)), y: w.y + by }
     : (() => { const a = T([w.x0, w.z0]), b = T([w.x1, w.z1]); return { kind: 'ramp', boat: true, x0: a[0], z0: a[1], x1: b[0], z1: b[1], hw: w.hw, y0: w.y0 + by, y1: w.y1 + by }; })());
   DYN.segs = YL.segs.map(sg => { const a = T([sg.ax, sg.az]), b = T([sg.bx, sg.bz]); return { ax: a[0], az: a[1], bx: b[0], bz: b[1], bottom: sg.bottom + by, top: sg.top + by }; });
+  DYN.hull = BOAT_HULL.map((p, i) => { const q = BOAT_HULL[(i + 1) % BOAT_HULL.length], A = T(p), B = T(q); return { ax: A[0], az: A[1], bx: B[0], bz: B[1] }; });
   DYN.rects = YL.rects.map(r => { const c = T([r.x, r.z]); return { x: c[0], z: c[1], hw: r.hw, hd: r.hd, rot: BOAT.yaw + (r.rot || 0), bottom: r.bottom + by, top: r.top + by }; });
   DYN.interact = [];
-  { const c = T([-24.2, 1.6]); DYN.interact.push({ x: c[0], z: c[1], r: 1.6, y: 2.26 + by, label: () => BOAT.atHome ? '下船回到登岸浮台' : '游艇未靠泊，暂不能下船', fn: () => { if (BOAT.atHome) FP_API.teleport(L.landing.x + 1, L.landing.z, -Math.PI / 2, 0.5, false); } }); }
   { const c = T([5.2, -2.9]); DYN.interact.push({ x: c[0], z: c[1], r: 1.0, y: 2.45 + by, label: '下层船舱舱盖（船员通道，暂不开放）', fn: () => {} }); }
   { const c = T([6.75, -0.55]); DYN.interact.push({ x: c[0], z: c[1], r: 0.9, y: 5.15 + by, label: '按喇叭（在闸外海域可召唤鲸群与鱼群）', fn: () => boatHorn() }); }
   for (const sv of BOAT.seats) DYN.interact.push({ x: sv.x, z: sv.z, r: sv.type === 'lie' ? 1.8 : 1.3, y: sv.y - (sv.type === 'lie' ? 0.62 : 0.45), label: sv.type === 'lie' ? '躺下休息' : '坐下', fn: () => FP_API.sitDown(sv) });
@@ -5965,7 +6474,46 @@ function syncBoat(t) {
     ln.m.position.copy(a).addScaledVector(d, 0.5); ln.m.scale.set(1, L_, 1); ln.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
   }
 }
-// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、系缆桩、登岸浮台
+// ---------------- 船体空气墙与 F 键登船/离船 ----------------
+// 船体外轮廓（局部坐标：x 向船首，z 向右舷；含船尾游泳平台），略大于船体。人不能直接走上走下（双向阻挡），只能按 F
+const BOAT_HULL = [[24.9, 0], [18, 3.6], [8, 4.9], [-8, 4.9], [-20, 4.8], [-25.2, 4.5], [-27.7, 4.3], [-27.7, -4.3], [-25.2, -4.5], [-20, -4.8], [-8, -4.9], [8, -4.9], [18, -3.6]];
+// 登船落脚点（局部坐标与甲板高度）：船尾游泳平台、后甲板、两舷通道、前甲板；按 F 时落到离人最近的一处
+const BOAT_ENTRY = [-19.8, 0, 2.26], BOAT_TV = [-11.52, 0];   // 登船落点（主甲板室后墙门洞外 0.8 m，后甲板面 2.26）与沙龙电视屏幕（船体局部坐标）
+const wToBoat = (wx, wz) => { const dx = wx - BOAT.x, dz = wz - BOAT.z, c = Math.cos(BOAT.yaw), s = Math.sin(BOAT.yaw); return [dx * c - dz * s, dx * s + dz * c]; };
+// 点到船体轮廓的最近距离与最近边的外法线（局部坐标）
+function boatEdge(lx, lz) {
+  let best = 1e9, nx = 0, nz = 0, px = 0, pz = 0;
+  for (let i = 0; i < BOAT_HULL.length; i++) { const [ax, az] = BOAT_HULL[i], [bx, bz] = BOAT_HULL[(i + 1) % BOAT_HULL.length], [d, t] = segDist(lx, lz, ax, az, bx, bz);
+    if (d < best) { best = d; px = ax + (bx - ax) * t; pz = az + (bz - az) * t; const ex = bx - ax, ez = bz - az, el = Math.hypot(ex, ez) || 1; nx = ez / el; nz = -ex / el; } }
+  // 轮廓按“船首 → 右舷 → 船尾 → 左舷”排列，(ez, -ex) 指向轮廓外侧；保险起见按中心方向校正
+  if (nx * px + nz * pz < 0) { nx = -nx; nz = -nz; }
+  return { d: best, inside: pointInPoly(lx, lz, BOAT_HULL), px, pz, nx, nz };
+}
+const boatMoving = () => !!BOAT.auto || Math.abs(BOAT.v) > 0.3;
+// 当前可用的 F 键动作：{ label, fn }；没有则返回 null。drive 为玩家正在驾驶的载具
+function boatFAction(st) {
+  if (!BOAT.g || st.seat || (DRIVE.active && DRIVE.active !== BOAT)) return null;
+  const [lx, lz] = wToBoat(st.pos.x, st.pos.z), E = boatEdge(lx, lz), deck = 2.26 + BOAT.y;
+  if (!st.onBoat && DRIVE.active !== BOAT) {
+    // 岸上、浮台上或水里：离船体轮廓 3 米以内、高度与船相近即可登船
+    if (E.inside || E.d > 3.0 || st.feet > deck + 3 || st.feet < -4) return null;
+    // 无论从哪一侧登船，都落到主甲板后甲板上的固定位置：一楼（主甲板室）舱门口，面朝船首，正对沙龙前端的电视
+    return { label: '登上游艇', fn: () => {
+      const [x, z] = boatToW(BOAT_ENTRY[0], BOAT_ENTRY[1]), [tx, tz] = boatToW(BOAT_TV[0], BOAT_TV[1]), yaw = Math.atan2(-(tx - x), -(tz - z));
+      FP_API.teleport(x, z, yaw, BOAT_ENTRY[2] + BOAT.y, true); } };
+  }
+  // 船上：站在船四周边缘（离轮廓 1.6 米以内）才能离船；驾驶中直接跳船
+  if (DRIVE.active !== BOAT && (!E.inside || E.d > 1.6)) return null;
+  const moving = boatMoving();
+  return { label: moving ? '跳入附近海域（游艇行驶中）' : '离开游艇', fn: () => {
+    if (DRIVE.active === BOAT) exitCar({ teleport: FP_API.teleport });
+    const e = boatEdge(...wToBoat(st.pos.x, st.pos.z));
+    // 落点：沿最近一侧的外法线离开船体；未行驶时优先落到旁边的浮台、岸上等可站立处，否则落水
+    const drop = (k) => boatToW(e.px + e.nx * k, e.pz + e.nz * k), away = (x, z) => Math.atan2(-(x - BOAT.x), -(z - BOAT.z));   // 面朝离开船的方向
+    if (!moving) for (const k of [1.2, 2, 3, 4]) { const [x, z] = drop(k), f = FP_API._test.floorAt(x, z, deck + 1); if (f > 0.2) { FP_API.teleport(x, z, away(x, z), f, false); return; } }
+    const [x, z] = drop(moving ? 3.5 : 2.5); FP_API.teleport(x, z, away(x, z), -0.6, false); } };
+}
+// 船体与环境碰撞：搁浅（水深不足）、水闸（关闭时）、闸墩、登岸浮台
 function boatBlocked(x, z, yaw) {
   const P = [[24.5, 0], [18, 3.3], [18, -3.3], [8, 4.6], [8, -4.6], [-8, 4.6], [-8, -4.6], [-20, 4.5], [-20, -4.5], [-25, 4.2], [-25, -4.2], [-25, 0]];
   for (const [lx, lz] of P) {
@@ -5973,7 +6521,6 @@ function boatBlocked(x, z, yaw) {
     if (gh(wx, wz) > -2.6) return 'shallow';
     if (wz > 122.8 && wz < 133.2 && (Math.abs(wx) < 2.4 || (Math.abs(wx) > 36.4 && Math.abs(wx) < 44))) return 'pier';
     if (GATE.open < 0.98 && Math.abs(wx) < 38.5 && wz > 126.3 && wz < 129.7) return 'gate';
-    for (const pz of [L.yacht.z - 6.5, L.yacht.z + 6.5]) if (Math.hypot(wx - 3.5, wz - pz) < 0.9) return 'pile';
     if (wx > L.landing.x - 3.2 && wx < L.landing.x + 3.2 && wz > L.landing.z - 6.7 && wz < L.landing.z + 6.7) return 'dock';
   }
   return null;
@@ -6246,6 +6793,8 @@ function setHeliObstacles(groups) {
     const b = { x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z };
     for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
   }); }
+  // 另行登记的整体实心体（住宅楼楼身）
+  for (const b of (typeof HELI_SOLIDS !== 'undefined' ? HELI_SOLIDS : [])) for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
 }
 // 机舱（离地 1.2 m、半径 1 m 的球）是否碰到建筑构件
 function heliHitsBuilding(x, y, z) {
@@ -6347,6 +6896,7 @@ const ecoRand = (a, b) => a + (b - a) * ECO_R();
 // 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；闸内港口为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
   if (lakeSD(x, z, L.lake, 0.1) > -0.4) return 'lake';
+  if (lakeSD(x, z, L.upperLake, 0.12) > -0.4) return 'upper';   // 瀑布上方的小水池
   if (gh(x, z) > 0.05) return null;
   return z < L.gateZ && z > 18 && Math.abs(x) < 75 ? 'lagoon' : 'ocean';
 }
@@ -6375,10 +6925,11 @@ function ecoShoreDist(x, z, R) {
 function ecoWhaleOk(x, z, minDepth) {
   return gh(x, z) < -minDepth && ecoIn('ocean', x, z) && !ecoGateArea(x, z) && ecoShoreDist(x, z, ECO_SHORE) >= ECO_SHORE;
 }
-const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
+const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : zone === 'upper' ? L.upperLake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）
 function ecoIn(zone, x, z) {
   if (zone === 'lake') return lakeSD(x, z, L.lake, 0.1) > 0.3;
+  if (zone === 'upper') return lakeSD(x, z, L.upperLake, 0.12) > 0.3;
   const lag = z < L.gateZ && z > 18 && Math.abs(x) < 75;
   return gh(x, z) < -0.3 && (zone === 'lagoon' ? lag : !lag);
 }
@@ -7180,6 +7731,7 @@ function buildEcology(scene) {
   ECO.scene = scene; ecoRaysInit(scene); ecoSeed(1001); buildEcoLake(scene);
   if (typeof buildEcoLagoon === 'function') { ecoSeed(2002); buildEcoLagoon(scene); }
   if (typeof buildEcoOcean === 'function') { ecoSeed(3003); buildEcoOcean(scene); }
+  if (typeof buildEcoUpper === 'function') { ecoSeed(4004); buildEcoUpper(scene); }   // 放在最后、单独种子：不影响另外三个水域的布置（P-016）
   ECO.built = true;
 }
 // 每帧：只推进相机附近水域的生物（远处水域整体隐藏、不计算）；player 为漫游中的玩家（潜水时作为鱼群的“捕食者”）
@@ -7212,7 +7764,8 @@ const ecoLookTmp = { c: new THREE.Color(), c2: new THREE.Color() };
 // 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从闸内港口渐变到外海
 function ecoWaterLook(x, y, z, kind) {
   const T = ecoLookTmp;
-  if (kind === 'lake') { const A = ECO_LOOK.lake, d = Math.max(0, L.lake.level - y); T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); return { color: T.c, density: A.dens * (1 + d * 0.08), over: A.over, zone: 'lake' }; }
+  if (kind === 'lake') { const A = ECO_LOOK.lake, d = Math.max(0, (lakeSD(x, z, L.upperLake, 0.12) > -2 ? L.upperLake.level : L.lake.level) - y);   // 小水池与淡水湖同一观感，按各自水面算深度
+ T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); return { color: T.c, density: A.dens * (1 + d * 0.08), over: A.over, zone: 'lake' }; }
   const lag = (1 - smoothstep(L.gateZ - 8, L.gateZ + 40, z)) * (z > 18 ? 1 : 0) * (1 - smoothstep(70, 80, Math.abs(x))), d = Math.max(0, -y);
   const A = ECO_LOOK.lagoon, B = ECO_LOOK.ocean;
   T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); T.c2.copy(B.top).lerp(B.deep, 1 - Math.exp(-d / B.k)); T.c2.lerp(T.c, lag);
@@ -7256,19 +7809,12 @@ function ecoUnderwater(camera, under, kind, fog, renderer, uw) {
   }
 }
 
-// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边 =======================
+// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边，并在 2 分钟内跟着船游 =======================
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
-// 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
+// 召唤期间各水域随船移动（ecoShowFollow）；2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
-function ecoHornSound() {
-  try {
-    const A = ECO_SHOW.ac || (ECO_SHOW.ac = new (window.AudioContext || window.webkitAudioContext)()); if (A.state === 'suspended') A.resume();
-    const t0 = A.currentTime, g = A.createGain(), f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.08); g.gain.setValueAtTime(0.32, t0 + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.3);
-    f.connect(g); g.connect(A.destination);
-    for (const fr of [110, 138.6, 165]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t0); o.stop(t0 + 2.4); }
-  } catch (e) { /* 浏览器不支持或未允许播放声音时静默 */ }
-}
+// 游艇汽笛音色统一在 13b_horn.js
+function ecoHornSound() { hornSound('boat'); }
 function ecoToast(msg) {
   let el = document.getElementById('fptoast');
   if (!el) { el = document.createElement('div'); el.id = 'fptoast'; el.style.cssText = 'position:fixed;left:50%;top:16%;transform:translateX(-50%);padding:8px 16px;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;font-size:15px;pointer-events:none;transition:opacity .6s;z-index:30;opacity:0'; document.body.appendChild(el); }
@@ -7297,19 +7843,301 @@ function ecoOceanShow(x, z) {
     if (ecoWhaleOk(px, pz, 20) && ecoShoreDist(px, pz, 36) >= 35 && ecoClearOfGate(px, pz, 36) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
-  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined;
+  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz, s.x - x, s.z - z]); Z.on = undefined;
     // 鲸群按编队位置在出现点重新集结（整体平移会把离队较远的个体带到岸边或峡谷里；编队最远约 23 m（幼鲸跟在母鲸旁），出现点离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m）
     for (const w of Z.whales || []) for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : s.x) + sl[0]; a.z = (f ? f.z : s.z) + sl[1]; } });
   ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
+// 跟船：召唤期间，各水域保持召唤时相对游艇的方位，追着船游：船开多快就跟多快（船速的 1.15 倍，落后时能追上），船停下（航速 < 0.3 m/s）鲸群鱼群也停下；
+// 新位置须仍满足鲸群可去的条件（深水、外海、离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m，P-017），不满足时原地等候，船开回深海再跟上
+function ecoShowFollow(dt) {
+  if (typeof BOAT === 'undefined' || !BOAT.g || ecoZone(BOAT.x, BOAT.z) !== 'ocean') return;
+  const sp = Math.abs(BOAT.v || 0); if (sp < 0.3) return;   // 船停鲸群停
+  const vmax = sp * 1.15 * dt;
+  for (const m of ECO_SHOW.moved) {
+    const Z = ECO.zones[m[0]], tx = BOAT.x + m[3], tz = BOAT.z + m[4]; let dx = tx - Z.center.x, dz = tz - Z.center.z; const d = Math.hypot(dx, dz);
+    if (d < 1.5) continue;
+    if (d > vmax) { dx *= vmax / d; dz *= vmax / d; }
+    const nx = Z.center.x + dx, nz = Z.center.z + dz;
+    m.okT = (m.okT || 0) - dt;
+    if (m.okT <= 0) { m.ok = ecoWhaleOk(nx, nz, 20) && ecoShoreDist(nx, nz, 36) >= 35 && ecoClearOfGate(nx, nz, 36); m.okT = 0.5; }   // 条件检查每 0.5 秒一次（每帧挪动不到 5 m，远小于 35 m 的余量）
+    if (!m.ok) continue;
+    ecoShiftZone(Z, dx, dz); m[1] += dx; m[2] += dz;
+  }
+}
 function ecoShowUpdate(dt) {
   if (!ECO_SHOW.moved) return;
   ECO_SHOW.t -= dt;
-  if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; }
+  if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; return; }
+  ecoShowFollow(dt);
 }
 // 游艇喇叭：驾驶时按 H，或在驾驶台按操控台上的红色按钮
 function boatHorn() { ecoHornSound(); const msg = ecoOceanShow(BOAT.x, BOAT.z); ecoToast(msg); return msg; }
+
+// ======================= 18 小白鹭：偶尔飞到闸口沙滩西侧的水线觅食，人跑近会惊飞 =======================
+// 小白鹭（Egretta garzetta）：体长约 60 cm，通体白色；黑色细长的喙，眼先黄色，黄色虹膜；黑腿黄脚趾；
+// 繁殖期枕部两根长饰羽、背部蓑羽（细丝状）。飞行时颈部缩成 S 形、双腿伸向后方。
+// 模型按部位分组（身体、颈与头、两腿、两翼），姿态每帧在分组上变换；几何体用生态模块的合并工具（17a）
+const EGRET = { birds: [], state: 'away', t: 0, next: 30, stay: 0, spots: [], flushes: 0, visits: 0, R: null, prevP: null, speed: 0 };
+const EGRET_EXIT = { x: -18, y: 46, z: 250 };   // 从闸外峡谷出海口上空飞来、飞走（沿水道，避开两侧崖壁）
+function egretGeo() {
+  const W = 0xf5f5f0, Wd = 0xe4e4dc, K = 0x16171a, Y = 0xe9c42e, parts = { body: [], neck: [], leg: [], wing: [] };
+  // 身体：纺锤形，胸部略丰满，背部近尾处收窄；腹侧颜色略暗（阴影色）
+  parts.body.push(ecoPart(ecoBody(0.34, (t) => [0.078 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.12 + t * 0.95)), 0.8) + 0.004, 0.068 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.12 + t * 0.95)), 0.85) + 0.004], (t, a) => ecoMix(Wd, W, 0.5 + 0.5 * Math.sin(a)), 14, 10), null, 0, ecoM4(0, 0.36, 0, 0, 0, 0.22)));
+  // 尾：短而方的白色尾羽
+  parts.body.push(ecoFin([[-0.15, 0.335, 0], [-0.26, 0.30, -0.035], [-0.27, 0.305, 0], [-0.26, 0.30, 0.035]], W));
+  // 背部蓑羽：十余根细丝从肩背披到尾后，末端上翘
+  for (let i = 0; i < 12; i++) { const z = (i / 11 - 0.5) * 0.07, pts = [V3(0.02, 0.43, z), V3(-0.12, 0.43, z * 1.3), V3(-0.25, 0.38, z * 1.6), V3(-0.33, 0.37 + 0.02 * Math.sin(i), z * 1.8)];
+    parts.body.push(ecoPart(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.0022, 3, false), W)); }
+  // 颈（以颈基为原点）：S 形细长颈，头在上端
+  const neckC = new THREE.CatmullRomCurve3([V3(0, 0, 0), V3(0.045, 0.07, 0), V3(0.01, 0.15, 0), V3(0.05, 0.22, 0), V3(0.085, 0.245, 0)]);
+  parts.neck.push(ecoPart(new THREE.TubeGeometry(neckC, 16, 0.017, 7, false), W));
+  parts.neck.push(ecoPart(new THREE.SphereGeometry(0.027, 10, 8), W, 0, ecoM4(0.09, 0.25, 0, 0, 0, 0, 1.35, 1, 0.95)));   // 头
+  parts.neck.push(ecoRod(V3(0.115, 0.248, 0), V3(0.215, 0.238, 0), 0.0085, 0.0012, K, 0, 6));                          // 喙：黑色、细长如匕首
+  for (const s of [-1, 1]) {
+    parts.neck.push(ecoPart(new THREE.SphereGeometry(0.0075, 6, 5), Y, 0, ecoM4(0.112, 0.252, s * 0.011, 0, 0, 0, 1.4, 0.8, 0.6)));   // 眼先：黄色裸皮
+    parts.neck.push(ecoPart(new THREE.SphereGeometry(0.0055, 6, 5), Y, 0, ecoM4(0.1, 0.258, s * 0.018)));                           // 虹膜
+    parts.neck.push(ecoPart(new THREE.SphereGeometry(0.0028, 5, 4), K, 0, ecoM4(0.103, 0.259, s * 0.0225)));                        // 瞳孔
+  }
+  // 枕部两根长饰羽：从后枕垂向背部
+  for (const s of [-1, 1]) parts.neck.push(ecoPart(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V3(0.07, 0.262, s * 0.006), V3(0.0, 0.25, s * 0.01), V3(-0.08, 0.2, s * 0.012), V3(-0.12, 0.15, s * 0.014)]), 10, 0.0016, 3, false), W));
+  // 腿（以髋为原点）：黑色胫、跗蹠；黄色脚趾三前一后
+  parts.leg.push(ecoRod(V3(0, 0, 0), V3(0.01, -0.11, 0), 0.0085, 0.0065, K, 0, 6), ecoRod(V3(0.01, -0.11, 0), V3(0, -0.3, 0), 0.0062, 0.0055, K, 0, 6));
+  for (const a of [-0.45, 0, 0.45]) parts.leg.push(ecoRod(V3(0, -0.3, 0), V3(0.055 * Math.cos(a), -0.302, 0.055 * Math.sin(a)), 0.0035, 0.0022, Y, 0, 4));
+  parts.leg.push(ecoRod(V3(0, -0.3, 0), V3(-0.03, -0.302, 0), 0.003, 0.002, Y, 0, 4));
+  // 翼（右翼，沿 +z 展开，以肩为原点）：宽圆的白色翼面，外缘初级飞羽分叉成指状
+  const sh = new THREE.Shape(); sh.moveTo(0.06, 0); sh.bezierCurveTo(0.09, 0.12, 0.08, 0.3, 0.03, 0.44);
+  for (let i = 0; i < 5; i++) { const y = 0.44 - i * 0.012, x = 0.03 - i * 0.03; sh.lineTo(x, y + 0.02); sh.lineTo(x - 0.018, y - 0.01); }
+  sh.bezierCurveTo(-0.14, 0.3, -0.13, 0.12, -0.08, 0); sh.lineTo(0.06, 0);
+  const wg = new THREE.ShapeGeometry(sh, 6); wg.rotateX(Math.PI / 2);
+  parts.wing.push(ecoPart(wg, (x, y, z) => ecoMix(W, Wd, clamp(-x * 4, 0, 1) * 0.5)));
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0, side: THREE.DoubleSide });
+  const mk = (k) => ecoMerge(parts[k]);
+  return { m, body: mk('body'), neck: mk('neck'), leg: mk('leg'), wing: mk('wing') };
+}
+function buildEgrets(scene) {
+  EGRET.R = mulberry32(5005);
+  // 觅食点：闸口沙滩西侧的水线（地面 -0.08～0.03 m，脚趾没在浅水或踩在湿沙上）
+  for (let x = -46; x <= -18; x += 0.5) { let best = null; for (let z = 34; z <= 58; z += 0.2) { const h = gh(x, z); if (h > -0.08 && h < 0.03) { best = { x, z }; break; } } if (best) EGRET.spots.push(best); }
+  const G = egretGeo();
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.Group(), add = (geo, p, par = g) => { const o = new THREE.Group(); o.position.set(...p); const me = new THREE.Mesh(geo, G.m); me.castShadow = true; o.add(me); par.add(o); return o; };
+    const body = new THREE.Group(); g.add(body); body.add(new THREE.Mesh(G.body, G.m)); body.children[0].castShadow = true;
+    const neck = add(G.neck, [0.13, 0.42, 0], body);
+    const legs = [add(G.leg, [0.015, 0.3, -0.03], g), add(G.leg, [0.015, 0.3, 0.03], g)];
+    const wings = [add(G.wing, [0.04, 0.41, -0.05], body), add(G.wing, [0.04, 0.41, 0.05], body)];
+    wings[0].scale.z = -1;                                                        // 左翼为右翼的镜像
+    g.visible = false; scene.add(g);
+    EGRET.birds.push({ g, body, neck, legs, wings, x: 0, y: 0, z: 0, yaw: 0, state: 'away', t: 0, ph: EGRET.R() * TAU, path: null });
+  }
+}
+const egretRand = (a, b) => a + (b - a) * EGRET.R();
+// 二次贝塞尔飞行路径：p0 → c → p1，按弧长近似匀速；用于飞来与飞走
+function egretPath(p0, c, p1, speed) { const L_ = Math.hypot(c.x - p0.x, c.y - p0.y, c.z - p0.z) + Math.hypot(p1.x - c.x, p1.y - c.y, p1.z - c.z); return { p0, c, p1, dur: L_ / speed, t: 0 }; }
+const egretAt = (P, u) => { const a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u; return { x: a * P.p0.x + b * P.c.x + c * P.p1.x, y: a * P.p0.y + b * P.c.y + c * P.p1.y, z: a * P.p0.z + b * P.c.z + c * P.p1.z }; };
+// 飞来：2～4 只，各自落在不同的水线觅食点
+function egretVisit(n) {
+  if (!EGRET.spots.length) return;
+  n = n || 2 + Math.floor(EGRET.R() * 3); EGRET.state = 'visit'; EGRET.stay = egretRand(70, 160); EGRET.t = 0; EGRET.visits++;
+  const used = [];
+  EGRET.birds.forEach((b, i) => {
+    if (i >= n) { b.state = 'away'; b.g.visible = false; return; }
+    let s = null; for (let k = 0; k < 30; k++) { const c = EGRET.spots[Math.floor(EGRET.R() * EGRET.spots.length)]; if (used.every(u => Math.hypot(u.x - c.x, u.z - c.z) > 2.5)) { s = c; break; } } s = s || EGRET.spots[i % EGRET.spots.length]; used.push(s);
+    const p0 = { x: EGRET_EXIT.x + egretRand(-8, 8), y: EGRET_EXIT.y + egretRand(-4, 4), z: EGRET_EXIT.z + i * 6 }, p1 = { x: s.x, y: gh(s.x, s.z), z: s.z };
+    b.path = egretPath(p0, { x: -20, y: 20, z: 110 }, p1, egretRand(8, 9.5)); b.path.t = -i * egretRand(0.8, 2.2);   // 前后错开几秒到达
+    b.state = 'arrive'; b.x = p0.x; b.y = p0.y; b.z = p0.z; b.g.visible = false; b.t = 0;
+  });
+}
+// 飞走：scared 为受惊（先急速起飞、背离玩家），否则从容离开
+function egretLeave(scared, player) {
+  EGRET.state = 'leaving'; if (scared) EGRET.flushes++;
+  EGRET.birds.forEach((b) => {
+    if (b.state === 'away') return;
+    let ax = -0.3, az = 1; if (player) { ax = b.x - player.x; az = b.z - player.z; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l; }
+    az = Math.max(az, 0.2); { const l = Math.hypot(ax, az); ax /= l; az /= l; }   // 背离玩家，但总是朝水面方向飞（不钻进沙滩后面的树林）
+    // 先原地振翅爬升约 1.2 秒（上升约 4 m/s、背离玩家约 3 m/s），再沿曲线飞向出海口
+    b.climb = { t: scared ? -egretRand(0, 0.35) : -egretRand(0, 3), dur: 1.2, ax, az };
+    b.path = null; b.speedOut = scared ? egretRand(10, 12) : 8.5;
+    b.state = 'depart'; b.scared = scared; b.t = 0;
+  });
+  EGRET.next = scared ? egretRand(90, 200) : egretRand(60, 150);
+}
+// 每帧：player 为玩家（或所驾载具）位置；奔跑（速度 > 6 m/s）靠近到 14 m 内、或走到 5 m 内、或开车/飞来（> 12 m/s）到 22 m 内就惊飞
+function updateEgrets(dt, t, player, camera) {
+  if (!EGRET.birds.length) return;
+  dt = Math.min(dt, 0.05);
+  if (player) { const p = EGRET.prevP; if (p && dt > 0) { const v = Math.hypot(player.x - p.x, player.z - p.z) / dt; EGRET.speed = v > 40 ? EGRET.speed : lerp(EGRET.speed, v, Math.min(1, dt * 6)); } EGRET.prevP = { x: player.x, z: player.z }; }
+  if (EGRET.state === 'away') { EGRET.next -= dt; if (EGRET.next <= 0) egretVisit(); return; }
+  EGRET.t += dt;
+  let ground = 0, near = 1e9;
+  for (const b of EGRET.birds) if (b.state === 'forage' || b.state === 'land') { ground++; if (player) near = Math.min(near, Math.hypot(player.x - b.x, player.z - b.z)); }
+  if (EGRET.state === 'visit' && ground && player && (near < 5 || (near < 14 && EGRET.speed > 6) || (near < 22 && EGRET.speed > 12))) egretLeave(true, player);
+  else if (EGRET.state === 'visit' && EGRET.t > EGRET.stay) egretLeave(false, null);
+  let alive = 0;
+  for (const b of EGRET.birds) {
+    if (b.state === 'away') continue; alive++;
+    b.t += dt; b.ph += dt;
+    if (b.state === 'arrive' || b.state === 'depart') egretFly(b, dt);
+    else egretForage(b, dt);
+    egretPose(b, t);
+  }
+  if (!alive && EGRET.state === 'leaving') { EGRET.state = 'away'; }
+  // 远处不画（体型小，200 m 外看不清）
+  if (camera) for (const b of EGRET.birds) if (b.state !== 'away') b.g.visible = Math.hypot(camera.position.x - b.x, camera.position.z - b.z) < 200 && !(b.path && b.path.t < 0 && b.state === 'arrive');
+}
+function egretFly(b, dt) {
+  if (b.state === 'depart' && !b.path) {
+    const C = b.climb; C.t += dt; if (C.t < 0) { b.anim = 'stand'; return; }
+    b.x += C.ax * 3 * dt; b.z += C.az * 3 * dt; b.y += 4 * dt; b.vy = 4; b.yaw = Math.atan2(-C.az, C.ax); b.anim = 'takeoff';
+    if (C.t >= C.dur) { const p0 = { x: b.x, y: b.y, z: b.z }, c = { x: b.x + C.ax * 12, y: b.y + (b.scared ? 12 : 9), z: b.z + C.az * 12 + 6 }, p1 = { x: EGRET_EXIT.x + egretRand(-10, 10), y: EGRET_EXIT.y + 8, z: EGRET_EXIT.z + 30 };
+      b.path = egretPath(p0, c, p1, b.speedOut); }
+    return;
+  }
+  const P = b.path; P.t += dt; if (P.t < 0) return;
+  const u = Math.min(1, P.t / P.dur), q = egretAt(P, u), q2 = egretAt(P, Math.min(1, u + 0.01));
+  b.vy = (q.y - b.y) / Math.max(dt, 1e-3); b.x = q.x; b.y = q.y; b.z = q.z;
+  if (Math.hypot(q2.x - q.x, q2.z - q.z) > 1e-4) b.yaw = Math.atan2(-(q2.z - q.z), q2.x - q.x);
+  const left = (1 - u) * P.dur;
+  b.anim = b.state === 'arrive' && left < 1.4 ? 'flare' : (b.state === 'arrive' && left < 5 && left > 1.4 ? 'glide' : 'flap');
+  if (u >= 1) {
+    if (b.state === 'arrive') { b.state = 'forage'; b.act = 'stand'; b.at = egretRand(1, 3); b.y = gh(b.x, b.z); }
+    else { b.state = 'away'; b.g.visible = false; }
+  }
+}
+// 觅食：踱步（沿水线慢走）→ 伏身潜行 → 迅速啄击 → 吞咽；偶尔梳理羽毛
+function egretForage(b, dt) {
+  b.at -= dt;
+  if (b.act === 'walk') {
+    const dx = b.gx - b.x, dz = b.gz - b.z, d = Math.hypot(dx, dz);
+    if (d < 0.05) { b.act = 'stand'; b.at = egretRand(0.5, 2); }
+    else { const want = Math.atan2(-dz, dx); let da = ((want - b.yaw + Math.PI * 3) % TAU) - Math.PI; b.yaw += clamp(da, -2 * dt, 2 * dt); const sp = 0.28 * (Math.abs(da) > 0.6 ? 0.3 : 1); b.x += Math.cos(b.yaw) * sp * dt; b.z -= Math.sin(b.yaw) * sp * dt; }
+  } else if (b.at <= 0) {
+    const r = EGRET.R();
+    if (b.act === 'stalk') { b.act = 'strike'; b.at = 0.55; }
+    else if (b.act === 'strike') { b.act = r < 0.35 ? 'swallow' : 'stand'; b.at = r < 0.35 ? 0.8 : egretRand(0.6, 1.8); }
+    else if (r < 0.45) { // 沿水线挑一个 1～3 m 外的觅食点
+      const near = EGRET.spots.filter(s => { const d = Math.hypot(s.x - b.x, s.z - b.z); return d > 0.8 && d < 3; }); const s = near[Math.floor(EGRET.R() * near.length)];
+      if (s) { b.act = 'walk'; b.gx = s.x + egretRand(-0.2, 0.2); b.gz = s.z + egretRand(-0.2, 0.2); } else { b.act = 'stand'; b.at = 1; }
+    } else if (r < 0.85) { b.act = 'stalk'; b.at = egretRand(1, 3); }
+    else { b.act = 'preen'; b.at = egretRand(1.5, 3); }
+  }
+  b.y = gh(b.x, b.z); b.anim = b.act;
+}
+// 姿态：飞行（振翅/滑翔/落地前张翼刹车/起飞），地面（站立、踱步、潜行、啄击、吞咽、梳羽）
+function egretPose(b, t) {
+  const g = b.g, a = b.anim || 'stand', [wl, wr] = b.wings, ph = b.ph;
+  g.position.set(b.x, b.y, b.z); g.rotation.set(0, b.yaw, 0);
+  // 收拢的翼：翼展转向后方（绕 y 轴 -1.5），再绕翼展轴翻成竖直，贴在体侧
+  let neckRz = 0, bodyRz = 0, legRz = [0, 0], wingX = 0, wingY = 0, wingS = 1, neckS = 1, folded = true;
+  if (a === 'flap' || a === 'takeoff' || a === 'glide' || a === 'flare') {
+    const f = a === 'takeoff' ? 4.2 : 2.9, fl = Math.sin(ph * f * TAU);
+    wingS = 1; wingY = 0; folded = false;
+    wingX = a === 'glide' ? -0.12 + 0.05 * Math.sin(ph * 2) : a === 'flare' ? -0.5 + 0.55 * fl : -0.15 - 0.75 * fl;   // 上下振翅；滑翔时两翼略上扬平展
+    neckRz = 0.35; neckS = 0.62; bodyRz = clamp((b.vy || 0) * 0.05, -0.35, 0.35) + (a === 'flare' ? 0.55 : 0);
+    legRz = a === 'flare' ? [0.4, 0.45] : [-1.35, -1.35];                                                                  // 飞行时双腿伸向后方，落地前放下
+  } else {
+    const walk = a === 'walk' ? Math.sin(ph * 5.5) : 0;
+    legRz = [0.42 * walk, -0.42 * walk]; bodyRz = 0.03 * Math.abs(walk);
+    if (a === 'stalk') { neckRz = -0.55; bodyRz = -0.12; }
+    else if (a === 'strike') { const u = clamp(1 - b.at / 0.55, 0, 1); neckRz = u < 0.25 ? -0.55 - 1.55 * (u / 0.25) : -2.1 + 2.1 * ((u - 0.25) / 0.75); bodyRz = -0.45 * Math.sin(Math.PI * Math.min(1, u * 1.6)); }   // 快速啄向水线：颈猛伸、身体前倾
+    else if (a === 'swallow') neckRz = 0.25 * Math.sin(ph * 14);
+    else if (a === 'preen') neckRz = 1.7 + 0.2 * Math.sin(ph * 6);   // 回头梳理背羽
+    else neckRz = 0.05 * Math.sin(ph * 0.7);
+    if (a === 'walk') neckRz = 0.12 * Math.sin(ph * 5.5 + 1);                                                          // 踱步时头随步点前后伸缩
+  }
+  b.body.rotation.z = bodyRz; b.neck.rotation.z = neckRz; b.neck.scale.set(1, neckS, 1);   // 飞行时颈部缩短（缩成 S 形贴在肩上）
+  b.legs[0].rotation.z = legRz[0]; b.legs[1].rotation.z = legRz[1];
+  // 收拢时翼紧贴体侧、被白色体羽盖住（真实的小白鹭站立时几乎看不出翼的轮廓）：只在飞行时显示翼面
+  wr.visible = wl.visible = !folded;
+  wr.rotation.set(wingX, wingY, 0); wr.scale.set(1, 1, wingS);
+  wl.rotation.set(-wingX, -wingY, 0); wl.scale.set(1, 1, -wingS);
+}
+
+// ======================= 17g 水域生态·瀑布上方的小水池（热带淡水，参照 17b 淡水湖的水族馆式布置） =======================
+// 小水池（L.upperLake，约 15 × 10 m、最深约 2.2 m）：湖底铺满沉水草与前景草坪；小鱼、小虾体型为下方淡水湖同种的一半
+// 水域键名 'upper'（'pool' 已用于别墅泳池的水下判定）
+function ecoUpperPoint(inside, depth, tries = 60) {
+  const lk = L.upperLake;
+  for (let k = 0; k < tries; k++) {
+    const a = ECO_R() * TAU, r = Math.sqrt(ECO_R()) * 1.1, x = lk.x + Math.cos(a) * lk.a * r, z = lk.z + Math.sin(a) * lk.b * r;
+    const sd = lakeSD(x, z, lk, 0.12), d = lk.level - gh(x, z);
+    if (sd >= inside[0] && sd <= inside[1] && d >= depth[0] && d <= depth[1]) return { x, z, d, y: gh(x, z) };
+  }
+  return null;
+}
+function buildEcoUpper(scene) {
+  const lk = L.upperLake, Z = { center: { x: lk.x, z: lk.z }, radius: 9, view: 60, meshes: [], lods: [] }, c0 = ECO.critters.length;
+  const inUp = (x, z, d0 = 0.12) => lakeSD(x, z, lk, 0.12) > 0.25 && lk.level - gh(x, z) > d0;
+  // ---------------- 水草：沉水草丛铺满池底，丛间铺前景草坪（与淡水湖同种，按池子大小减量） ----------------
+  const plants = [], weedSpots = [], add = (list, d) => { for (const g of list) plants.push(ecoDepAttr(g, Math.max(0, d))); };
+  // 池边挺水：几丛香蒲与芦苇
+  for (let c = 0; c < 6; c++) {
+    const p = ecoUpperPoint([-0.3, 0.7], [-0.3, 0.4]); if (!p) continue;
+    for (let k = 0; k < 6; k++) { const x = p.x + ecoRand(-0.3, 0.3), z = p.z + ecoRand(-0.3, 0.3), y = gh(x, z), h = ecoRand(0.9, 1.5), list = [];
+      for (let l = 0; l < 4; l++) list.push(ecoRibbon(x, y, z, h * ecoRand(0.8, 1.05), 0.026, ECO_R() * TAU, 0.35, 0x5f7a36, 4)); add(list, p.d); }
+  }
+  const kinds = ['vall', 'vall', 'horn', 'hydr', 'myri', 'vall', 'horn', 'myri', 'hydr', 'vall'];
+  for (let c = 0; c < 28; c++) {
+    const kind = kinds[c % kinds.length], p = ecoUpperPoint([0.6, 99], [0.35, 2.4]); if (!p) continue;
+    const rad = ecoRand(0.6, 1.3), cnt = kind === 'vall' ? 34 : 8; weedSpots.push({ x: p.x, y: p.y + Math.min(p.d, 1) * 0.5, z: p.z, r: rad, kind });
+    for (let k = 0; k < cnt; k++) {
+      const a = ECO_R() * TAU, rr = Math.sqrt(ECO_R()) * rad, x = p.x + Math.cos(a) * rr, z = p.z + Math.sin(a) * rr, y = gh(x, z), d = lk.level - y; if (d < 0.3 || lakeSD(x, z, lk, 0.12) < 0.4) continue;
+      const hmax = Math.max(0.15, d - 0.08);
+      if (kind === 'vall') { const list = []; for (let l = 0; l < 6; l++) list.push(ecoRibbon(x, y, z, Math.min(hmax, ecoRand(0.4, 1.1)), 0.011, ECO_R() * TAU, 0.35, ecoMix(0x4f8a2a, 0x7aa84a, ECO_R()), 6)); add(list, d); }
+      else if (kind === 'horn') add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.7)), 7, 8, 0.045, 0.0025, 0x2f4a1e, 0x2a4f1c, null, true), d);
+      else if (kind === 'hydr') add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.6)), 8, 5, 0.02, 0.004, 0x3a5a22, 0x4f8a2e, null, false), d);
+      else add(ecoWhorlPlant(x, y, z, Math.min(hmax, ecoRand(0.3, 0.8)), 7, 5, 0.04, 0.0022, 0x4a5a26, 0x4a7a2e, 0x8a3a2a, true), d);
+    }
+  }
+  for (const w of weedSpots) if (w.kind !== 'vall') for (let k = 0; k < 12; k++) {   // 轮生叶水草丛之间补种苦草，连成一片
+    const a = ECO_R() * TAU, rr = Math.sqrt(ECO_R()) * w.r * 1.2, x = w.x + Math.cos(a) * rr, z = w.z + Math.sin(a) * rr, y = gh(x, z), d = lk.level - y; if (d < 0.3 || lakeSD(x, z, lk, 0.12) < 0.4) continue;
+    const list = []; for (let l = 0; l < 5; l++) list.push(ecoRibbon(x, y, z, Math.min(Math.max(0.15, d - 0.08), ecoRand(0.3, 0.9)), 0.01, ECO_R() * TAU, 0.35, ecoMix(0x4f8a2a, 0x7aa84a, ECO_R()), 5)); add(list, d);
+  }
+  for (let i = 0; i < 2800; i++) {                                           // 前景草坪
+    const p = ecoUpperPoint([0.4, 99], [0.25, 2.4], 8); if (!p) continue; const n = 3 + Math.floor(ECO_R() * 3), list = [];
+    for (let k = 0; k < n; k++) list.push(ecoRibbon(p.x + ecoRand(-0.04, 0.04), p.y, p.z + ecoRand(-0.04, 0.04), ecoRand(0.05, 0.12), 0.006, ECO_R() * TAU, 0.5, ecoMix(0x4f9a30, 0x86c050, ECO_R()), 2));
+    add(list, p.d);
+  }
+  // 池底水草只在相机离池心 30 m 以内显示（远处、水面以上看不清池底），控制面数
+  const plantMesh = new THREE.Mesh(ecoMerge(plants), ecoMat('sway', { freq: 1.1, amp: 0.09, depthFade: 0.6, rough: 0.7, side: THREE.DoubleSide }));
+  plantMesh.frustumCulled = true; plantMesh.visible = false; scene.add(plantMesh);
+  Z.update = () => { const c = ECO.cam; plantMesh.visible = !!c && Math.hypot(c.x - lk.x, c.z - lk.z) < 30; };
+  ECO.upperNear = plantMesh;
+
+  // ---------------- 小虾：罗氏沼虾与小龙虾，体型为淡水湖同种的一半 ----------------
+  const prawn = (male, lo) => ecoCrustGeo({ len: 0.085, c1: 0x5f8aa8, c2: 0x9ac0d8, claw: male ? { arm: 0.9, r: 0.009, palm: 0.28, col: 0x1f4fd0 } : { arm: 0.3, r: 0.007, palm: 0.1, col: 0x5f8aa8 }, antenna: 1.8, h: 0.05, w: 0.045, rostrum: true, curl: -0.12, antCol: 0x7a9ab8 }, lo);
+  const pMat = ecoMat('crawl', { freq: 8, amp: 0.0015, rough: 0.25, metal: 0.1, opacity: 0.82 }), prawns = [];
+  for (const male of [true, false]) {
+    const lod = new EcoLod(scene, [prawn(male, false), prawn(male, true)], pMat, 6, 8, 35), list = [];
+    for (let i = 0; i < 6; i++) { const p = ecoUpperPoint([0.6, 99], [0.4, 2.3]); if (!p) continue; list.push({ x: p.x, z: p.z, y: p.y, yaw: ECO_R() * TAU, s: male ? ecoRand(1, 1.2) : ecoRand(0.8, 0.95), ph: ECO_R(), state: 'idle', tm: ecoRand(0, 6), hop: 0 }); }
+    new EcoCritters(lod, list, (c, dt) => {
+      if (c.hop > 0) { c.hop -= dt; c.x += Math.cos(c.yaw) * 0.15 * dt; c.z -= Math.sin(c.yaw) * 0.15 * dt; if (!inUp(c.x, c.z, 0.4)) c.yaw += Math.PI; c.y = gh(c.x, c.z) + 0.12 * Math.sin(Math.PI * clamp(c.hop / 2.2, 0, 1)); return; }
+      if (c.state === 'walk' && ECO_R() < dt * 0.05) { c.hop = 2.2; return; }
+      if (ecoPlayerNear(c, 1.0) && c.hop <= 0) { c.yaw += Math.PI; c.hop = 1.2; return; }
+      ecoCrawl(c, dt, 0.025, (cc) => { const x = cc.x + ecoRand(-0.5, 0.5), z = cc.z + ecoRand(-0.5, 0.5); return inUp(x, z, 0.4) ? { x, z } : null; }); c.y = gh(c.x, c.z);
+    });
+    prawns.push(...list);
+  }
+  const cray = ecoCrustGeo.bind(null, { len: 0.055, c1: 0x6a1a12, c2: 0x9a2a18, claw: { arm: 0.28, r: 0.0175, palm: 0.16, col: 0x7a1c12 }, antenna: 1.3, h: 0.06, w: 0.07, band: 0x3a0e08 });
+  const crayLod = new EcoLod(scene, [cray(false), cray(true)], ecoMat('crawl', { freq: 9, amp: 0.002, rough: 0.5 }), 6, 8, 35), crays = [];
+  for (let i = 0; i < 40 && crays.length < 6 && weedSpots.length; i++) { const h = weedSpots[Math.floor(ECO_R() * weedSpots.length)], x = h.x + ecoRand(-0.2, 0.2), z = h.z + ecoRand(-0.2, 0.2); if (!inUp(x, z)) continue; crays.push({ x, z, y: gh(x, z), yaw: ECO_R() * TAU, s: ecoRand(0.8, 1.2), ph: ECO_R(), state: 'idle', tm: ecoRand(0, 8), home: h, flee: 0, pitch: 0 }); }
+  new EcoCritters(crayLod, crays, (c, dt) => {
+    if (c.flee > 0) { c.flee -= dt; const sp = 1.2 * c.flee / 0.35; c.x -= Math.cos(c.yaw) * sp * dt; c.z += Math.sin(c.yaw) * sp * dt; c.pitch = 0.5 * Math.sin(Math.PI * c.flee / 0.35); if (!inUp(c.x, c.z)) { c.x += Math.cos(c.yaw) * sp * dt; c.z -= Math.sin(c.yaw) * sp * dt; } c.y = gh(c.x, c.z); return; }
+    if (ecoPlayerNear(c, 1.0)) { c.flee = 0.35; return; }
+    ecoCrawl(c, dt, 0.03, (cc) => { const x = cc.home.x + ecoRand(-0.4, 0.4), z = cc.home.z + ecoRand(-0.4, 0.4); return inUp(x, z) ? { x, z } : null; }); c.y = gh(c.x, c.z);
+  });
+  // ---------------- 小鱼：鲫鱼与罗非鱼幼鱼，体长为淡水湖的一半，在水草丛间游动 ----------------
+  const crucian = { len: 0.085, h: 0.035, w: 0.015, c1: 0x5f6a4a, c2: 0xc9c6a6, fin: 0x6a6a52, tail: 'fork', dorsal: 0.3, pat: (t, a, c) => { if (Math.sin(a) > -0.2) c.lerp(new THREE.Color(0x8a7a4a), 0.25); } };
+  const tilapia = { len: 0.11, h: 0.0425, w: 0.0175, c1: 0x5a6250, c2: 0xb9b8a0, fin: 0x5a5a4a, tail: 'round', dorsal: 0.45, pat: (t, a, c) => { if (Math.sin(t * 18) > 0.75 && Math.sin(a) > -0.4) c.multiplyScalar(0.72); } };
+  const predU = () => { const p = ECO.player; return p && p.under ? [{ x: p.x, y: p.y, z: p.z, r: 1.6 }] : []; };
+  const anchors = weedSpots.map(w => ({ x: w.x, y: Math.min(w.y + 0.25, lk.level - 0.35), z: w.z }));
+  const f1 = new EcoFlock({ zone: 'upper', n: 16, lod: ecoFishLod(scene, crucian, 16, 10, 35), mode: anchors.length ? 'reef' : 'school', anchors: anchors.length ? anchors : null, home: { x: lk.x, y: lk.level - 0.8, z: lk.z }, range: 4.5, rangeZ: 0.6, spawn: 0.6, speed: 0.25, maxSpeed: 0.8, per: 0.35, flee: 1.6, minDepth: 0.4, floorGap: 0.12, ceilGap: 0.2, predators: predU, size: 1 });
+  const f2 = new EcoFlock({ zone: 'upper', n: 14, lod: ecoFishLod(scene, tilapia, 14, 10, 35), mode: 'school', home: { x: lk.x + 1, y: lk.level - 0.9, z: lk.z }, range: 4.5, rangeZ: 0.6, spawn: 0.8, speed: 0.3, maxSpeed: 0.9, per: 0.4, minDepth: 0.5, floorGap: 0.15, ceilGap: 0.25, predators: predU, size: 1, band: 0.45 });
+  Z.flocks = [f1, f2]; Z.critters = ECO.critters.slice(c0);
+  ECO.zones.upper = Z;
+  ECO.upperInfo = { weeds: weedSpots.length, prawns: prawns.length, crays: crays.length, fish: f1.n + f2.n, fishLen: [crucian.len, tilapia.len], prawnLen: 0.085, crayLen: 0.055 };
+}
 
 // ======================= 10 主流程 / 相机 / 界面 =======================
 const lbar = document.getElementById('lbar'), lstep = document.getElementById('lstep');
@@ -7356,12 +8184,13 @@ try {
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
   setHeliObstacles(statics);   // 直升机与建筑构件的碰撞（须在烘焙前，构件仍在分组中）
   statics.forEach(bake);
+  for (const c of DORM.lifts) scene.attach(c.g);   // 电梯轿厢是可动的分组，单独挂到场景根下（不参与烘焙）
   ECO.waterMats = W.mats;
   if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   await stage(0.8, '雨林与作物');
-  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene);
+  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene); buildEgrets(scene);
   await stage(0.92, '光影');
   // ---------------- 相机与视角 ----------------
   const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 3, 20000);
@@ -7409,7 +8238,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; }, get VINEYARD() { return VINEYARD; }, lounger }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -7462,17 +8291,18 @@ try {
     if (anim) { anim.t = Math.min(1, anim.t + dt / 1.6); const e = anim.t < 0.5 ? 4 * anim.t ** 3 : 1 - Math.pow(-2 * anim.t + 2, 3) / 2; camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e); if (anim.t >= 1) anim = null; }
     { const prev = updateBoat(dt, t, fp._st.keys); if (BOAT.moved) { if (fp.on) carryOnBoat(fp._st, prev); syncBoat(t); } }
     { const hr = updateHeli(dt, fp._st.keys, fp.on ? camera : null);
-      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
+      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
     if (fp.on && DRIVE.active === HELI) {}
-    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', pile: '碰撞系缆桩', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位`; }
-    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  V 视角  E 下车`; }
+    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位  F 跳船`; }
+    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  H 喇叭  V 视角  E 下车`; }
     else if (!fp.update(dt)) controls.update();
     for (const m of W.mats) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = t;
     for (const u of TIME_U) u.value = t;
     if (W.sea) W.sea.update(renderer, camera, t);
     if (grass) grass.update(fp);
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
-    updateAnimals(dt, fp.on ? fp.pos : null);
+    updateAnimals(dt, fp.on ? fp.pos : null); updateDorm(dt);
+    updateEgrets(dt, t, fp.on ? fp.pos : null, camera);
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateEcology(dt, t, camera, fp.on ? { x: st_.pos.x, y: camera.position.y, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 0.3), under: !!(w_ && camera.position.y < w_.level) } : null); }
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
     if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
