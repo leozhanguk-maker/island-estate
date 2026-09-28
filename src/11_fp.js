@@ -65,7 +65,7 @@ function setupFP(ctx) {
   // ---- 碰撞数据：固定实体 + 各构件登记 ----
   const rects = COLL.rects.slice(), circles = COLL.circles, segs = COLL.segs;
   const R_ = (x, z, hw, hd, rot = 0, top = 1e9, bottom = -1e9) => rects.push({ x, z, hw, hd, rot, top, bottom });
-  R_(L.dorm.x, L.dorm.z, 15.5, 10.5);
+  // 住宅楼改为可进出：外墙、隔墙、户门、电梯在 06c_dorm.js 里逐段登记碰撞，不再整体当作实心矩形
   R_(L.barn.x, L.barn.z, 13.3, 6.3);
   const gh0 = L.greenhouses; for (let i = 0; i < gh0.n; i++) R_(gh0.x0 + i * (gh0.w + gh0.gap) + gh0.w / 2, gh0.z0 + gh0.len / 2, gh0.w / 2 + 0.2, gh0.len / 2 + 0.2);
   for (const pen of [L.pig, L.chicken]) R_(pen.x, pen.z, pen.w / 2 + 0.1, pen.d / 2 + 0.1);
