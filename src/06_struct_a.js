@@ -73,7 +73,7 @@ function bedF(p, x, y, z, ry, w = 1.8, L = 2.1, duvet = 0xf1ede4) {
   box(g, w + 0.1, 0.25, L + 0.1, wood, 0, 0.2, 0);
   box(g, w, 0.22, L, std(0xfafaf8, 0.9), 0, 0.43, 0);
   box(g, w + 0.06, 0.08, L * 0.7, std(duvet, 0.95), 0, 0.57, L * 0.15);
-  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.03);
+  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.045);   // 被尾垂边：外皮比床架尾端再出 1.5 cm，不与床架端面共面
   box(g, w * 0.95, 0.03, 0.35, std(0x9aa7b0, 0.9), 0, 0.62, L * 0.15 - L * 0.35 + 0.2);
   for (const sx of [-1, 1]) { const pl = box(g, w / 2 - 0.15, 0.14, 0.4, std(0xffffff, 0.9), sx * w / 4, 0.62, -L / 2 + 0.3); pl.rotation.x = -0.2; }
   box(g, w + 0.2, 1.0, 0.12, std(0xcbbfae, 0.95), 0, 0.85, -L / 2 - 0.05);
@@ -462,53 +462,7 @@ function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细
   cyl(g, 0.03, 0.05, 0.12, M.alu, 0, h + 0.27, 0, 8);
   g.position.set(x, y, z); p.add(g); return g;
 }
-// ---------------- 12 层住宅楼（两梯四户，南北通透） ----------------
-function buildDorm() {
-  const D = new THREE.Group(), fl = 3.0, n = L.dorm.floors, W = 30, Dp = 20, y0 = 0.9;
-  box(D, W + 1, y0, Dp + 1, M.concreteWarm, 0, y0 / 2, 0);                 // 石材基座
-  box(D, W, n * fl, Dp, M.wallLight, 0, n * fl / 2 + y0, 0);
-  const ux = [-11.85, -4.35, 4.35, 11.85];
-  for (let f = 0; f < n; f++) {
-    const y = y0 + f * fl;
-    box(D, W + 0.1, 0.18, Dp + 0.1, M.concreteDark, 0, y + fl, 0);
-    for (const cx of ux) {
-      if (f === 0) continue;
-      // 南向：落地窗 + 阳台
-      framedGlass(D, 5.2, 2.3, cx, y + 1.35, Dp / 2 + 0.03, 0, 4, 1);
-      box(D, 6.0, 0.16, 1.5, M.concrete, cx, y + 0.08, Dp / 2 + 0.75);
-      box(D, 6.0, 1.0, 0.05, M.glassLight, cx, y + 0.66, Dp / 2 + 1.48);
-      box(D, 6.0, 0.05, 0.08, M.metalDark, cx, y + 1.18, Dp / 2 + 1.48);
-      // 北向窗（对流）
-      framedGlass(D, 4.2, 1.6, cx, y + 1.55, -Dp / 2 - 0.03, Math.PI, 3, 1);
-      box(D, 4.5, 0.08, 0.3, M.metalDark, cx, y + 0.7, -Dp / 2 - 0.12);
-    }
-    for (const sx of [-1, 1]) framedGlass(D, 3.2, 1.5, sx * (W / 2 + 0.03), y + 1.5, 4, sx * Math.PI / 2, 2, 1);
-    if (f > 0) framedGlass(D, 3.0, 2.2, 0, y + 1.4, -Dp / 2 - 0.03, Math.PI, 2, 1);   // 交通核
-  }
-  // 南立面竖向分户墙鳍
-  for (const x of [-15, -8.1, 0, 8.1, 15]) box(D, 0.35, n * fl - fl, 1.7, M.wallGray, x, y0 + fl + (n - 1) * fl / 2, Dp / 2 + 0.85);
-  // 首层大堂与入口
-  framedGlass(D, 8, 2.7, 0, y0 + 1.4, Dp / 2 + 0.03, 0, 4, 1);
-  for (const cx of [-11.85, 11.85]) framedGlass(D, 5, 2.2, cx, y0 + 1.5, Dp / 2 + 0.03, 0, 3, 1);
-  box(D, 9, 0.22, 3.2, M.metalDark, 0, y0 + 3.0, Dp / 2 + 1.6);
-  for (const x of [-4.2, 4.2]) cyl(D, 0.08, 0.08, 3.0, M.metalDark, x, y0 + 1.5, Dp / 2 + 3.0, 8);
-  // 屋面
-  const top = y0 + n * fl;
-  box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, Dp / 2); box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, -Dp / 2);
-  box(D, 0.25, 1.0, Dp, M.wallLight, W / 2, top + 0.5, 0); box(D, 0.25, 1.0, Dp, M.wallLight, -W / 2, top + 0.5, 0);
-  box(D, W + 0.4, 0.1, Dp + 0.4, M.metalDark, 0, top + 1.02, 0);
-  box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
-  box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
-  // 前庭：绿篱、长椅、铺装步道
-  // 前庭：绿篱、长椅放在楼前平整地带（再往外是道路边坡，地面起伏 1.5 m），按所在地面最低点取高，避免悬空
-  const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
-  for (const sx of [-1, 1]) {
-    const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
-    planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
-    const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
-    box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
-  D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
-}
+// 12 层住宅楼见 06c_dorm.js（两梯四户，可进出）
 // ---------------- 双人网球场 ----------------
 function buildTennis() {
   const T = new THREE.Group(), w = L.tennis.w, d = L.tennis.d;

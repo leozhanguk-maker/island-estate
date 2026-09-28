@@ -21,6 +21,8 @@ function setHeliObstacles(groups) {
     const b = { x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z };
     for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
   }); }
+  // 另行登记的整体实心体（住宅楼楼身）
+  for (const b of (typeof HELI_SOLIDS !== 'undefined' ? HELI_SOLIDS : [])) for (let i = Math.floor(b.x0 / HELI_OBS_CELL); i <= Math.floor(b.x1 / HELI_OBS_CELL); i++) for (let j = Math.floor(b.z0 / HELI_OBS_CELL); j <= Math.floor(b.z1 / HELI_OBS_CELL); j++) { const k = i * 100003 + j; if (!HELI_OBS.has(k)) HELI_OBS.set(k, []); HELI_OBS.get(k).push(b); }
 }
 // 机舱（离地 1.2 m、半径 1 m 的球）是否碰到建筑构件
 function heliHitsBuilding(x, y, z) {
