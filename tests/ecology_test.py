@@ -1,8 +1,9 @@
 # 水域生态测试：三个水域的物种数量、淡水/海水不混用、长时间推进后无 NaN、生物不离开各自水域、绘制调用预算
 #   1. 数量：各水域的物种与数量与设计一致（对照下方 EXPECT）
-#   2. 分区：湖里的生物始终在淡水湖内；闸内港口生物始终在闸内港口（寄居蟹在港口沙滩）；外海生物始终在闸外海水里
+#   2. 分区：湖里的生物始终在淡水湖内；瀑布上方小水池的生物始终在小水池内；闸内港口生物始终在闸内港口（寄居蟹在港口沙滩）；外海生物始终在闸外海水里
 #   3. 竖向：水中生物不钻进湖底/海底、不飞出水面（鲸跃出水面、海豚除外：鲸允许短时高出水面 6 m 以内）
 #   4. 数值：每个水域推进 30 秒（每步 1/30 s）后所有位置有限，无 NaN
+#   6. 小白鹭：落在闸口沙滩西侧水线觅食、飞行不贴地、远处不惊扰、奔跑靠近即惊飞、受惊后一段时间不回来
 #   5. 绘制调用：相机分别在三个水域水下时，生态新增的绘制调用不超过预算
 # 用法：python3 tests/ecology_test.py
 import os, sys
@@ -14,6 +15,7 @@ from harness import Session
 EXPECT = {
     'lakeInfo': {'crays': 14, 'prawns': 10, 'crabs': 8, 'logs': 0, 'stonesUnder': 0, 'fish': 48},   # 水族馆式清澈湖：无沉木、水下无石头，鱼类加倍
     'lagoonInfo': {'octopus': 2, 'anemones': 4},
+    'upperInfo': {'prawns': 12, 'crays': 6, 'fish': 30},   # 瀑布上方小水池：小鱼小虾（体型为淡水湖同种的一半）
 }
 DRAW_BUDGET = 60   # 单个水域水下时，生态网格新增的绘制调用上限
 
@@ -24,12 +26,14 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     for (const k of Z.critters || []) for (const c of k.a) out.push({ kind: k.beach ? 'beach' : 'critter', x: c.x, y: c.y, z: c.z });
     for (const w of Z.whales || []) for (const c of w.a) out.push({ kind: 'whale', x: c.x, y: c.y, z: c.z }); return out; };
   const inLake = (x, z) => D.ecoZone(x, z) === 'lake';
+  const inUpper = (x, z) => D.ecoZone(x, z) === 'upper';
   const lagoonBox = (x, z) => z < D.L.gateZ && z > 18 && Math.abs(x) < 75;
   const check = (name, Z) => { let bad = 0, nan = 0, vert = 0, first = null;
     for (const c of creatures(Z)) {
       if (!fin(c.x, c.y, c.z)) { nan++; continue; }
       const g = D.gh(c.x, c.z); let ok, vok = true;
       if (name === 'lake') { ok = inLake(c.x, c.z); vok = c.y <= D.L.lake.level + 0.05 && c.y >= g - 0.3; }
+      else if (name === 'upper') { ok = inUpper(c.x, c.z); vok = c.y <= D.L.upperLake.level + 0.05 && c.y >= g - 0.3; }
       else if (name === 'lagoon') { if (c.kind === 'beach') { ok = lagoonBox(c.x, c.z + 0) || (c.z > 18 && c.z < 60 && Math.abs(c.x) < 60); ok = ok && !inLake(c.x, c.z); vok = Math.abs(c.y - g) < 0.3; }
         else { ok = lagoonBox(c.x, c.z) && g < 0; vok = c.y <= 0.05 && c.y >= g - 0.3; } }
       else { ok = !lagoonBox(c.x, c.z) && !inLake(c.x, c.z) && g < -0.3; vok = c.kind === 'whale' ? (c.y <= 6 && c.y >= g - 0.5) : (c.y <= 0.05 && c.y >= g - 0.5); }
@@ -37,8 +41,8 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
       if (!vok) { vert++; first = first || `${c.kind} 高度 ${c.y.toFixed(2)}，地面 ${g.toFixed(2)} @ (${c.x.toFixed(1)}, ${c.z.toFixed(1)})`; } }
     return { n: creatures(Z).length, bad, nan, vert, first }; };
   // 每个水域：相机放到水下，推进 30 秒，每 5 秒检查一次
-  const views = { lake: [181, 9.4, -78], lagoon: [0, -3, 85], oceanS: [20, -6, 205], oceanSE: [240, -6, 200], oceanSW: [-250, -6, 200], oceanN: [10, -8, -214] };
-  const base = { lake: 'lake', lagoon: 'lagoon' };
+  const views = { lake: [181, 9.4, -78], upper: [212, 48.7, -82], lagoon: [0, -3, 85], oceanS: [20, -6, 205], oceanSE: [240, -6, 200], oceanSW: [-250, -6, 200], oceanN: [10, -8, -214] };
+  const base = { lake: 'lake', lagoon: 'lagoon', upper: 'upper' };
   for (const [name, p] of Object.entries(views)) { const Z = E.zones[name]; if (!Z) { fails.push(`缺少水域 ${name}`); continue; }
     cam.position.set(...p); cam.lookAt(p[0] + 5, p[1] - 1, p[2] + 5); cam.updateMatrixWorld();
     const player = { x: p[0], y: p[1], z: p[2], inWater: true, under: true };
@@ -55,6 +59,9 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
   // 水族馆式湖泊：荷花集中在靠瀑布一侧（湖东部）、沉水草铺满湖底；三个水域都清澈（水下雾密度上限）
   { const I = E.lakeInfo || {}; if (!(I.lotus >= 20 && I.lotusCx > D.L.lake.x + 3)) fails.push(`荷花应集中在靠瀑布一侧：${I.lotus} 丛，重心 x=${(I.lotusCx || 0).toFixed(1)}（湖心 ${D.L.lake.x}）`);
     if (!(I.weeds >= 80)) fails.push(`湖底沉水草只有 ${I.weeds} 丛，应铺满湖底（≥ 80）`); }
+  // 瀑布上方小水池：水草茂密、小鱼小虾体型为淡水湖同种的一半
+  { const U = E.upperInfo || {}; if (!(U.weeds >= 20)) fails.push(`小水池沉水草只有 ${U.weeds} 丛，应茂密（≥ 20）`);
+    if (!(U.fishLen && Math.abs(U.fishLen[0] - 0.085) < 0.005 && Math.abs(U.fishLen[1] - 0.11) < 0.005 && Math.abs(U.prawnLen - 0.085) < 0.005 && Math.abs(U.crayLen - 0.055) < 0.005)) fails.push(`小水池鱼虾体长应为淡水湖同种的一半：${JSON.stringify(U)}`); }
   for (const [k, lim] of [['lake', 0.08], ['lagoon', 0.04], ['ocean', 0.035]]) { const d = D.ECO_LOOK && D.ECO_LOOK[k].dens; if (!(d <= lim)) fails.push(`${k} 水下雾密度 ${d}，应 ≤ ${lim}（能见度高、清澈）`); }
   // P-016：三个水域的随机数各自独立（每个水域建造前重置种子），改动一个水域的内容不会让另外两个水域整体错位
   { const src = String(window.__dbg.buildEcology || ''); if (!/ecoSeed\(\d+\);\s*buildEcoLagoon/.test(src) || !/ecoSeed\(\d+\);\s*buildEcoOcean/.test(src)) fails.push('闸内港口、外海建造前没有各自重置生态随机数种子（P-016）'); }
@@ -86,24 +93,59 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     // 游艇在峡谷出口外鸣笛：召唤来的鲸群出现的位置与之后 30 秒都不违规
     if (!bad) { for (const w of E.whales) w.chaseT = 30; const msg = D.ecoOceanShow(0, 222); if (!D.ECO_SHOW.moved) bad = `峡谷出口外鸣笛没有召唤成功：${msg}`; const b0 = E.whales.map(badOf).find(Boolean); const b = b0 || run(30, 300);
       if (b) bad = `峡谷出口外鸣笛（${msg}）后${b}`; }
+    // 跟船：鸣笛后游艇从峡谷出口外以 3 m/s 南行 30 秒（90 m），召唤来的各水域随船移动，期间鲸群不违规
+    if (!bad && D.ECO_SHOW.moved) { const B = D.BOAT, keep = { x: B.x, z: B.z, v: B.v }, M = D.ECO_SHOW.moved; B.x = 0; B.z = 222; B.v = 3; D.ECO_SHOW.t = 120;
+      const c0 = M.map(m => D.ECO.zones[m[0]].center.z);
+      for (let s = 0; s < 900 && !bad; s++) { B.z = 222 + s / 30 * 3; D.ecoShowUpdate(1 / 30); for (const w of E.whales) w.update(1 / 30, 400 + s / 30); if (s % 15 === 0) { const b = E.whales.map(badOf).find(Boolean); if (b) bad = `鸣笛后游艇南行、鲸群跟船时${b}`; } }
+      stats.follow = M.map((m, i) => +(D.ECO.zones[m[0]].center.z - c0[i]).toFixed(1));
+      // 船停鲸群停：航速置 0 再推进 10 秒，各水域不再移动
+      { B.v = 0; const c1 = M.map(m => ({ ...D.ECO.zones[m[0]].center })); for (let s = 0; s < 300; s++) D.ecoShowUpdate(1 / 30);
+        stats.stopDrift = +Math.max(...M.map((m, i) => Math.hypot(D.ECO.zones[m[0]].center.x - c1[i].x, D.ECO.zones[m[0]].center.z - c1[i].z))).toFixed(2);
+        if (!bad && stats.stopDrift > 0.01) bad = `游艇停下后召唤来的水域仍移动了 ${stats.stopDrift} m（船停应停）`; }
+      if (!bad && Math.min(...stats.follow) < 60) bad = `鸣笛后游艇南行 90 m，召唤来的水域只跟了 ${stats.follow.join('、')} m（应追着船游）`;
+      Object.assign(B, keep); }
     // 还原：召唤的水域挪回原处、鲸群回到测试前的状态（不影响后面的绘制调用测量）
     if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }
     for (const o of snap) { o.a.forEach((c, i) => Object.assign(o.w.a[i], c)); o.w.wp = o.wp; o.w.wt = o.wt; o.w.chaseT = o.chaseT; o.w.chasing = o.chasing; }
     if (bad) fails.push(`鲸群${bad}（P-017）`); }
+  // 小白鹭：飞到闸口沙滩西侧的水线觅食；飞行中离地形 3 m 以上；远处静立的玩家不惊扰；奔跑靠近就一起惊飞，之后至少 60 秒不回来
+  { const G = D.EGRET, cam = I.camera; if (!G || !G.birds.length) fails.push('缺少小白鹭');
+    else { G.prevP = null; cam.position.set(-30, 4, 75); cam.updateMatrixWorld(); let clear = 1e9, clearAt = null; const far = { x: -32, z: 78 };
+      const step = (s, p) => { D.updateEgrets(1 / 30, s / 30, p, cam);
+        for (const b of G.birds) if ((b.state === 'arrive' || b.state === 'depart') && b.path && b.path.t > 0) { const left = (1 - Math.min(1, b.path.t / b.path.dur)) * b.path.dur, c = b.y - Math.max(D.gh(b.x, b.z), 0);
+          // 飞来：着陆前 2.5 秒以外；飞走：起飞爬升（约 1.2 秒）之后的整段航线
+          if ((b.state === 'depart' || left > 2.5) && c < clear) { clear = c; clearAt = `(${b.x.toFixed(1)}, ${b.y.toFixed(1)}, ${b.z.toFixed(1)})`; } } };
+      D.egretVisit(3); for (let s = 0; s < 1500; s++) step(s, far);
+      const on = G.birds.filter(b => b.state === 'forage');
+      if (on.length !== 3) fails.push(`小白鹭应有 3 只落地觅食，实际 ${on.length} 只（状态 ${G.birds.map(b => b.state).join('/')}）`);
+      for (const b of on) { const g = D.gh(b.x, b.z);
+        if (!(b.x > -47 && b.x < -17 && b.z > 33 && b.z < 59) || Math.abs(b.y - g) > 0.02 || g < -0.15 || !b.g.visible) { fails.push(`小白鹭不在闸口沙滩西侧的水线上：(${b.x.toFixed(1)}, ${b.y.toFixed(2)}, ${b.z.toFixed(1)}) 地面 ${g.toFixed(2)} 可见 ${b.g.visible}`); break; } }
+      let verts = 0; G.birds[0].g.traverse(o => { if (o.isMesh) verts += o.geometry.attributes.position.count; }); if (verts < 3000) fails.push(`小白鹭模型细节不足（${verts} 个顶点）`);
+      // 远处（约 25 m）慢慢走动：不惊扰
+      const b0 = on[0] || G.birds[0]; let px = b0.x + 25, pz = b0.z + 2; for (let s = 0; s < 150; s++) { px -= 1.2 / 30; step(1500 + s, { x: px, z: pz }); }
+      if (G.state !== 'visit') fails.push(`玩家在 ${Math.hypot(px - b0.x, pz - b0.z).toFixed(1)} m 外慢走，小白鹭不该惊飞（状态 ${G.state}）`);
+      // 奔跑（8 m/s）冲过去：进入 14 m 后应立即惊飞
+      let flushAt = null; for (let s = 0; s < 150 && !flushAt; s++) { px -= 8 / 30; step(1650 + s, { x: px, z: pz }); if (G.state === 'leaving') flushAt = Math.hypot(px - b0.x, pz - b0.z); }
+      if (!flushAt || flushAt < 10) fails.push(`玩家奔跑靠近时小白鹭没有及时惊飞（${flushAt ? '距离 ' + flushAt.toFixed(1) + ' m 才飞' : '一直没飞'}）`);
+      for (let s = 0; s < 900; s++) step(1800 + s, { x: px, z: pz });
+      if (G.state !== 'away' || G.birds.some(b => b.g.visible)) fails.push(`小白鹭惊飞 30 秒后应已飞离并隐藏（状态 ${G.state}）`);
+      if (!(clear > 3)) fails.push(`小白鹭飞行时（飞来或飞走）离地形只有 ${clear.toFixed(1)} m @ ${clearAt}`);
+      if (!(G.next >= 60)) fails.push(`小白鹭受惊后 ${G.next.toFixed(0)} 秒就回来，应至少 60 秒`);
+      stats.egret = { verts, clear: +clear.toFixed(1), flushAt: flushAt && +flushAt.toFixed(1) }; } }
   // 淡水与海水物种不混用：湖区只有淡水生物、闸内港口和外海没有淡水生物（按各水域登记的鱼群所属水域核对）
-  for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'lagoon' ? 'lagoon' : 'ocean';
+  for (const [name, Z] of Object.entries(E.zones)) { if (!Z) continue; const want = name === 'lake' ? 'lake' : name === 'upper' ? 'upper' : name === 'lagoon' ? 'lagoon' : 'ocean';
     for (const f of Z.flocks || []) if (f.zone !== want) fails.push(`${name} 里登记了属于 ${f.zone} 的鱼群`); }
   // 绘制调用：相机在各水域水下时，生态网格新增的绘制调用数
   const R = I.renderer, draws = {};
-  for (const [name, p] of [['lake', views.lake], ['lagoon', views.lagoon], ['oceanSE', views.oceanSE]]) {
+  for (const [name, p] of [['lake', views.lake], ['upper', views.upper], ['lagoon', views.lagoon], ['oceanSE', views.oceanSE]]) {
     cam.position.set(...p); cam.lookAt(p[0] + 5, p[1] - 1, p[2] + 5); cam.updateMatrixWorld(); __fp._st.pos.x = p[0]; __fp._st.pos.z = p[2]; __fp._st.feet = p[1] - 1.6;
     for (let s = 0; s < 3; s++) { D.updateEcology(1 / 30, s / 30, cam, null); I.underwaterCheck(); }
     R.info.autoReset = false; R.info.reset(); R.render(I.scene, cam); const on = R.info.render.calls;
     const vis = []; for (const Z of Object.values(E.zones)) if (Z) for (const m of Z.meshes) vis.push([m, m.visible]);
-    for (const l of E.lods) for (const m of l.ims) vis.push([m, m.visible]); if (E.rays) vis.push([E.rays.im, E.rays.im.visible]); if (E.uwBack) vis.push([E.uwBack, E.uwBack.visible]); if (E.lakeNear) vis.push([E.lakeNear, E.lakeNear.visible]);
+    for (const l of E.lods) for (const m of l.ims) vis.push([m, m.visible]); if (E.rays) vis.push([E.rays.im, E.rays.im.visible]); if (E.uwBack) vis.push([E.uwBack, E.uwBack.visible]); if (E.lakeNear) vis.push([E.lakeNear, E.lakeNear.visible]); if (E.upperNear) vis.push([E.upperNear, E.upperNear.visible]);
     for (const [m] of vis) m.visible = false; R.info.reset(); R.render(I.scene, cam); const off = R.info.render.calls; for (const [m, v] of vis) m.visible = v; R.info.autoReset = true;
     draws[name] = on - off; if (on - off > BUDGET) fails.push(`${name} 水下时生态新增绘制调用 ${on - off} 次，超过预算 ${BUDGET}`); }
-  return { fails, stats, draws, lakeInfo: E.lakeInfo && Object.fromEntries(Object.entries(E.lakeInfo).filter(([k, v]) => typeof v === 'number')), lagoonInfo: E.lagoonInfo }; }'''
+  return { fails, stats, draws, lakeInfo: E.lakeInfo && Object.fromEntries(Object.entries(E.lakeInfo).filter(([k, v]) => typeof v === 'number')), lagoonInfo: E.lagoonInfo, upperInfo: E.upperInfo }; }'''
 
 
 def main():
@@ -119,6 +161,7 @@ def main():
     print('各水域生物数量：', r['stats'])
     print('湖：', r['lakeInfo'])
     print('闸内港口：', r['lagoonInfo'])
+    print('小水池：', r['upperInfo'])
     print('生态新增绘制调用：', r['draws'])
     if fails:
         print('\n生态测试失败：')

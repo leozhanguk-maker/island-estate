@@ -43,12 +43,13 @@ try {
   for (const [a, b] of [[-4, -3.1], [4, -3.1], [-4, 3.1], [4, 3.1], [0, -3.1]]) collC(L.parking.x + a, L.parking.z - 5.5 + b, 0.15);
   setHeliObstacles(statics);   // 直升机与建筑构件的碰撞（须在烘焙前，构件仍在分组中）
   statics.forEach(bake);
+  for (const c of DORM.lifts) scene.attach(c.g);   // 电梯轿厢是可动的分组，单独挂到场景根下（不参与烘焙）
   ECO.waterMats = W.mats;
   if (DEBUG) window.__statics = { groups: statics, THREE, TIME_U, waterMats: W.mats };   // 调试：烘焙前的构件分组（供场景体检逐个检查）与动画时间 uniform（供截图固定时刻）
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   await stage(0.8, '雨林与作物');
-  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene);
+  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene); buildEgrets(scene);
   await stage(0.92, '光影');
   // ---------------- 相机与视角 ----------------
   const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 3, 20000);
@@ -96,7 +97,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; } }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; }, lounger }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -149,17 +150,18 @@ try {
     if (anim) { anim.t = Math.min(1, anim.t + dt / 1.6); const e = anim.t < 0.5 ? 4 * anim.t ** 3 : 1 - Math.pow(-2 * anim.t + 2, 3) / 2; camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e); if (anim.t >= 1) anim = null; }
     { const prev = updateBoat(dt, t, fp._st.keys); if (BOAT.moved) { if (fp.on) carryOnBoat(fp._st, prev); syncBoat(t); } }
     { const hr = updateHeli(dt, fp._st.keys, fp.on ? camera : null);
-      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
+      if (fp.on && DRIVE.active === HELI) { fp._st.pos.set(HELI.x, HELI.y + 1.5, HELI.z); fp.mapTick(t); document.getElementById('fphud').textContent = HELI.auto ? `H125 自动飞行：${HELI.auto.to === 'roof' ? '前往别墅屋顶' : '返回停机坪'}（${({ spool: '旋翼起转', lift: '起飞', cruise: '超低空巡航', approach: '进近', align: '悬停对准', land: '垂直降落', shutdown: '关车' })[HELI.auto.phase]}）  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  G 取消` : `H125  速度 ${hr.kmh} 公里/小时  离地 ${hr.agl} 米  H 鸣笛  空格 上升  Shift 下降  W/S 前后  A/D 转向  V 视角  G 自动飞往${Math.hypot(HELI.x - HELI_SPOTS.roof.x, HELI.z - HELI_SPOTS.roof.z) < 30 ? '停机坪' : '别墅屋顶'}  ${HELI.ground ? 'E 下机' : ''}`; } }
     if (fp.on && DRIVE.active === HELI) {}
-    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', pile: '碰撞系缆桩', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位`; }
-    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  V 视角  E 下车`; }
+    else if (fp.on && DRIVE.active === BOAT) { boatCamera(dt, camera); document.getElementById('fphud').textContent = `驾驶游艇  航速 ${(Math.abs(BOAT.v) * 1.944).toFixed(1)} 节${BOAT.v < -0.05 ? '（倒车）' : ''}  油门 ${Math.round(BOAT.thr * 100)}%  ${BOAT.hit ? '【' + ({ shallow: '水浅搁浅风险', pier: '碰撞闸墩', gate: '水闸未开启', dock: '碰撞浮台' })[BOAT.hit] + '】' : ''}  W/S 油门  A/D 舵  空格 收油  H 鸣笛  V 视角  E 离开舵位  F 跳船`; }
+    else if (fp.on && DRIVE.active) { const r = updateDrive(dt, fp._st.keys, camera, fp); fp._st.pos.set(DRIVE.active.x, DRIVE.active.y + 1.5, DRIVE.active.z); document.getElementById('fphud').textContent = `驾驶 ${DRIVE.active.sp.name}  ${Math.abs(r.kmh)} 公里/小时${r.kmh < 0 ? '（倒车）' : ''}  W/S 油门制动  A/D 转向  空格 手刹  H 喇叭  V 视角  E 下车`; }
     else if (!fp.update(dt)) controls.update();
     for (const m of W.mats) if (m.uniforms && m.uniforms.uTime) m.uniforms.uTime.value = t;
     for (const u of TIME_U) u.value = t;
     if (W.sea) W.sea.update(renderer, camera, t);
     if (grass) grass.update(fp);
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
-    updateAnimals(dt, fp.on ? fp.pos : null);
+    updateAnimals(dt, fp.on ? fp.pos : null); updateDorm(dt);
+    updateEgrets(dt, t, fp.on ? fp.pos : null, camera);
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateEcology(dt, t, camera, fp.on ? { x: st_.pos.x, y: camera.position.y, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 0.3), under: !!(w_ && camera.position.y < w_.level) } : null); }
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
     if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
