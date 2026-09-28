@@ -3,6 +3,7 @@ function buildEcology(scene) {
   ECO.scene = scene; ecoRaysInit(scene); ecoSeed(1001); buildEcoLake(scene);
   if (typeof buildEcoLagoon === 'function') { ecoSeed(2002); buildEcoLagoon(scene); }
   if (typeof buildEcoOcean === 'function') { ecoSeed(3003); buildEcoOcean(scene); }
+  if (typeof buildEcoUpper === 'function') { ecoSeed(4004); buildEcoUpper(scene); }   // 放在最后、单独种子：不影响另外三个水域的布置（P-016）
   ECO.built = true;
 }
 // 每帧：只推进相机附近水域的生物（远处水域整体隐藏、不计算）；player 为漫游中的玩家（潜水时作为鱼群的“捕食者”）
@@ -35,7 +36,8 @@ const ecoLookTmp = { c: new THREE.Color(), c2: new THREE.Color() };
 // 返回相机所在位置的目标雾色与密度；海水在水闸附近（闸内 8 m 到闸外 40 m）从闸内港口渐变到外海
 function ecoWaterLook(x, y, z, kind) {
   const T = ecoLookTmp;
-  if (kind === 'lake') { const A = ECO_LOOK.lake, d = Math.max(0, L.lake.level - y); T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); return { color: T.c, density: A.dens * (1 + d * 0.08), over: A.over, zone: 'lake' }; }
+  if (kind === 'lake') { const A = ECO_LOOK.lake, d = Math.max(0, (lakeSD(x, z, L.upperLake, 0.12) > -2 ? L.upperLake.level : L.lake.level) - y);   // 小水池与淡水湖同一观感，按各自水面算深度
+ T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); return { color: T.c, density: A.dens * (1 + d * 0.08), over: A.over, zone: 'lake' }; }
   const lag = (1 - smoothstep(L.gateZ - 8, L.gateZ + 40, z)) * (z > 18 ? 1 : 0) * (1 - smoothstep(70, 80, Math.abs(x))), d = Math.max(0, -y);
   const A = ECO_LOOK.lagoon, B = ECO_LOOK.ocean;
   T.c.copy(A.top).lerp(A.deep, 1 - Math.exp(-d / A.k)); T.c2.copy(B.top).lerp(B.deep, 1 - Math.exp(-d / B.k)); T.c2.lerp(T.c, lag);

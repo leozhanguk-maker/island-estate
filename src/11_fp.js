@@ -118,6 +118,8 @@ function setupFP(ctx) {
     // 陆地漫游边界；在船上时不限制（游艇巡航会驶出该范围，否则人在船上寸步难行）
     if (!st.onBoat && (x1 < -372 || x1 > 372 || z1 < -222 || z1 > 222)) return false;
     if (st.onBoat) for (const o of DYN.segs) if (inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
+    // 游艇船体空气墙：船上船下都不能直接跨过船体轮廓（只能按 F 登船、离船）
+    for (const o of DYN.hull || []) if (cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     for (const o of near(x1, z1)) if (o.t === 's' && inBand(o, feet) && cross(x0, z0, x1, z1, o.ax, o.az, o.bx, o.bz)) return false;
     const f = floorAt(x1, z1, feet), d = Math.hypot(x1 - x0, z1 - z0) + 1e-6;
     const w = waterAt(x1, z1);
@@ -248,10 +250,11 @@ function setupFP(ctx) {
   function findInteract() {
     act = null; let best = 1e9;
     for (const it of (DYN.interact.length ? INTERACT.concat(DYN.interact) : INTERACT)) { const d = Math.hypot(st.pos.x - it.x, st.pos.z - it.z); const fy = it.y !== undefined ? it.y : gh(it.x, it.z); if (d < it.r && d < best && Math.abs(st.feet - fy) < 1.8) { best = d; act = it; } }
-    prompt.textContent = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : ''; prompt.style.opacity = act ? 1 : 0;
+    const fa = boatFAction(st), pe = act ? '按 E ' + (typeof act.label === 'function' ? act.label() : act.label) : '', pf = fa ? '按 F ' + fa.label : '';
+    prompt.textContent = pe && pf ? pe + '　' + pf : pe || pf; prompt.style.opacity = act || fa ? 1 : 0;
   }
-  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
-  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
+  window.addEventListener('keydown', (e) => { if (DRIVE.active === HELI) { if (e.code === 'KeyG') heliAutoToggle(); if (e.code === 'KeyH') hornSound('heli'); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; if (e.code === 'KeyE' && HELI.ground && !HELI.auto) { DRIVE.active = null; document.body.classList.remove('driving'); const s0 = Math.sin(HELI.yaw), c0 = Math.cos(HELI.yaw); teleport(HELI.x + s0 * 2.2, HELI.z + c0 * 2.2, HELI.yaw, HELI.y + 0.02); } return; }
+  if (st.seat && st.on) { if (e.code === 'KeyE' || ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) { standUp(); e.stopImmediatePropagation && null; } return; } if (DRIVE.active) { if (e.code === 'KeyC' && DRIVE.active === BOAT) { startCruise(); return; } if (e.code === 'KeyH' && DRIVE.active === BOAT) { boatHorn(); return; } if (e.code === 'KeyF' && DRIVE.active === BOAT) { const fa = boatFAction(st); if (fa) fa.fn(); return; } if (e.code === 'KeyH') { hornSound(DRIVE.active.sp && DRIVE.active.sp.horn || 'car'); return; } if (e.code === 'KeyE') exitCar({ teleport }); if (e.code === 'KeyV') DRIVE.cam = DRIVE.cam === 'chase' ? 'seat' : 'chase'; return; } if (st.on && e.code === 'KeyF') { const fa = boatFAction(st); if (fa) { fa.fn(); return; } } if (st.on && e.code === 'KeyE' && act) { if (act.fn) act.fn(); else { const g = act.go; teleport(g.x, g.z, g.yaw, g.y); } } if (st.on && e.code === 'KeyC' && act && act.cruise && st.mode !== 'swim') act.cruise(); if (st.on && e.code === 'KeyM') st.mapR = st.mapR === 150 ? 400 : 150; });
   st.mapR = 150;
   const mm = document.getElementById('minimap'), mctx = mm.getContext('2d');
   let mapBase = null, lastMap = 0;

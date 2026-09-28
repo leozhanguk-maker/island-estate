@@ -51,7 +51,13 @@ CHECKS = {
         ('拖拉机 4 秒行驶 ≥ 5 m', lambda r: r['tractor']['moved'], lambda v: isinstance(v, (int, float)) and v >= 5),
     ],
     'boat': [
-        ('按 E 登船后在船上', lambda r: r['boarded']['onBoat'], lambda v: v is True),
+        ('不按 F 从浮台走不上船（被挡在船体轮廓外）', lambda r: (r['wallIn']['onBoat'], r['wallIn']['lx']), lambda v: v[0] is False and v[1] < -27.6),
+        ('浮台上提示并按 F 登船后在船上', lambda r: (r['boardPrompt'], r['boarded']['onBoat']), lambda v: '按 F 登上游艇' in v[0] and v[1] is True),
+        ('按 F 登船落在主甲板一楼舱门口（局部 -19.8, 0，脚底 2.26），正对沙龙电视', lambda r: (r['boarded']['lx'], r['boarded']['lz'], r['boarded']['feet'], r['boardFaceTV']), lambda v: near(v[0], -19.8, 0.15) and near(v[1], 0, 0.15) and near(v[2], 2.26, 0.05) and v[3] > 0.99),
+        ('船上不按 F 走不下船', lambda r: (r['wallOut']['onBoat'], r['wallOut']['lx']), lambda v: v[0] is True and v[1] > -27.8),
+        ('靠泊时船边按 F 离船落到登岸浮台', lambda r: (r['leavePrompt'], r['leftToDock']['onBoat'], r['leftToDock']['feet'], r['leftToDock']['lx']), lambda v: '按 F 离开游艇' in v[0] and v[1] is False and v[2] > 0.2 and v[3] < -27.7),
+        ('再按 F 重新登船', lambda r: r['reboard']['onBoat'], lambda v: v is True),
+        ('游泳平台经梯级上后甲板（2.26）', lambda r: (r['platStair']['onBoat'], r['platStair']['feet']), lambda v: v[0] is True and near(v[1], 2.26, 0.05)),
         ('走到驾驶台舵位（上层 5.16）', lambda r: r['helmSpot']['feet'], lambda v: near(v, 5.16, 0.1)),
         ('舵位可接管驾驶', lambda r: r['driving'], lambda v: v is True),
         ('出港四段零碰撞', lambda r: [r[k]['hit'] for k in ('leg1', 'leg2', 'leg3', 'leg4')], lambda v: all(h is None for h in v)),
@@ -60,6 +66,7 @@ CHECKS = {
         ('主甲板走过负一舱盖不掉下去（2.45）', lambda r: (r['hatch']['onBoat'], r['hatch']['feet']), lambda v: v[0] is True and near(v[1], 2.45, 0.05)),
         ('上甲板经楼梯上日光甲板（7.88）', lambda r: (r['sunDeck']['feet'], r['sunDeckIn']['feet']), lambda v: near(v[0], 7.88, 0.05) and near(v[1], 7.88, 0.05)),
         ('外海鸣笛召唤鲸群与鱼群', lambda r: (r['horn'], r['showNear']), lambda v: '正在游向游艇' in v[0] and v[1] == 4),
+        ('行驶中船边按 F 跳入附近海域', lambda r: (r['jumpPrompt'], r['jumped']['onBoat'], r['afterJump']['mode'], r['afterJump']['feet']), lambda v: '跳入附近海域' in v[0] and v[1] is False and v[2] == 'swim' and v[3] < 0.3),
     ],
     'cruise': [
         ('自动巡航完成', lambda r: r['done'], lambda v: v is True),
