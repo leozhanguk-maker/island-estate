@@ -143,6 +143,14 @@ JS = r'''() => {
     if (!sm) fails.push(`找不到灌木实例网格（灌木 ${v.shrubs}，草莓丛 ${v.strawPatches}）`); else if (sm.geometry.groups[0].count > 0) fails.push(`灌木几何体仍有实心内核（${sm.geometry.groups[0].count / 3} 个三角形），近看是一大块绿包`);
     const ratio = v.strawPatches / v.shrubs; if (!(ratio > 0.28 && ratio < 0.39)) fails.push(`草莓丛占灌木 ${r3(ratio)}，应约为三分之一`);
     if (!(v.strawberries >= v.strawPatches * 4)) fails.push(`草莓 ${v.strawberries} 株 / ${v.strawPatches} 丛，每丛应至少 4 株`); }
+  // ---- 2m. 农田细节（V-023）：葡萄园为篱架式（每行立柱、四道铁丝、每株主干/单臂/叶幕、每株 3 串果穗），不再是贴图方块；苹果树冠无实心内核并挂果；香蕉有果串 ----
+  { const V = D.VINEYARD;
+    if (!V) fails.push('葡萄园没有按株绘制（VINEYARD 为空）');
+    else { if (V.vines < 500) fails.push(`葡萄 ${V.vines} 株，太少`); if (V.bunches < V.vines * 3) fails.push(`果穗 ${V.bunches} 串，应为每株 3 串`); if (V.wires !== V.rows * 40) fails.push(`铁丝段 ${V.wires}，应为每行 10 跨 × 4 道`); if (V.posts !== V.rows * 11) fails.push(`立柱 ${V.posts}，应为每行 11 根`); }
+    let boxes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh && o.material.map && o.material.map.image && o.material.map.image.width === 256 && o.material.map.repeat && o.material.map.repeat.x === 5) boxes++; }));
+    if (boxes) fails.push(`葡萄园仍有 ${boxes} 个贴图方块`);
+    let apple = null, fruit = 0; I.scene.traverse(o => { if (o.isInstancedMesh && Array.isArray(o.material) && o.count > 20 && o.count < 200 && o.geometry.groups.length === 2 && o.geometry.attributes.uv && o.geometry.groups[1].count === (20 + 8) * 6) apple = o; });
+    if (!apple) fails.push('找不到苹果树冠（外层 20 + 内层 8 张面片、无实心内核）'); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

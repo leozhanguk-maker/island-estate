@@ -4212,23 +4212,11 @@ function buildGolfFlags() {
   }
   return F;
 }
+// 葡萄园：只登记每行的碰撞；立柱、铁丝、葡萄藤、叶幕、果穗在 08_vegetation 的 buildVineyardPlants() 里按实例绘制
+function vineRows() { const vy = L.vineyard, out = []; for (let x = vy.x0 + 1.4; x < vy.x1 - 0.8; x += 2.6) out.push(x); return { xs: out, z0: vy.z0 + 1.8, z1: vy.z1 - 1.8 }; }
 function buildVineyard() {
-  const V = new THREE.Group(), vy = L.vineyard;
-  const vc = document.createElement('canvas'); vc.width = vc.height = 256; const g = vc.getContext('2d'); g.fillStyle = '#3c5e28'; g.fillRect(0, 0, 256, 256);
-  const R = mulberry32(333);
-  for (let i = 0; i < 420; i++) { const x = R() * 256, y = R() * 256, s = 7 + R() * 9, a = R() * TAU; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.save(); g.translate(x + dx, y + dy); g.rotate(a); g.fillStyle = `hsl(${85 + R() * 20},${40 + R() * 15}%,${30 + R() * 22}%)`; for (const d of [-0.9, 0, 0.9]) { g.save(); g.rotate(d); g.beginPath(); g.ellipse(s * 0.5, 0, s * 0.55, s * 0.28, 0, 0, TAU); g.fill(); g.restore(); } g.restore(); } }
-  for (let i = 0; i < 30; i++) { const x = R() * 256, y = R() * 256; g.fillStyle = 'rgba(70,40,70,0.85)'; for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(x + (k % 3) * 4, y + Math.floor(k / 3) * 4 + (k % 3), 2.4, 0, TAU); g.fill(); } }
-  const vt = new THREE.CanvasTexture(vc); vt.colorSpace = THREE.SRGBColorSpace; vt.wrapS = vt.wrapT = THREE.RepeatWrapping; vt.repeat.set(5, 1); vt.anisotropy = 8;
-  const mat = std(0xffffff, 0.85, 0, { map: vt }), matL = std(0xdfe8cf, 0.85, 0, { map: vt });
-  for (let x = vy.x0 + 1.4, i = 0; x < vy.x1 - 0.8; x += 2.6, i++) {
-    const z0 = vy.z0 + 1.8, z1 = vy.z1 - 1.8, n = 8;
-    collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1);
-    for (let s = 0; s < n; s++) {
-      const za = lerp(z0, z1, s / n), zb = lerp(z0, z1, (s + 1) / n), zm = (za + zb) / 2, y = gh(x, zm);
-      box(V, 0.75 + 0.1 * Math.sin(s * 3 + i), 1.25, zb - za - 0.15, (s + i) % 3 ? mat : matL, x, y + 0.95, zm);
-      box(V, 0.08, 1.6, 0.08, M.woodDark, x, y + 0.8, za + 0.1);
-    }
-  }
+  const V = new THREE.Group(), { xs, z0, z1 } = vineRows();
+  for (const x of xs) { collS(x - 0.4, z0, x - 0.4, z1); collS(x + 0.4, z0, x + 0.4, z1); collS(x - 0.4, z0, x + 0.4, z0); collS(x - 0.4, z1, x + 0.4, z1); }
   return V;
 }
 function buildDuckArea() {
@@ -5402,6 +5390,36 @@ function bananaGeo() {
   const merged = THREE.BufferGeometryUtils.mergeGeometries(parts.map(p => { if (p.attributes.normal) p.deleteAttribute('normal'); return p; }));
   merged.computeVertexNormals(); return merged;
 }
+// 香蕉果串：从假茎顶部（2.3 m）弯出的果轴，向下挂 6 梳香蕉（每梳 7 根，果指向上翘），果轴末端垂一个紫红色蕉蕾
+function bananaBunchGeo() {
+  const parts = [], R = mulberry32(711);
+  const colr = (g, c) => { g = g.index ? g.toNonIndexed() : g; const C = new THREE.Color(c), a = []; for (let i = 0; i < g.attributes.position.count; i++) { const k = 0.9 + R() * 0.2; a.push(C.r * k, C.g * k, C.b * k); } g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const seg = (a, b, r0, r1, c, n = 5) => { const d = new THREE.Vector3().subVectors(b, a), L0 = d.length(), g = new THREE.CylinderGeometry(r1, r0, L0, n, 1); g.translate(0, L0 / 2, 0);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(a.x, a.y, a.z); parts.push(colr(g, c)); };
+  const V = (x, y, z) => new THREE.Vector3(x, y, z), top = V(0.05, 2.3, 0), bend = V(0.34, 2.18, 0), a0 = V(0.4, 1.95, 0), a1 = V(0.42, 1.22, 0), tip = V(0.43, 0.98, 0);
+  seg(top, bend, 0.035, 0.03, 0x6d7a3a); seg(bend, a0, 0.03, 0.028, 0x6d7a3a); seg(a0, a1, 0.028, 0.02, 0x7a8a40); seg(a1, tip, 0.012, 0.01, 0x6d6a3a);
+  for (let h = 0; h < 6; h++) { const y = 1.9 - h * 0.12, rr = 0.075 - h * 0.004;
+    for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + h * 0.45, dx = Math.cos(a), dz = Math.sin(a), b = V(0.41 + dx * 0.035, y, dz * 0.035), m = V(0.41 + dx * rr, y + 0.06, dz * rr), e = V(0.41 + dx * (rr + 0.03), y + 0.15, dz * (rr + 0.03));
+      seg(b, m, 0.012, 0.017, 0x7fa23a, 4); seg(m, e, 0.017, 0.008, 0x8fb040, 4); } }
+  const bell = new THREE.ConeGeometry(0.065, 0.2, 7); bell.rotateX(Math.PI); bell.translate(0.43, 0.9, 0); parts.push(colr(bell, 0x6a2140));
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+// 苹果树干：主干 1.4 m，顶部分出三根主枝斜伸进树冠（原点在地面）
+function appleTrunkGeo() {
+  const parts = [], t = new THREE.CylinderGeometry(0.12, 0.16, 1.5, 7); t.translate(0, 0.75, 0); parts.push(t.toNonIndexed());
+  for (let k = 0; k < 3; k++) { const a = k / 3 * TAU + 0.4, d = new THREE.Vector3(Math.cos(a) * 0.9, 1.3, Math.sin(a) * 0.9), L0 = d.length(), g = new THREE.CylinderGeometry(0.05, 0.1, L0, 6);
+    g.translate(0, L0 / 2, 0); g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(0, 1.35, 0); parts.push(g.toNonIndexed()); }
+  parts.forEach(g => { g.deleteAttribute('uv'); g.deleteAttribute('normal'); });
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+// 苹果：18 个挂在树冠外表面（中下部为主），按树冠半径 1.8 m 摆放、实例缩放随树冠；红色为主，少量黄绿
+function appleFruitGeo() {
+  const parts = [], R = mulberry32(712);
+  for (let k = 0; k < 18; k++) { const a = k * 2.39996, yy = -0.55 + 0.9 * (k + 0.5) / 18 + (R() - 0.5) * 0.1, rr = Math.sqrt(Math.max(0, 1 - yy * yy)), sh = 0.8 * 1.8;
+    const x = Math.cos(a) * rr * sh, z = Math.sin(a) * rr * sh, y = yy * sh * 0.8, f = new THREE.IcosahedronGeometry(0.055, 1); f.scale(1, 0.9, 1); f.translate(x, y, z);
+    const c = new THREE.Color(R() < 0.8 ? 0xc0202a : 0xb8b040).multiplyScalar(0.85 + R() * 0.25), ca = []; for (let i = 0; i < f.attributes.position.count; i++) ca.push(c.r, c.g, c.b); f.setAttribute('color', new THREE.Float32BufferAttribute(ca, 3)); f.deleteAttribute('uv'); parts.push(f); }
+  return THREE.BufferGeometryUtils.mergeGeometries(parts);
+}
 function buildCrops(scene) {
   const R = mulberry32(99), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), col = new THREE.Color();
   // 香蕉
@@ -5411,16 +5429,19 @@ function buildCrops(scene) {
   const bi = new THREE.InstancedMesh(bananaGeo(), bm, pts.length);
   pts.forEach((p, i) => { const s = 0.85 + R() * 0.4; m4.compose(ps.set(p[0], gh(p[0], p[1]), p[1]), q.setFromEuler(new THREE.Euler(0, R() * TAU, 0)), sc.set(s, s, s)); bi.setMatrixAt(i, m4); bi.setColorAt(i, col.setRGB(0.85 + R() * 0.25, 0.95 + R() * 0.15, 0.7 + R() * 0.15)); });
   bi.castShadow = true; bi.receiveShadow = true; scene.add(bi);
+  { const bb = new THREE.InstancedMesh(bananaBunchGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }), pts.length), mm = new THREE.Matrix4();   // 果串与蕉蕾：与植株同一变换
+    for (let i = 0; i < pts.length; i++) { bi.getMatrixAt(i, mm); bb.setMatrixAt(i, mm); } bb.castShadow = true; bb.receiveShadow = true; scene.add(bb); }
   for (const p of pts) collC(p[0], p[1], 0.3);
   // 苹果树
   const orch = L.orchard, apples = [];
   for (let x = 56; x < 132; x += 5) for (let z = -122; z < -99; z += 5) if (pointInPoly(x, z, orch.map(p => [p[0] + (p[0] > 90 ? 0 : 0), p[1]])) && Math.hypot(x - 100, z + 110) < 60) apples.push([x + (R() - 0.5), z + (R() - 0.5)]);
   const acore = foliageMaterial(); acore.color.setHex(0x345c26);
-  const am = new THREE.InstancedMesh(crownCardsGeo(5.5, { lobes: 2, cards: 14, cell: 4, cardSize: 1.05 }), [acore, leafMaterial(VEG_ATLAS)], apples.length);
-  const tg = new THREE.CylinderGeometry(0.12, 0.16, 1.4, 6); tg.translate(0, 0.7, 0);
-  const at = new THREE.InstancedMesh(tg, std(0x5b4636, 0.9), apples.length);
-  apples.forEach((p, i) => { const y = gh(p[0], p[1]), r = 1.6 + R() * 0.4; m4.compose(ps.set(p[0], y + 2.3, p[1]), q.setFromEuler(new THREE.Euler(0, R() * TAU, 0)), sc.set(r, r * 0.95, r)); am.setMatrixAt(i, m4); am.setColorAt(i, col.setRGB(0.9, 1, 0.85)); m4.compose(ps.set(p[0], y, p[1]), q.identity(), sc.set(1, 1, 1)); at.setMatrixAt(i, m4); });
-  am.castShadow = at.castShadow = true; am.receiveShadow = true; scene.add(am); scene.add(at);
+  // 树冠不要实心内核（与灌木同理，面片之间会露出一块光滑绿包）；树干分出三根主枝伸进树冠；冠面挂满红苹果
+  const am = new THREE.InstancedMesh(crownCardsGeo(5.5, { cards: 20, inner: 8, cell: 4, cardSize: 1.0, core: false }), [acore, leafMaterial(VEG_ATLAS)], apples.length);
+  const at = new THREE.InstancedMesh(appleTrunkGeo(), std(0x5b4636, 0.9), apples.length), af = new THREE.InstancedMesh(appleFruitGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42 }), apples.length);
+  apples.forEach((p, i) => { const y = gh(p[0], p[1]), r = 1.6 + R() * 0.4, rot = R() * TAU; q.setFromEuler(new THREE.Euler(0, rot, 0)); m4.compose(ps.set(p[0], y + 2.3, p[1]), q, sc.set(r, r * 0.95, r)); am.setMatrixAt(i, m4); am.setColorAt(i, col.setRGB(0.9, 1, 0.85));
+    m4.compose(ps.set(p[0], y, p[1]), q, sc.set(1, 1, 1)); at.setMatrixAt(i, m4); m4.compose(ps.set(p[0], y + 2.3, p[1]), q, sc.set(r / 1.8, r * 0.95 / 1.8, r / 1.8)); af.setMatrixAt(i, m4); });
+  am.castShadow = at.castShadow = af.castShadow = true; am.receiveShadow = true; af.receiveShadow = true; scene.add(am); scene.add(at); scene.add(af);
   for (const p of apples) collC(p[0], p[1], 0.25);
   // ---------------- 蔬菜基地：按畦种植七种作物；大棚内番茄吊蔓与草莓 ----------------
   const VT = ['lettuce', 'cabbage', 'tomato', 'carrot', 'corn', 'eggplant', 'scallion'], lists = {}; VT.forEach(k => lists[k] = []);
@@ -5467,8 +5488,105 @@ function buildCrops(scene) {
   inst(solid(new THREE.IcosahedronGeometry(0.025, 0).translate(0.08, 0.14, 0.03), 0xe0202a), vcMat, ghS, p => ({ y: g_(p[0], p[1]), rot: p[2] * 7, sx: 1, sy: 1 }));
   for (let i = 0; i < gh0.n; i++) if (i % 2 === 0) for (let r = 0; r < 4; r++) { const x = gh0.x0 + i * (gh0.w + gh0.gap) + 1.35 + r * 1.9; const g = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, gh0.len - 2, 4), M.galv); g.rotation.x = Math.PI / 2; g.position.set(x, 5.9 + 2.1, gh0.z0 + gh0.len / 2); scene.add(g); }
   const vp = []; for (const k of VT) vp.push(...lists[k]);
-  return { bananas: pts.length, apples: apples.length, veg: vp.length, greenhouse: ghT.length + ghS.length };
+  const vines = buildVineyardPlants(scene);
+  return { bananas: pts.length, apples: apples.length, veg: vp.length, greenhouse: ghT.length + ghS.length, vines };
 }
+// ======================= 葡萄园：篱架式栽培（按实物结构） =======================
+// 每行：木立柱（约 6.4 m 一根，两端为加粗的斜撑端柱 + 地锚拉线）+ 四道铁丝（0.85 m 结果铁丝、1.2/1.55/1.9 m 护蔓铁丝）
+// 每 1.45 m 一株葡萄：弯曲老藤主干 + 沿结果铁丝左右伸出的两条单臂 + 竖直新梢；叶幕为 0.95～2.0 m 高的一堵葡萄叶墙（掌状三裂叶）；
+// 结果区（0.55～0.85 m）叶片已摘除，紫黑色果穗挂在主蔓下方，行间可以直接看见
+function vineTrunkGeo() {   // 原点在地面，主蔓沿 ±z（沿行方向）
+  const parts = [], R = mulberry32(611), bark = new THREE.Color(0x5a4432), shoot = new THREE.Color(0x6f8f3a);
+  const col = (g, c) => { g = g.index ? g.toNonIndexed() : g; const a = []; for (let i = 0; i < g.attributes.position.count; i++) { const k = 0.85 + R() * 0.3; a.push(c.r * k, c.g * k, c.b * k); } g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const seg = (a, b, r0, r1, c, n = 6) => { const d = new THREE.Vector3().subVectors(b, a), L0 = d.length(), g = new THREE.CylinderGeometry(r1, r0, L0, n, 1, true); g.translate(0, L0 / 2, 0);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))); g.translate(a.x, a.y, a.z); parts.push(col(g, c)); };
+  // 弯曲主干：地面 → 0.3 → 0.6 → 0.82，略微扭动
+  const P = [[0, -0.02, 0], [0.03, 0.3, 0.02], [-0.02, 0.6, -0.03], [0, 0.84, 0]].map(p => new THREE.Vector3(...p));
+  for (let i = 0; i < 3; i++) seg(P[i], P[i + 1], 0.05 - i * 0.006, 0.044 - i * 0.006, bark);
+  const knob = new THREE.SphereGeometry(0.045, 6, 4); knob.translate(0, 0.84, 0); parts.push(col(knob, bark));
+  // 左右单臂：沿结果铁丝（0.85）水平伸出 0.68 m，末端略下垂；臂上每 0.17 m 一根新梢竖直向上穿过护蔓铁丝
+  for (const s of [-1, 1]) {
+    const A = [[0, 0.84, 0], [0, 0.87, s * 0.25], [0.01, 0.86, s * 0.5], [0, 0.84, s * 0.68]].map(p => new THREE.Vector3(...p));
+    for (let i = 0; i < 3; i++) seg(A[i], A[i + 1], 0.03 - i * 0.005, 0.025 - i * 0.005, bark, 5);
+    for (let k = 1; k <= 4; k++) { const z = s * k * 0.17, x0 = (R() - 0.5) * 0.04; seg(new THREE.Vector3(x0, 0.86, z), new THREE.Vector3(x0 + (R() - 0.5) * 0.12, 1.95 + R() * 0.1, z + (R() - 0.5) * 0.1), 0.009, 0.006, shoot, 3); }
+  }
+  const g = THREE.BufferGeometryUtils.mergeGeometries(parts); g.computeVertexNormals(); return g;
+}
+function vineCanopyGeo() {   // 叶幕：叶片面片竖直排成一堵叶墙（两侧外表面 + 中间一层），覆盖 1.45 m 行长
+  const pos = [], nrm = [], col = [], uv = [], idx = [], R = mulberry32(612), [u0, v0, u1, v1] = ATLAS_UV(6);
+  const quad = (c, n, s) => { const up = new THREE.Vector3(0, 1, 0), t = new THREE.Vector3().crossVectors(up, n).normalize(), b = new THREE.Vector3().crossVectors(n, t).normalize(), base = pos.length / 3, roll = (R() - 0.5) * 1.2;
+    const T = t.clone().multiplyScalar(Math.cos(roll)).addScaledVector(b, Math.sin(roll)), B = b.clone().multiplyScalar(Math.cos(roll)).addScaledVector(t, -Math.sin(roll));
+    for (const [a, bb, uu, vv] of [[-1, -1, u0, v0], [1, -1, u1, v0], [1, 1, u1, v1], [-1, 1, u0, v1]]) { const p = c.clone().addScaledVector(T, a * s / 2).addScaledVector(B, bb * s / 2); pos.push(p.x, p.y, p.z); nrm.push(n.x * 0.7, 0.5, n.z * 0.7); const sh = 0.6 + 0.45 * clamp((p.y - 0.9) / 1.1, 0, 1); col.push(sh, sh, sh); uv.push(uu, vv); }
+    idx.push(base, base + 1, base + 2, base, base + 2, base + 3); };
+  for (let k = 0; k < 30; k++) {
+    const side = k % 3 === 2 ? 0 : (k % 3 ? 1 : -1), y = 1.0 + R() * 1.0, z = (R() - 0.5) * 1.45;
+    const x = side * (0.16 + R() * 0.1) + (side ? 0 : (R() - 0.5) * 0.1), n = new THREE.Vector3(side || (R() < 0.5 ? -1 : 1), (R() - 0.3) * 0.8, (R() - 0.5) * 0.9).normalize();
+    quad(new THREE.Vector3(x, y, z), n, 0.42 + R() * 0.18);
+  }
+  // 叶幕顶部几片向上翻的叶片，免得从高处看到一条直线
+  for (let k = 0; k < 6; k++) quad(new THREE.Vector3((R() - 0.5) * 0.3, 2.0 + R() * 0.08, (R() - 0.5) * 1.3), new THREE.Vector3((R() - 0.5) * 0.6, 1, (R() - 0.5) * 0.6).normalize(), 0.4);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.normalizeNormals?.(); return g;
+}
+function grapeBunchGeo() {   // 果穗：原点在穗梗顶端，向下呈倒圆锥，长约 0.2 m；果粒为法线取径向的小八面体（看上去是圆的）
+  const parts = [], R = mulberry32(613);
+  const stem = new THREE.CylinderGeometry(0.004, 0.004, 0.08, 3, 1, true); stem.translate(0, -0.04, 0); { const a = []; for (let i = 0; i < stem.attributes.position.count; i++) a.push(0.35, 0.42, 0.2); stem.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); stem.deleteAttribute('uv'); parts.push(stem.toNonIndexed()); }
+  const layers = [[-0.07, 0.045, 7], [-0.1, 0.05, 7], [-0.13, 0.042, 6], [-0.16, 0.032, 5], [-0.19, 0.02, 3], [-0.215, 0, 1]];
+  layers.forEach(([y, r, n], li) => { for (let k = 0; k < n; k++) {
+    const a = k / n * TAU + li * 0.7, b = new THREE.OctahedronGeometry(0.0165, 0), cx = Math.cos(a) * r, cz = Math.sin(a) * r, cy = y + (R() - 0.5) * 0.01;
+    const p = b.attributes.position, nr = []; for (let i = 0; i < p.count; i++) { const v = new THREE.Vector3(p.getX(i), p.getY(i), p.getZ(i)).normalize(); nr.push(v.x, v.y, v.z); }
+    b.setAttribute('normal', new THREE.Float32BufferAttribute(nr, 3)); b.scale(1, 1.12, 1); b.translate(cx, cy, cz); b.deleteAttribute('uv');
+    const sh = 0.8 + R() * 0.35, a2 = []; for (let i = 0; i < p.count; i++) a2.push(0.36 * sh, 0.2 * sh, 0.42 * sh); b.setAttribute('color', new THREE.Float32BufferAttribute(a2, 3)); parts.push(b);
+  } });
+  parts.forEach(g => { if (!g.attributes.normal) g.computeVertexNormals(); });
+  return THREE.BufferGeometryUtils.mergeGeometries(parts);
+}
+function buildVineyardPlants(scene) {
+  const { xs, z0, z1 } = vineRows(), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), R = mulberry32(614);
+  const posts = [], wires = [], vines = [], bunches = [], anchors = [];
+  const nP = 10, WY = [0.85, 1.2, 1.55, 1.9];
+  for (const x of xs) {
+    const P = []; for (let k = 0; k <= nP; k++) { const z = lerp(z0, z1, k / nP); P.push([x, gh(x, z), z, k === 0 || k === nP]); }
+    for (const p of P) posts.push(p);
+    for (const e of [P[0], P[nP]]) { const dz = e === P[0] ? -1.4 : 1.4, az = e[2] + dz; anchors.push([[e[0], e[1] + 1.85, e[2]], [e[0], gh(e[0], az) + 0.02, az]]); }
+    for (let k = 0; k < nP; k++) for (const wy of WY) wires.push([[x, P[k][1] + wy, P[k][2]], [x, P[k + 1][1] + wy, P[k + 1][2]]]);
+    for (let z = z0 + 0.8; z < z1 - 0.6; z += 1.45) {
+      const y = gh(x, z), flip = R() < 0.5; vines.push([x, y, z, flip ? Math.PI : 0, 0.95 + R() * 0.1]);
+      for (let b = 0; b < 3; b++) { const bz = z + (b - 1) * 0.42 + (R() - 0.5) * 0.12, bx = x + (R() < 0.5 ? -1 : 1) * (0.05 + R() * 0.07); bunches.push([bx, y + 0.8 - R() * 0.05, bz, R() * TAU, 0.85 + R() * 0.35]); }
+    }
+  }
+  const wood = new THREE.MeshStandardMaterial({ color: 0x7a6248, roughness: 0.9 });
+  // 立柱：普通柱 0.09 方，端柱 0.14 方并向外斜 8°
+  const pg = new THREE.BoxGeometry(1, 1, 1); pg.translate(0, 0.5, 0);
+  const pm = new THREE.InstancedMesh(pg, wood, posts.length);
+  posts.forEach((p, i) => { const end = p[3], w = end ? 0.14 : 0.09, h = end ? 2.25 : 2.15, tilt = end ? (p[2] < (z0 + z1) / 2 ? -0.14 : 0.14) : 0;
+    q.setFromEuler(new THREE.Euler(tilt, 0, 0)); m4.compose(ps.set(p[0], p[1] - 0.25, p[2]), q, sc.set(w, h, w)); pm.setMatrixAt(i, m4); });
+  pm.castShadow = true; pm.receiveShadow = true; scene.add(pm);
+  // 铁丝与地锚拉线：单位长度细圆柱，按两端点定向
+  const wg = new THREE.CylinderGeometry(0.004, 0.004, 1, 3, 1, true); wg.translate(0, 0.5, 0);
+  const segs = wires.concat(anchors), wm = new THREE.InstancedMesh(wg, new THREE.MeshStandardMaterial({ color: 0x9aa0a4, roughness: 0.4, metalness: 0.7 }), segs.length), d = new THREE.Vector3();
+  segs.forEach(([a, b], i) => { d.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L0 = d.length(); q.setFromUnitVectors(up, d.normalize()); m4.compose(ps.set(...a), q, sc.set(1, L0, 1)); wm.setMatrixAt(i, m4); });
+  scene.add(wm);
+  const astake = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.25, 0.05).translate(0, 0.05, 0), wood, anchors.length);
+  anchors.forEach(([, b], i) => { m4.compose(ps.set(...b), q.identity(), sc.set(1, 1, 1)); astake.setMatrixAt(i, m4); }); scene.add(astake);
+  // 葡萄藤：主干 + 单臂 + 新梢（顶点色），叶幕（葡萄叶贴图），果穗
+  const cm = new THREE.InstancedMesh(vineCanopyGeo(), leafMaterial(VEG_ATLAS), vines.length), col = new THREE.Color();
+  vines.forEach((v, i) => { q.setFromEuler(new THREE.Euler(0, v[3], 0)); m4.compose(ps.set(v[0], v[1], v[2]), q, sc.set(1, 1, 1)); cm.setMatrixAt(i, m4); cm.setColorAt(i, col.setRGB(0.82 + R() * 0.2, 0.95 + R() * 0.1, 0.72 + R() * 0.12)); });
+  cm.castShadow = true; cm.receiveShadow = true; scene.add(cm);
+  // 主干与果穗藏在叶幕下、尺寸小（果穗约 0.2 m），按 24 m 网格分块，渲染前只显示离相机 120 m 以内的块；叶幕、立柱、铁丝全程显示，远看葡萄园外观不变
+  const lod = [], tgeo = vineTrunkGeo(), tmat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), bgeo = grapeBunchGeo(), bmat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.0 });
+  const chunked = (arr, geo, mat, mtx) => { const cells = new Map(); for (const a of arr) { const k = Math.floor(a[0] / 24) + ',' + Math.floor(a[2] / 24); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(a); }
+    for (const list of cells.values()) { const im = new THREE.InstancedMesh(geo, mat, list.length); let cx = 0, cz = 0; list.forEach((a, i) => { im.setMatrixAt(i, mtx(a)); cx += a[0]; cz += a[2]; });
+      im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); scene.add(im); lod.push({ m: im, x: cx / list.length, z: cz / list.length }); } };
+  chunked(vines, tgeo, tmat, v => m4.compose(ps.set(v[0], v[1], v[2]), q.setFromEuler(new THREE.Euler(0, v[3], 0)), sc.set(1, v[4], 1)));
+  chunked(bunches, bgeo, bmat, b => m4.compose(ps.set(b[0], b[1], b[2]), q.setFromEuler(new THREE.Euler((R() - 0.5) * 0.2, b[3], (R() - 0.5) * 0.2)), sc.set(b[4], b[4], b[4])));
+  VINEYARD = { rows: xs.length, posts: posts.length, wires: wires.length, vines: vines.length, bunches: bunches.length, range: 120, lod, meshes: { posts: pm, wires: wm, canopy: cm } };
+  const prev = scene.onBeforeRender;
+  scene.onBeforeRender = function (r, sc_, cam, rt) { prev.call(this, r, sc_, cam, rt); if (rt) return;
+    const R2 = (VINEYARD.range + 17) ** 2, c = cam.position; for (const o of lod) o.m.visible = (o.x - c.x) ** 2 + (o.z - c.z) ** 2 < R2; };
+  return VINEYARD;
+}
+let VINEYARD = null;
 // ======================= 水田：水面 + 成行稻丛 =======================
 function riceTexture() {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d'), R = mulberry32(4411);
@@ -8096,7 +8214,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; }, lounger }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, DORM, dormCall, updateDorm, dormY, boatFAction, BOAT_HULL, wToBoat, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA, get VEG_STRAW() { return VEG_STRAW; }, get VINEYARD() { return VINEYARD; }, lounger }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
