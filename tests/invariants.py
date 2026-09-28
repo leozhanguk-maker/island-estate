@@ -138,6 +138,11 @@ JS = r'''() => {
       if (h && h.distance < 2.0) fails.push(`别墅楼梯（起步 ${r3(w.x0)}, ${r3(w.z0)}，高 ${r3(w.y0)}）起步前只有 ${r3(h.distance)} m 就碰到构件，应 ≥ 2 m`);
       const o2 = new TH.Vector3(w.x1 - dx / l * 0.05, w.y1 + 1.0, w.z1 - dz / l * 0.05), h2 = new TH.Raycaster(o2, new TH.Vector3(-dx / l, 0, -dz / l), 0, 5).intersectObjects(__statics.groups, true)[0];
       if (h2 && h2.distance < 2.0) fails.push(`别墅楼梯（到顶 ${r3(w.x1)}, ${r3(w.z1)}，高 ${r3(w.y1)}）迎面只有 ${r3(h2.distance)} m 就碰到构件，应 ≥ 2 m`); } }
+  // ---- 2l. 灌木不再有实心内核（V-018：原来 8 张叶片面片围着一个光滑绿球），约三分之一的灌木换成野草莓丛 ----
+  { const v = I.veg, nS = v.shrubs - v.strawPatches; let sm = null; I.scene.traverse(o => { if (o.isInstancedMesh && o.count === nS && Array.isArray(o.material) && o.geometry.groups.length === 2) sm = o; });
+    if (!sm) fails.push(`找不到灌木实例网格（灌木 ${v.shrubs}，草莓丛 ${v.strawPatches}）`); else if (sm.geometry.groups[0].count > 0) fails.push(`灌木几何体仍有实心内核（${sm.geometry.groups[0].count / 3} 个三角形），近看是一大块绿包`);
+    const ratio = v.strawPatches / v.shrubs; if (!(ratio > 0.28 && ratio < 0.39)) fails.push(`草莓丛占灌木 ${r3(ratio)}，应约为三分之一`);
+    if (!(v.strawberries >= v.strawPatches * 4)) fails.push(`草莓 ${v.strawberries} 株 / ${v.strawPatches} 丛，每丛应至少 4 株`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));
   let tris = 0; I.scene.traverse(o => { if (o.isMesh && o.visible) { const g = o.geometry, n = g.index ? g.index.count / 3 : g.attributes.position.count / 3; tris += n * (o.isInstancedMesh ? o.count : 1); } });

@@ -100,6 +100,25 @@ function vegScatter(X, H, NR, QS) {
   }
   return { trees, shrubs, excl };
 }
+// 草莓植株（原点在地面，约 0.3 m 高、0.6 m 宽）：6 片复叶的低矮叶丛 + 4 颗果（3 红 1 青白，锥形、带绿色萼片）+ 2 朵白花
+let VEG_STRAW = null;
+function strawberryPlantGeo() {
+  const leaves = frondGeo(6, 0.3, 7, 0.15, 0.03);
+  const solidC = (g, c) => { g = g.index ? g.toNonIndexed() : g; const C = new THREE.Color(c), a = []; for (let i = 0; i < g.attributes.position.count; i++) a.push(C.r, C.g, C.b); g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); if (g.attributes.uv) g.deleteAttribute('uv'); return g; };
+  const parts = [];
+  [[0.17, 0.3, 0xd41c24], [0.2, 2.4, 0xc81822], [0.14, 4.3, 0xdc2a26], [0.19, 5.5, 0xe6e2b0]].forEach(([d, a, c], k) => {
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, y = 0.055 + (k % 2) * 0.02;
+    const b = new THREE.ConeGeometry(0.032, 0.065, 5, 1, true); b.rotateX(Math.PI); b.translate(x, y - 0.03, z); parts.push(solidC(b, c));   // 果实尖端朝下
+    const cx = new THREE.ConeGeometry(0.036, 0.014, 4, 1, true); cx.translate(x, y + 0.005, z); parts.push(solidC(cx, 0x3f7a2a));          // 萼片
+  });
+  for (const [d, a] of [[0.1, 1.3], [0.22, 3.6]]) {
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, f = new THREE.CircleGeometry(0.022, 5); f.rotateX(-Math.PI / 2); f.translate(x, 0.1, z); parts.push(solidC(f, 0xfbfaf4));
+    const c = new THREE.CircleGeometry(0.008, 4); c.rotateX(-Math.PI / 2); c.translate(x, 0.101, z); parts.push(solidC(c, 0xe8c230));
+  }
+  parts.forEach(g => { if (g.attributes.normal) g.deleteAttribute('normal'); });
+  const fruit = THREE.BufferGeometryUtils.mergeGeometries(parts); fruit.computeVertexNormals();
+  return { leaves, fruit, fruitMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide }) };
+}
 function buildVegetation(X, scene, QS) {
   const H = X.H, NR = X.normals;
   const cell = (x, z) => Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1));
@@ -118,7 +137,7 @@ function buildVegetation(X, scene, QS) {
     banyan: [banyanTreeGeo(1, { clumps: 10, flat: 0.42, spread: 0.82, cell: 10, hb: 0.68, roots: 9 }), banyanTreeGeo(2, { clumps: 9, flat: 0.38, spread: 0.85, cell: 10, hb: 0.72, roots: 7 })],
     ficusRound: [banyanTreeGeo(3, { clumps: 8, flat: 0.75, spread: 0.55, cell: 10, cards: 7, hb: 0.72, roots: 1 })],
     ficusWeep: [banyanTreeGeo(4, { clumps: 9, flat: 0.6, spread: 0.65, cell: 11, cards: 7, hb: 0.8, roots: 2 })],
-    shrub: [crownCardsGeo(3.3, { lobes: 2, detail: 0, flat: 0.7, cards: 8, cell: 2, cardSize: 1.15 })],
+    shrub: [crownCardsGeo(3.3, { flat: 0.7, cards: 16, inner: 6, cell: 2, cardSize: 1.0, core: false })],   // 不要实心内核（原来 8 张面片围着一个光滑绿球，近看是一大块绿包）
   };
   const WOOD = { banyan: [banyanWoodGeo(1, 14), banyanWoodGeo(2, 10)], ficus: [banyanWoodGeo(3, 3)] };
   const lists = { palm: [[], [], [], []], banyan: [[], []], ficusRound: [[]], ficusWeep: [[]], shrub: [[]] }, wood = { banyan: [[], []], ficus: [[]] };
@@ -139,7 +158,12 @@ function buildVegetation(X, scene, QS) {
     lists[kind][v].push({ x: t[0], y: t[1], z: t[2], sx: Rc, sy: Rc * (0.92 + R() * 0.16), rot, tint });    // 整株：地面为原点，均匀缩放
     treeColl.push([t[0], t[2], 0.1 * Rc + 0.08]);
   }
-  for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3]; lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
+  const straw = []; let strawPatches = 0;
+  for (const t of shrubs) { const R = vegCell(t[0], t[2], 3); const r = (1.1 + R() * 1.6) * t[3];
+    // 随机三分之一的灌木换成一丛野草莓（按格点单独取随机数，不影响其余灌木的布置）
+    { const Rs = vegCell(t[0], t[2], 13); if (Rs() < 1 / 3) { const k = 4 + Math.floor(r * 1.5), rad = 0.2 + r * 0.15;   // 植株挨得很近，叶片相互交叠成一丛
+      for (let i = 0; i < k; i++) { const a = i * 2.39996 + Rs() * 0.6, d = rad * Math.sqrt((i + 0.5) / k), x = t[0] + Math.cos(a) * d, z = t[2] + Math.sin(a) * d; straw.push([x, gh(x, z), z, Rs()]); } strawPatches++; continue; } }
+    lists.shrub[0].push({ x: t[0], y: t[1] + r * 0.3, z: t[2], sx: r, sy: r * (0.6 + R() * 0.35), rot: R() * TAU, tint: TINT[Math.floor(R() * TINT.length)] }); }
   const out = [];
   for (const k in lists) lists[k].forEach((L_, vi) => {
     if (!L_.length) return;
@@ -153,6 +177,22 @@ function buildVegetation(X, scene, QS) {
     L_.forEach((o, i) => { eu.set(0, o.rot, 0); q.setFromEuler(eu); m4.compose(ps.set(o.x, o.y, o.z), q, sc.set(o.sx, o.sy, o.sx)); tm.setMatrixAt(i, m4); });
     tm.castShadow = true; tm.receiveShadow = true; scene.add(tm);
   });
+  // 野草莓：每株一丛三出复叶 + 垂在叶下的红果（成熟）与青白果、几朵白花
+  // 按 32 m 网格分块，每块一对实例网格；每次渲染前只显示离相机 90 m 以内的块（草莓高约 0.3 m，90 m 外已不足一个像素），全岛近 8000 株不必每帧全画
+  if (straw.length) {
+    const sg = strawberryPlantGeo(), cells = new Map(), CS = 32;
+    for (const p of straw) { const k = Math.floor(p[0] / CS) + ',' + Math.floor(p[2] / CS); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(p); }
+    VEG_STRAW = { n: straw.length, chunks: [], range: 90 };
+    for (const [k, arr] of cells) {
+      const lm = new THREE.InstancedMesh(sg.leaves, leafMat, arr.length), fm = new THREE.InstancedMesh(sg.fruit, sg.fruitMat, arr.length); let cx = 0, cz = 0;
+      arr.forEach((p, i) => { const s = 0.9 + p[3] * 0.45; eu.set(0, p[3] * 40, 0); q.setFromEuler(eu); m4.compose(ps.set(p[0], p[1] - 0.01, p[2]), q, sc.set(s, s, s)); lm.setMatrixAt(i, m4); fm.setMatrixAt(i, m4); lm.setColorAt(i, col.setRGB(0.8 + p[3] * 0.2, 1.0, 0.75)); cx += p[0]; cz += p[2]; });
+      lm.castShadow = false; lm.receiveShadow = true; fm.receiveShadow = true; lm.computeBoundingSphere(); fm.computeBoundingSphere(); scene.add(lm); scene.add(fm);
+      VEG_STRAW.chunks.push({ x: cx / arr.length, z: cz / arr.length, leaves: lm, fruit: fm, n: arr.length });
+    }
+    const prev = scene.onBeforeRender;
+    scene.onBeforeRender = function (r, sc_, cam, rt) { prev.call(this, r, sc_, cam, rt); if (rt) return;   // 离屏渲染（海面 FFT 等）不改
+      const R2 = (VEG_STRAW.range + CS * 0.72) ** 2, c = cam.position; for (const ch of VEG_STRAW.chunks) { const v = (ch.x - c.x) ** 2 + (ch.z - c.z) ** 2 < R2; ch.leaves.visible = ch.fruit.visible = v; } };
+  }
   // 别墅北门扶桑（开红花）
   if (typeof HIBISCUS !== 'undefined' && HIBISCUS.length) {
     const hm = new THREE.InstancedMesh(crownCardsGeo(9.9, { lobes: 2, detail: 0, flat: 0.85, cards: 12, cell: 9, cardSize: 1.1 }), mats, HIBISCUS.length);
@@ -202,7 +242,7 @@ function buildVegetation(X, scene, QS) {
   rocks.forEach((r, i) => { const R = vegCell(r[0], r[2], 9); m4.compose(ps.set(r[0], r[1] + r[3] * 0.15, r[2]), q.setFromEuler(new THREE.Euler(R() * 0.5, R() * TAU, R() * 0.5)), sc.set(r[3], r[3] * (0.7 + R() * 0.5), r[3] * (0.8 + R() * 0.4))); rm.setMatrixAt(i, m4); rm.setColorAt(i, col.setHex(0x6e675c).lerp(new THREE.Color(0x9a9282), R())); });
   rm.castShadow = true; rm.receiveShadow = true; scene.add(rm);
   for (const r of rocks) if (r[3] > 0.7) collC(r[0], r[2], r[3] * 0.85);
-  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, rocks: rocks.length, ferns: ferns.length };
+  return { banyanAt: lists.banyan[0].slice(0, 6).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), ficusAt: lists.ficusRound[0].slice(0, 4).map(o => [+o.x.toFixed(1), +o.z.toFixed(1), +o.y.toFixed(1), +o.sx.toFixed(1)]), trees: trees.length, palms: palmColl.length, ficus: treeColl.length, shrubs: shrubs.length, strawberries: straw.length, strawPatches, rocks: rocks.length, ferns: ferns.length };
 }
 // 盆地内空地判定（不压占任何功能区）
 function basinFree(x, z) {
