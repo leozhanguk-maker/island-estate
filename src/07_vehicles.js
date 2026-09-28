@@ -96,7 +96,7 @@ function buildYacht() {
   box(Y, 1.2, 2.2, 0.35, M.yachtWhite, 1.5, 11.6, 0); box(Y, 0.3, 0.2, 3.2, M.metalDark, 1.5, 12.7, 0);
   cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, 0.9, 12); cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, -0.9, 12);
   // 日光甲板躺椅（后段遮阳顶上）
-  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); }
+  for (const z of [-2.4, -0.8, 0.8, 2.4]) { lounger(Y, -20.5, 7.88, z, -Math.PI / 2, 0xf2eee6); YL.rects.push({ x: -20.5, z, hw: 1.05, hd: 0.38, rot: 0, bottom: 7.4, top: 9 }); ySeat(-20.5, 7.88 + 0.42, z, Math.PI / 2, 'lie'); YL.seats.at(-1).recline = LOUNGER_BACK; }
   // 日光甲板按摩池
   cyl(Y, 1.25, 1.3, 0.55, M.white, -9.5, 7.93, 0, 24); cyl(Y, 1.1, 1.1, 0.05, M.pool, -9.5, 8.2, 0, 24); YL.rects.push({ x: -9.5, z: 0, hw: 1.3, hd: 1.3, rot: 0, bottom: 7.3, top: 9 });
   // ---- 楼梯：主甲板 → 上甲板、上甲板后部 → 日光甲板；船尾游泳平台 → 后甲板（下甲板已改为舱盖） ----
@@ -152,7 +152,7 @@ function buildYacht() {
   YL.walks.push({ kind: 'poly', pts: rectPts(-24.7, -18.8, -4.2, 4.2), y: 2.26 });
   for (const sz of [-1, 1]) YL.walks.push({ kind: 'ramp', x0: -19.2, z0: sz * 4.2, x1: 13.8, z1: sz * 4.15, hw: 0.33, y0: 2.26, y1: 3.05 });
   YL.walks.push({ kind: 'ramp', x0: 13.4, z0: 0, x1: 21, z1: 0, hw: 3.2, y0: 3.05, y1: 3.55 });
-  YL.walks.push({ kind: 'poly', pts: rectPts(-27.4, -24.9, -4.1, 4.1), y: 0.9 });
+  YL.walks.push({ kind: 'poly', pts: rectPts(-27.55, -24.9, -4.1, 4.1), y: 0.9 });   // 伸出尾缘挡墙（-27.45）之外：原先止于 -27.4，挡墙前 5 cm 的缝里脚下只有浮台（0.5），人会掉到浮台上、离开游艇
   // 后甲板：左右两组沙发 + 柚木茶几
   sofaF(Y, -21.2, 2.26, -3.5, 0, 3.0, 0xefe9dc, [0x2f5f86, 0xd9c29a]); sofaF(Y, -21.2, 2.26, 3.5, Math.PI, 3.0, 0xefe9dc, [0x2f5f86, 0xd9c29a]); tableF(Y, -21.2, 2.26, 0, 0, 1.6, 0.8, 0.42, M.teak, M.alu);
   YL.rects.push({ x: -21.2, z: -3.5, hw: 1.5, hd: 0.45, rot: 0, bottom: 1.8, top: 3.5 }, { x: -21.2, z: 3.5, hw: 1.5, hd: 0.45, rot: 0, bottom: 1.8, top: 3.5 }, { x: -21.2, z: 0, hw: 0.8, hd: 0.4, rot: 0, bottom: 1.8, top: 3.5 });
@@ -272,7 +272,7 @@ function buildCybertruck() {
   { const roof = new THREE.Mesh(new THREE.PlaneGeometry(1.7, Wb * 0.82), std(0x14202a, 0.1, 0.2, { transparent: true, opacity: 0.55, side: THREE.DoubleSide })); roof.rotation.set(Math.PI / 2, 0, 0); roof.rotateY(Math.atan2(1.78 - 1.4, 1.65)); roof.position.set(-1.05, 1.6, 0); cab.add(roof); }
   box(cab, 0.55, 0.5, 0.55, std(0xf0ede6, 0.8), -0.2, 0.75, 0.42); box(cab, 0.12, 0.7, 0.55, std(0xf0ede6, 0.8), -0.5, 1.1, 0.42);
   box(cab, 1.5, 0.05, Wb * 0.9, dark, 0.2, 0.55, 0);
-  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
+  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', horn: 'car', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
   C.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return C;
 }
@@ -294,7 +294,7 @@ function buildTractor() {
     cyl(T, r * 0.6, r * 0.6, w + 0.02, M.yellow, x, r, z, 12, Math.PI / 2);
   }
   box(T, 0.3, 0.2, 0.7, dark, -1.35, 0.55, 0);          // 三点悬挂
-  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
+  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', horn: 'tractor', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
   T.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return T;
 }

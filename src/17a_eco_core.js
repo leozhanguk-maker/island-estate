@@ -11,6 +11,7 @@ const ecoRand = (a, b) => a + (b - a) * ECO_R();
 // 水域判定：淡水湖含湖岸 0.4 m（挺水植物）；闸内港口为水闸以北的泊港与港口沙滩前的海水；其余海水（含闸外峡谷）为外海
 function ecoZone(x, z) {
   if (lakeSD(x, z, L.lake, 0.1) > -0.4) return 'lake';
+  if (lakeSD(x, z, L.upperLake, 0.12) > -0.4) return 'upper';   // 瀑布上方的小水池
   if (gh(x, z) > 0.05) return null;
   return z < L.gateZ && z > 18 && Math.abs(x) < 75 ? 'lagoon' : 'ocean';
 }
@@ -39,10 +40,11 @@ function ecoShoreDist(x, z, R) {
 function ecoWhaleOk(x, z, minDepth) {
   return gh(x, z) < -minDepth && ecoIn('ocean', x, z) && !ecoGateArea(x, z) && ecoShoreDist(x, z, ECO_SHORE) >= ECO_SHORE;
 }
-const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : 0;
+const ecoLevel = (zone) => zone === 'lake' ? L.lake.level : zone === 'upper' ? L.upperLake.level : 0;
 // 按指定水域判定（每帧大量调用，不做完整分区判断）
 function ecoIn(zone, x, z) {
   if (zone === 'lake') return lakeSD(x, z, L.lake, 0.1) > 0.3;
+  if (zone === 'upper') return lakeSD(x, z, L.upperLake, 0.12) > 0.3;
   const lag = z < L.gateZ && z > 18 && Math.abs(x) < 75;
   return gh(x, z) < -0.3 && (zone === 'lagoon' ? lag : !lag);
 }
