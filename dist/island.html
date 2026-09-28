@@ -7620,9 +7620,9 @@ function ecoUnderwater(camera, under, kind, fog, renderer, uw) {
   }
 }
 
-// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边 =======================
+// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边，并在 2 分钟内跟着船游 =======================
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
-// 2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
+// 召唤期间各水域随船移动（ecoShowFollow）；2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
 // 游艇汽笛音色统一在 13b_horn.js
 function ecoHornSound() { hornSound('boat'); }
@@ -7654,16 +7654,34 @@ function ecoOceanShow(x, z) {
     if (ecoWhaleOk(px, pz, 20) && ecoShoreDist(px, pz, 36) >= 35 && ecoClearOfGate(px, pz, 36) && spots.every(s => Math.hypot(s.x - px, s.z - pz) > 25)) spots.push({ x: px, z: pz });
   }
   if (!spots.length) return '鸣笛：附近海水太浅，鲸鱼过不来，往深海开一点再试';
-  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz]); Z.on = undefined;
+  names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz, s.x - x, s.z - z]); Z.on = undefined;
     // 鲸群按编队位置在出现点重新集结（整体平移会把离队较远的个体带到岸边或峡谷里；编队最远约 23 m（幼鲸跟在母鲸旁），出现点离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m）
     for (const w of Z.whales || []) for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : s.x) + sl[0]; a.z = (f ? f.z : s.z) + sl[1]; } });
   ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
+// 跟船：召唤期间，各水域保持召唤时相对游艇的方位，追着船游：船开多快就跟多快（船速的 1.15 倍，落后时能追上），船停下（航速 < 0.3 m/s）鲸群鱼群也停下；
+// 新位置须仍满足鲸群可去的条件（深水、外海、离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m，P-017），不满足时原地等候，船开回深海再跟上
+function ecoShowFollow(dt) {
+  if (typeof BOAT === 'undefined' || !BOAT.g || ecoZone(BOAT.x, BOAT.z) !== 'ocean') return;
+  const sp = Math.abs(BOAT.v || 0); if (sp < 0.3) return;   // 船停鲸群停
+  const vmax = sp * 1.15 * dt;
+  for (const m of ECO_SHOW.moved) {
+    const Z = ECO.zones[m[0]], tx = BOAT.x + m[3], tz = BOAT.z + m[4]; let dx = tx - Z.center.x, dz = tz - Z.center.z; const d = Math.hypot(dx, dz);
+    if (d < 1.5) continue;
+    if (d > vmax) { dx *= vmax / d; dz *= vmax / d; }
+    const nx = Z.center.x + dx, nz = Z.center.z + dz;
+    m.okT = (m.okT || 0) - dt;
+    if (m.okT <= 0) { m.ok = ecoWhaleOk(nx, nz, 20) && ecoShoreDist(nx, nz, 36) >= 35 && ecoClearOfGate(nx, nz, 36); m.okT = 0.5; }   // 条件检查每 0.5 秒一次（每帧挪动不到 5 m，远小于 35 m 的余量）
+    if (!m.ok) continue;
+    ecoShiftZone(Z, dx, dz); m[1] += dx; m[2] += dz;
+  }
+}
 function ecoShowUpdate(dt) {
   if (!ECO_SHOW.moved) return;
   ECO_SHOW.t -= dt;
-  if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; }
+  if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; return; }
+  ecoShowFollow(dt);
 }
 // 游艇喇叭：驾驶时按 H，或在驾驶台按操控台上的红色按钮
 function boatHorn() { ecoHornSound(); const msg = ecoOceanShow(BOAT.x, BOAT.z); ecoToast(msg); return msg; }
