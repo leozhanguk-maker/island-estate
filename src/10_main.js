@@ -48,7 +48,7 @@ try {
   { const live = []; for (const g of statics) g.traverse(o => { if (o.isMesh && o.userData.live && !(o.parent && o.parent.userData.live)) live.push(o); }); live.forEach(o => { o.castShadow = !o.material.transparent; scene.attach(o); }); }
   flushBatches(scene);
   await stage(0.8, '雨林与作物');
-  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene);
+  const veg = buildVegetation(X, scene, QS); buildCrops(scene); veg.rice = buildRice(scene, QS).hills; buildPots(scene); buildMarine(scene, X); buildAnimals(scene); buildEcology(scene); buildEgrets(scene);
   await stage(0.92, '光影');
   // ---------------- 相机与视角 ----------------
   const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 3, 20000);
@@ -96,7 +96,7 @@ try {
     scene.fog = u ? fogWater : fogAir; sky.visible = !u; renderer.setClearColor(u ? fogWater.color : 0x000000);
     document.body.classList.toggle('under', u);
   }
-    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
+    if (DEBUG) { window.__fp = fp; window.__dbg = { HELI, HELI_SPOTS, updateHeli, heliAutoToggle, MARINE, updateMarine, ECO, ECO_LOOK, ECO_SHOW, buildEcology, updateEcology, ecoZone, ecoOceanShow, ecoShowUpdate, boatHorn, HORN, hornSound, SEATS, POTS, COLL, BOARDWALK, gh, G, L, INTERACT, GATE, ANIMALS, updateAnimals, DRIVE, updateDrive, exitCar, BOAT, DYN, updateBoat, syncBoat, carryOnBoat, startCruise, updateGate, EGRET, egretVisit, updateEgrets, egretPose, vegScatter, QS, ecoWhaleOk, ecoGateArea, ecoShoreDist, SHORE, SEA }; }
   const fpBtn = document.createElement('button'); fpBtn.type = 'button'; fpBtn.textContent = '第一人称漫游'; fpBtn.style.color = 'var(--accent)';
   fpBtn.onclick = () => { fp.enter(false); document.getElementById('fpgate').classList.add('show'); }; nav.appendChild(fpBtn);
   const hashParts = decodeURIComponent(location.hash.slice(1)).split(','); const hashView = VIEWS.findIndex(v => hashParts.includes(v.name));
@@ -160,6 +160,7 @@ try {
     if (grass) grass.update(fp);
     shadowFollow(t); underwaterCheck(); if (fp.on) fp.mapTick(t);
     updateAnimals(dt, fp.on ? fp.pos : null);
+    updateEgrets(dt, t, fp.on ? fp.pos : null, camera);
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateEcology(dt, t, camera, fp.on ? { x: st_.pos.x, y: camera.position.y, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 0.3), under: !!(w_ && camera.position.y < w_.level) } : null); }
     { const st_ = fp._st, w_ = fp.on ? fp._test.waterAt(st_.pos.x, st_.pos.z) : null; updateMarine(dt, t, fp.on ? { x: st_.pos.x, z: st_.pos.z, inWater: st_.mode === 'swim' || !!(w_ && w_.level - st_.feet > 1), under: camera.position.y < (w_ ? w_.level : -99), lagoon: st_.pos.z < L.gateZ && Math.abs(st_.pos.x) < 70 && st_.pos.z > 30 } : null); }
     if (updateGate(dt, fp)) renderer.shadowMap.needsUpdate = true;   // 水闸：开闸转移门顶上的人 + 门叶动画
