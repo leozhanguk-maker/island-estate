@@ -4,6 +4,7 @@
 #   P-007 离开舵位后船继续开/打转：页面内脚本，全速左满舵时按 E 离开舵位
 #   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致；宿舍楼传送点按用户指定位置 (14.7, 13.91, -132.0) 朝向 180°
 #   P-014 植被随机数按位置独立：把一小块林地挖成海，只有附近的树和灌木变化，12 m 以外的撒点完全不变
+#   载具喇叭：驾驶汽车、拖拉机、直升机、游艇时按 H 各自鸣笛（音色不同），ESC 暂停面板列出 H 键
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
@@ -54,6 +55,13 @@ VEG_JS = r'''() => { const D = __dbg, X = __island.X, G = D.G;
   const near = (l) => l.filter(p => Math.hypot(p[0] - c[0], p[2] - c[2]) < 6).length;
   return { c: [+c[0].toFixed(1), +c[2].toFixed(1)], trees: [a.trees.length, b.trees.length], shrubs: [a.shrubs.length, b.shrubs.length],
     sameTrees: far(a.trees) === far(b.trees), sameShrubs: far(a.shrubs) === far(b.shrubs), nearA: near(a.trees) + near(a.shrubs), nearB: near(b.trees) + near(b.shrubs) }; }'''
+HORN_JS = r'''() => { const D = __dbg, fp = __fp, out = {}; fp._st.on = true;
+  const press = () => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyH' })); };
+  const car = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'car'), tr = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'tractor');
+  for (const [name, v] of [['car', car], ['tractor', tr], ['heli', D.HELI], ['boat', D.BOAT]]) { D.HORN.last = null; D.DRIVE.active = v || null; press(); out[name] = D.HORN.last && D.HORN.last.kind; }
+  D.DRIVE.active = null; D.HORN.last = null; press(); out.walk = D.HORN.last && D.HORN.last.kind;
+  out.esc = [...document.querySelectorAll('#fpgate dt')].some(dt => dt.textContent.trim() === 'H' && /鸣笛/.test(dt.nextElementSibling.textContent));
+  return out; }'''
 READY = "document.getElementById('loading').classList.contains('done')"
 FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
   // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
@@ -99,6 +107,11 @@ def main():
     ok = 'err' not in r and r['sameTrees'] and r['sameShrubs'] and r['nearA'] > r['nearB']
     print(f"  {'✓' if ok else '✗'} P-014 局部地形改动只影响附近植被：在 {r.get('c')} 挖出半径 6 m 的水坑，附近撒点 {r.get('nearA')} → {r.get('nearB')}，"
           f"12 m 外树木{'不变' if r.get('sameTrees') else '整体错位'}、灌木{'不变' if r.get('sameShrubs') else '整体错位'}（树 {r.get('trees')}，灌木 {r.get('shrubs')}）" + (f"：{r['err']}" if 'err' in r else ''))
+    failed += 0 if ok else 1
+    with Session('#fp,still,q=low') as s:
+        r = s.js(HORN_JS)
+    ok = r['car'] == 'car' and r['tractor'] == 'tractor' and r['heli'] == 'heli' and r['boat'] == 'boat' and r['walk'] is None and r['esc']
+    print(f"  {'✓' if ok else '✗'} 载具喇叭：汽车 {r['car']}、拖拉机 {r['tractor']}、直升机 {r['heli']}、游艇 {r['boat']}，步行时按 H 不鸣笛（{r['walk']}），ESC 面板列出 H 键：{r['esc']}")
     failed += 0 if ok else 1
     with Session('#q=high,debug,noworker', size=(640, 360), ready=READY) as s:
         r = s.js(FALLBACK_JS)
