@@ -73,7 +73,7 @@ function bedF(p, x, y, z, ry, w = 1.8, L = 2.1, duvet = 0xf1ede4) {
   box(g, w + 0.1, 0.25, L + 0.1, wood, 0, 0.2, 0);
   box(g, w, 0.22, L, std(0xfafaf8, 0.9), 0, 0.43, 0);
   box(g, w + 0.06, 0.08, L * 0.7, std(duvet, 0.95), 0, 0.57, L * 0.15);
-  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.03);
+  box(g, w + 0.08, 0.3, 0.04, std(duvet, 0.95), 0, 0.43, L / 2 + 0.045);   // 被尾垂边：外皮比床架尾端再出 1.5 cm，不与床架端面共面
   box(g, w * 0.95, 0.03, 0.35, std(0x9aa7b0, 0.9), 0, 0.62, L * 0.15 - L * 0.35 + 0.2);
   for (const sx of [-1, 1]) { const pl = box(g, w / 2 - 0.15, 0.14, 0.4, std(0xffffff, 0.9), sx * w / 4, 0.62, -L / 2 + 0.3); pl.rotation.x = -0.2; }
   box(g, w + 0.2, 1.0, 0.12, std(0xcbbfae, 0.95), 0, 0.85, -L / 2 - 0.05);
@@ -329,8 +329,9 @@ function buildVilla() {
     }
   };
   // ---- 楼梯 S1：首层 → 二层室内（沿西侧） ----
-  const S1 = [-9.2, -8.0, -0.3, 6.3], S2 = [-5.75, -4.65, -2.4, 4.6], S3 = [7.9, 8.9, -1.9, 4.8];
-  stairs(V, toW, y0, -8.6, 6.3, -0.3, 0.13, 3.9, 1.1, { railSides: [1], openSides: [] });
+  // 三部楼梯两端都离正对的墙 ≥ 2 m：起步离背后的南墙内皮（原先只有 0.6～0.7 m，要侧身挤进墙与第一级之间才能上楼），到顶离迎面的墙或屋顶栏板；首层楼梯西侧保持原位
+  const S1 = [-9.2, -8.0, -1.8, 4.8], S2 = [-5.75, -4.65, -2.75, 3.0], S3 = [7.9, 8.9, -3.25, 3.3];
+  stairs(V, toW, y0, -8.6, 4.8, -1.8, 0.13, 3.9, 1.1, { railSides: [1], openSides: [] });
   slab(-10.9, 10.9, -6.9, 6.9, 3.62, 0.04, M.ceiling, S1);                                   // 首层吊顶（楼梯处开洞）
   for (const [x, z] of [[-4.5, -3], [3.2, -3.2], [5.5, 1.8], [-1, 3]]) box(V, 1.6, 0.04, 0.25, M.lamp, x, 3.57, z);
   // 首层墙体碰撞
@@ -350,7 +351,7 @@ function buildVilla() {
   slab(-11.3, 11.3, -7.3, 7.3, 3.78, 0.2, M.metalDark, [-10.9, 10.9, -6.9, 6.9]);
   // ---- 二层（向湖悬挑）：外壳 + 卧室；北侧门通阳台 ----
   const F1 = 3.9, F1h = 3.3;
-  slab(-9.4, 10.6, -7.7, 5.3, F1, 0.14, M.floorWood, [S1[0], S1[1], S1[2], 5.3], F1);
+  slab(-9.4, 10.6, -7.7, 5.3, F1, 0.14, M.floorWood, [S1[0], S1[1], S1[2], S1[3]], F1);
   wellRail(S1, F1, [-1]);
   walls(F1, F1h, 'x', -7.7, [[-9.4, -8, 'w'], [-8, -1.2, 'g'], [-1.2, 1.2, 'o'], [1.2, 9.2, 'g'], [9.2, 10.6, 'w']]);
   box(V, 2.4, 0.4, 0.25, M.wallWarm, 0, F1 + F1h - 0.2, -7.7); slideDoor(V, 2.4, F1 + 1.2, -7.52, 2.4, 2.4);   // 二层北门推拉门（开启）
@@ -379,7 +380,7 @@ function buildVilla() {
   collR(wx(-4), wz(-8.2), 1.2, 0.45, 0, bb + 2.5, bb); collR(wx(-2.4), wz(-8.2), 0.25, 0.25, 0, bb + 2.5, bb);
   for (const x of [-4.7, -3.9, -3.1]) addSeat(wx(x), y0 + 4.08 + 0.42, wz(-8.35), 0);
   // ---- 楼梯 S2：二层 → 三层 ----
-  stairs(V, toW, y0, -5.2, 4.6, -2.4, F1, 7.45, 1.1, { railSides: [1, -1] });
+  stairs(V, toW, y0, -5.2, 3.0, -2.75, F1, 7.45, 1.1, { railSides: [1, -1] });   // 二层层高 3.55 m、上下都要留 2 m，梯段 5.75 m（踏步 0.29 m）
   slab(-9.9, 11.1, -8.2, 5.8, 7.445, 0.2, M.metalDark, [-9.4, 10.6, -7.7, 5.3]);          // 二层顶檐口（顶面比三层木地板低 5 mm，避免共面闪烁）
   // 二层屋面（三层外围露台）：北侧露台 + 东西两侧窄台
   slab(-9.4, 10.6, -7.7, -5.0, 7.45, 0.12, M.stone, null, 7.45);
@@ -415,7 +416,7 @@ function buildVilla() {
   addSeat(wx(2.5), y0 + F2 + 0.5, wz(-2.85), 0); addSeat(wx(-2.5), y0 + F2 + 0.42, wz(3.75), 0); addSeat(wx(-1.5), y0 + F2 + 0.42, wz(3.75), 0);
   collR(wx(2.5), wz(-3.4), 1.0, 0.8, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(3.5), wz(5.2), 1.6, 0.3, 0, y0 + F2 + 2, y0 + F2 - 0.5); collR(wx(-2), wz(3.9), 1.1, 0.5, 0, y0 + F2 + 2, y0 + F2 - 0.5);
   // ---- 楼梯 S3：三层 → 屋顶 ----
-  stairs(V, toW, y0, 8.4, 4.8, -1.9, F2, 11.1, 1.0, { railSides: [-1] });
+  stairs(V, toW, y0, 8.4, 3.3, -3.25, F2, 11.1, 1.0, { railSides: [-1] });
   // ---- 屋面：屋顶平台（玻璃栏板）+ 应急停机标识（不停放直升机） ----
   slab(-6.8, 9.6, -5.4, 6.0, 11.1, 0.4, M.concrete, [S3[0], S3[1], S3[2], S3[3]], 11.1);
   slab(-6.9, 9.7, -5.5, 6.1, 10.72, 0.15, M.metalDark, [-6.4, 9.2, -5.0, 5.6]);
@@ -431,25 +432,51 @@ function buildVilla() {
   for (const px of [-3, 7.5]) { const gy = Math.min(gh(180 + px - 1.5, -46 + 9.05), gh(180 + px + 1.5, -46 + 9.05), gh(180 + px - 1.5, -46 + 9.95), gh(180 + px + 1.5, -46 + 9.95));
     planter(V, 3, 0.9, px, Math.min(0, gy - y0), 9.5, 0, 'narcissus', [180, y0, -46]); }   // 南门花池：坡地上按最低地面落座
   for (const [px, pz] of [[-10.2, -6.2], [10.2, -6.2], [-10.2, 6.2], [9.8, -1.5]]) planter(V, 0.6, 0.6, px, 0.13, pz, 0, 'narcissus', [180, y0, -46]);
-  // 泳池旁（靠别墅一侧）两把沙滩椅 + 遮阳伞
   // 泳池旁（靠别墅一侧）两把躺椅 + 遮阳伞：正对瀑布
   { const ry = Math.atan2(FALL.plunge.x - 184.5, FALL.plunge.z + 54.9), yaw = ry + Math.PI;
-    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); }
+    for (const dx of [3.7, 5.3]) { lounger(V, dx, 0.05, -8.5, ry); collR(180 + dx, -46 - 8.5, 0.38, 1.05, ry, y0 + 1.5); addSeat(180 + dx, y0 + 0.05 + 0.42, -46 - 8.5, yaw, 'lie'); SEATS.at(-1).recline = LOUNGER_BACK; }
     parasol(V, 4.5, 0.05, -7.6, 1.35); collC(184.5, -53.6, 0.25); tableF(V, 4.5, 0.05, -8.9, 0, 0.35, 0.35, 0.45, M.teak, M.alu); }
   collR(171.4, -53.85, 2.1, 0.45, 0, y0 + 2); collR(178.6, -53.85, 1.3, 0.45, 0, y0 + 2);   // 泳池北侧水仙花池的碰撞由 planter() 登记
   COLL.walks.push({ kind: 'rect', x: 180, z: -58.2, hw: 13, hd: 5.25, rot: 0, y: y0 + 0.05 });
   V.position.set(180, y0, -46); return V;
 }
-function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {   // 精细躺椅：铝框、柚木板条、可调靠背、分段软垫、滚轮、浴巾
-  const g = new THREE.Group(), cu = std(cushion, 0.95);
-  for (const sx of [-1, 1]) { box(g, 0.04, 0.05, 1.95, M.alu, sx * 0.33, 0.3, 0.1); box(g, 0.04, 0.3, 0.04, M.alu, sx * 0.33, 0.15, 0.95); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 14), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.36, 0.07, -0.72); g.add(w); }
-  for (let i = 0; i < 11; i++) box(g, 0.64, 0.02, 0.1, M.teak, 0, 0.33, -0.15 + i * 0.105);
-  const back = new THREE.Group(); back.position.set(0, 0.33, -0.2); back.rotation.x = -0.75; g.add(back);
-  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.8, M.alu, sx * 0.33, 0, -0.4);
-  for (let i = 0; i < 7; i++) box(back, 0.64, 0.02, 0.1, M.teak, 0, 0.01, -0.06 - i * 0.11);
-  box(back, 0.6, 0.07, 0.78, cu, 0, 0.05, -0.4); box(back, 0.4, 0.1, 0.2, std(0xffffff, 0.9), 0, 0.12, -0.65);
-  box(g, 0.6, 0.07, 1.18, cu, 0, 0.38, 0.4); for (const zz of [-0.18, 0.99]) box(g, 0.61, 0.075, 0.015, std(0xd8d0c0, 0.9), 0, 0.38, zz);
-  box(g, 0.5, 0.03, 0.34, std(0x3e7fa6, 0.95), 0, 0.43, 0.7);
+// 躺椅（按实物结构）：头端在 -z、脚端在 +z，全长 2.0 m、宽 0.72 m；座面高 0.44（与 addSeat 的 +0.42 一致）
+// 铝合金框：两根纵梁 + 两端横梁，脚端两条腿（带橡胶脚垫），头端两条短腿各带一个滚轮（轮子着地，可推着走）
+// 柚木板条座面；靠背以铰轴与纵梁相连，向头端抬起约 40°，背后一根支撑杆顶在纵梁的卡槽上
+// 软垫：座垫、靠背垫分段并带滚边，头枕；脚端叠放一条条纹浴巾
+const LOUNGER_MAT = {}, LOUNGER_BACK = 0.7;   // 靠背抬起角（弧度，约 40°）；躺椅座位带 recline，漫游时按此角度半躺
+function loungerMat(c, r = 0.95) { const k = c + ':' + r; return LOUNGER_MAT[k] || (LOUNGER_MAT[k] = std(c, r)); }
+function lounger(p, x, y, z, ry, cushion = 0xefe9dc) {
+  const g = new THREE.Group(), cu = loungerMat(cushion), pip = loungerMat(0xcfc6b4, 0.9), towelB = loungerMat(0x3e7fa6), towelW = loungerMat(0xf4f1ea);
+  const RY = 0.33, RH = 0.06, HX = 0.33;   // 纵梁中心高、截面高、半宽
+  for (const sx of [-1, 1]) {
+    box(g, 0.045, RH, 2.0, M.alu, sx * HX, RY, 0.05);                                  // 纵梁
+    box(g, 0.045, RY - RH / 2 - 0.02, 0.045, M.alu, sx * HX, (RY - RH / 2 - 0.02) / 2 + 0.02, 0.95);   // 脚端腿
+    box(g, 0.06, 0.02, 0.06, M.rubber, sx * HX, 0.01, 0.95);                           // 橡胶脚垫
+    box(g, 0.04, RY - RH / 2 - 0.09, 0.04, M.alu, sx * HX, (RY - RH / 2 + 0.09) / 2, -0.8);   // 头端短腿（下端接轮轴）
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.035, 16), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(w);   // 滚轮，着地
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.045, 10), M.alu); hub.rotation.z = Math.PI / 2; hub.position.set(sx * (HX + 0.05), 0.09, -0.8); g.add(hub);
+    for (const zz of [-0.72, -0.64, -0.56]) box(g, 0.05, 0.012, 0.02, M.metalDark, sx * HX, RY + RH / 2 + 0.006, zz);   // 靠背角度卡槽
+  }
+  for (const zz of [-0.93, 1.03]) box(g, 2 * HX + 0.045, 0.05, 0.04, M.alu, 0, RY, zz);   // 两端横梁
+  cyl(g, 0.012, 0.012, 2 * HX + 0.1, M.alu, 0, 0.09, -0.8, 6, 0, Math.PI / 2);          // 轮轴
+  for (let i = 0; i < 10; i++) box(g, 0.62, 0.02, 0.085, M.teak, 0, RY + RH / 2 + 0.012, -0.06 + i * 0.109);   // 座面板条
+  const sy = RY + RH / 2 + 0.022;   // 板条顶面
+  box(g, 0.6, 0.065, 1.07, cu, 0, sy + 0.005 + 0.0325, 0.46);                          // 座垫
+  for (const zz of [-0.075, 0.995]) box(g, 0.61, 0.018, 0.018, pip, 0, sy + 0.07, zz);    // 座垫滚边
+  // 靠背：铰轴在 z = -0.12，向头端（-z）抬起 40°
+  const back = new THREE.Group(); back.position.set(0, sy, -0.12); back.rotation.x = LOUNGER_BACK; g.add(back);
+  for (const sx of [-1, 1]) box(back, 0.04, 0.04, 0.84, M.alu, sx * (HX - 0.03), -0.02, -0.42);
+  box(back, 2 * (HX - 0.03) + 0.04, 0.04, 0.04, M.alu, 0, -0.02, -0.82);
+  for (let i = 0; i < 7; i++) box(back, 0.58, 0.02, 0.095, M.teak, 0, 0.01, -0.08 - i * 0.11);
+  box(back, 0.58, 0.06, 0.8, cu, 0, 0.055, -0.43);                                     // 靠背垫
+  box(back, 0.59, 0.018, 0.018, pip, 0, 0.09, -0.83);
+  box(back, 0.44, 0.1, 0.2, loungerMat(0xffffff, 0.9), 0, 0.14, -0.7);                 // 头枕
+  // 支撑杆：从靠背背面（离铰轴 0.5 m 处）斜顶到纵梁中间的卡槽
+  const ca = Math.cos(LOUNGER_BACK), sa = Math.sin(LOUNGER_BACK), by = sy - 0.04 * ca + 0.5 * sa, bz = -0.12 - 0.5 * ca - 0.04 * sa;
+  for (const sx of [-1, 1]) rod(g, new THREE.Vector3(sx * (HX - 0.03), by, bz), new THREE.Vector3(sx * (HX - 0.03), RY + RH / 2, -0.64), 0.012, M.alu, 6);
+  // 脚端折叠浴巾（蓝白条纹）
+  for (let i = 0; i < 8; i++) box(g, 0.5, 0.03, 0.04, i % 2 ? towelW : towelB, 0, sy + 0.07 + 0.017, 0.62 + i * 0.04 + 0.02);
   g.position.set(x, y, z); g.rotation.y = ry; p.add(g); return g;
 }
 function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细遮阳伞：八角伞面 + 垂边 + 伞骨 + 摇柄 + 石材伞座
@@ -462,53 +489,7 @@ function parasol(p, x, y, z, r = 1.25, h = 2.4, fabric = 0xf3efe6) {   // 精细
   cyl(g, 0.03, 0.05, 0.12, M.alu, 0, h + 0.27, 0, 8);
   g.position.set(x, y, z); p.add(g); return g;
 }
-// ---------------- 12 层住宅楼（两梯四户，南北通透） ----------------
-function buildDorm() {
-  const D = new THREE.Group(), fl = 3.0, n = L.dorm.floors, W = 30, Dp = 20, y0 = 0.9;
-  box(D, W + 1, y0, Dp + 1, M.concreteWarm, 0, y0 / 2, 0);                 // 石材基座
-  box(D, W, n * fl, Dp, M.wallLight, 0, n * fl / 2 + y0, 0);
-  const ux = [-11.85, -4.35, 4.35, 11.85];
-  for (let f = 0; f < n; f++) {
-    const y = y0 + f * fl;
-    box(D, W + 0.1, 0.18, Dp + 0.1, M.concreteDark, 0, y + fl, 0);
-    for (const cx of ux) {
-      if (f === 0) continue;
-      // 南向：落地窗 + 阳台
-      framedGlass(D, 5.2, 2.3, cx, y + 1.35, Dp / 2 + 0.03, 0, 4, 1);
-      box(D, 6.0, 0.16, 1.5, M.concrete, cx, y + 0.08, Dp / 2 + 0.75);
-      box(D, 6.0, 1.0, 0.05, M.glassLight, cx, y + 0.66, Dp / 2 + 1.48);
-      box(D, 6.0, 0.05, 0.08, M.metalDark, cx, y + 1.18, Dp / 2 + 1.48);
-      // 北向窗（对流）
-      framedGlass(D, 4.2, 1.6, cx, y + 1.55, -Dp / 2 - 0.03, Math.PI, 3, 1);
-      box(D, 4.5, 0.08, 0.3, M.metalDark, cx, y + 0.7, -Dp / 2 - 0.12);
-    }
-    for (const sx of [-1, 1]) framedGlass(D, 3.2, 1.5, sx * (W / 2 + 0.03), y + 1.5, 4, sx * Math.PI / 2, 2, 1);
-    if (f > 0) framedGlass(D, 3.0, 2.2, 0, y + 1.4, -Dp / 2 - 0.03, Math.PI, 2, 1);   // 交通核
-  }
-  // 南立面竖向分户墙鳍
-  for (const x of [-15, -8.1, 0, 8.1, 15]) box(D, 0.35, n * fl - fl, 1.7, M.wallGray, x, y0 + fl + (n - 1) * fl / 2, Dp / 2 + 0.85);
-  // 首层大堂与入口
-  framedGlass(D, 8, 2.7, 0, y0 + 1.4, Dp / 2 + 0.03, 0, 4, 1);
-  for (const cx of [-11.85, 11.85]) framedGlass(D, 5, 2.2, cx, y0 + 1.5, Dp / 2 + 0.03, 0, 3, 1);
-  box(D, 9, 0.22, 3.2, M.metalDark, 0, y0 + 3.0, Dp / 2 + 1.6);
-  for (const x of [-4.2, 4.2]) cyl(D, 0.08, 0.08, 3.0, M.metalDark, x, y0 + 1.5, Dp / 2 + 3.0, 8);
-  // 屋面
-  const top = y0 + n * fl;
-  box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, Dp / 2); box(D, W + 0.3, 1.0, 0.25, M.wallLight, 0, top + 0.5, -Dp / 2);
-  box(D, 0.25, 1.0, Dp, M.wallLight, W / 2, top + 0.5, 0); box(D, 0.25, 1.0, Dp, M.wallLight, -W / 2, top + 0.5, 0);
-  box(D, W + 0.4, 0.1, Dp + 0.4, M.metalDark, 0, top + 1.02, 0);
-  box(D, 7.5, 3.4, 4.8, M.wallGray, 0, top + 1.7, -2.5); box(D, 7.9, 0.2, 5.2, M.metalDark, 0, top + 3.5, -2.5);
-  box(D, 3, 1.4, 2, M.metalMid, -8, top + 0.7, 4); box(D, 3, 1.4, 2, M.metalMid, 8, top + 0.7, 4);
-  // 前庭：绿篱、长椅、铺装步道
-  // 前庭：绿篱、长椅放在楼前平整地带（再往外是道路边坡，地面起伏 1.5 m），按所在地面最低点取高，避免悬空
-  const DY = 15.0, lowest = (cx, cz, hx, hz) => Math.min(gh(cx - hx, cz - hz), gh(cx + hx, cz - hz), gh(cx - hx, cz + hz), gh(cx + hx, cz + hz), gh(cx, cz));
-  for (const sx of [-1, 1]) {
-    const px = L.dorm.x + sx * 10, pz = L.dorm.z + Dp / 2 + 1.4, py = lowest(px, pz, 3.5, 0.5);
-    planter(D, 7, 1.0, sx * 10, py - DY, Dp / 2 + 1.4); collR(px, pz, 3.5, 0.5, 0, py + 1.7, py - 0.3);
-    const bx = L.dorm.x + sx * 5.5, bz = L.dorm.z + Dp / 2 + 2.0, by = lowest(bx, bz, 0.9, 0.25);
-    box(D, 1.8, 0.45, 0.5, M.wood, sx * 5.5, by - DY + 0.225, Dp / 2 + 2.0); collR(bx, bz, 0.9, 0.25, 0, by + 1.7, by - 0.3); }
-  D.position.set(L.dorm.x, 15.0 - y0 + 0.9, L.dorm.z); return D;
-}
+// 12 层住宅楼见 06c_dorm.js（两梯四户，可进出）
 // ---------------- 双人网球场 ----------------
 function buildTennis() {
   const T = new THREE.Group(), w = L.tennis.w, d = L.tennis.d;
