@@ -272,7 +272,7 @@ function buildCybertruck() {
   { const roof = new THREE.Mesh(new THREE.PlaneGeometry(1.7, Wb * 0.82), std(0x14202a, 0.1, 0.2, { transparent: true, opacity: 0.55, side: THREE.DoubleSide })); roof.rotation.set(Math.PI / 2, 0, 0); roof.rotateY(Math.atan2(1.78 - 1.4, 1.65)); roof.position.set(-1.05, 1.6, 0); cab.add(roof); }
   box(cab, 0.55, 0.5, 0.55, std(0xf0ede6, 0.8), -0.2, 0.75, 0.42); box(cab, 0.12, 0.7, 0.55, std(0xf0ede6, 0.8), -0.5, 1.1, 0.42);
   box(cab, 1.5, 0.05, Wb * 0.9, dark, 0.2, 0.55, 0);
-  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
+  C.userData = { body, cab, wheels, spec: { name: 'Cybertruck', horn: 'car', L: 5.683, W: 2.03, wb: WB, track: 1.72, r: 0.445, vmax: 30, acc: 5.2, brake: 9, steer: 0.52, eye: [0.05, 1.32, -0.42], chase: [7.8, 2.6] } };
   C.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return C;
 }
@@ -294,7 +294,7 @@ function buildTractor() {
     cyl(T, r * 0.6, r * 0.6, w + 0.02, M.yellow, x, r, z, 12, Math.PI / 2);
   }
   box(T, 0.3, 0.2, 0.7, dark, -1.35, 0.55, 0);          // 三点悬挂
-  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
+  T.userData = { wheels: [], spec: { name: 'Solectrac e70N', horn: 'tractor', L: 3.3, W: 1.37, wb: 2.0, track: 1.2, r: 0.5, vmax: 8, acc: 2.2, brake: 5, steer: 0.62, eye: [-0.55, 1.9, 0], chase: [7, 3] } };
   T.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return T;
 }
