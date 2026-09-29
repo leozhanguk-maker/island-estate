@@ -93,16 +93,22 @@ function buildKitchen() {
     kPanel(K, x1 - x0, z1 - z0, T.paver, (x0 + x1) / 2, PT, (z0 + z1) / 2, -Math.PI / 2, 0, 1.2);
     walk(x0, x1, z0, z1, PT);
   }
-  // 挡土墙：沿基座外轮廓，墙底埋入地面 0.3 m；人在地面上不能从墙下钻进基座（高度带只拦基座顶面以下 0.55 m 的人）
-  const [A, B] = PADS, edges = [
-    [A[0], A[2], A[1], A[2]], [A[1], A[2], A[1], A[3]], [A[1], A[3], A[0], A[3]], [A[0], A[3], A[0], B[3]], [A[0], B[2], A[0], A[2]],
-    [B[0], B[2], A[0], B[2]], [B[0], B[3], B[0], B[2]], [A[0], B[3], B[0], B[3]],
-  ];
-  for (const [ax, az, bx, bz] of edges) {
+  // 挡土墙：沿几块基座合并后的外轮廓（相邻基座的共用边不建墙），墙底埋入地面 0.3 m；人在地面上不能从墙下钻进基座（高度带只拦基座顶面以下 0.55 m 的人）
+  const [A, B] = PADS, inPad = (x, z) => PADS.some(([x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
+  const edges = [];
+  for (const [x0, x1, z0, z1] of PADS) for (const [ax, az, bx, bz, nx, nz] of [[x0, z0, x1, z0, 0, -1], [x1, z0, x1, z1, 1, 0], [x1, z1, x0, z1, 0, 1], [x0, z1, x0, z0, -1, 0]]) {
+    const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / 0.25)); let run = null;
+    for (let i = 0; i < n; i++) {
+      const t0 = i / n, t1 = (i + 1) / n, mx = ax + (bx - ax) * (t0 + t1) / 2, mz = az + (bz - az) * (t0 + t1) / 2, out = !inPad(mx + nx * 0.05, mz + nz * 0.05);
+      if (out && !run) run = [t0, t1]; else if (out) run[1] = t1;
+      if ((!out || i === n - 1) && run) { edges.push([ax + (bx - ax) * run[0], az + (bz - az) * run[0], ax + (bx - ax) * run[1], az + (bz - az) * run[1], nx, nz]); run = null; }
+    }
+  }
+  for (const [ax, az, bx, bz, onx, onz] of edges) {
     const len = Math.hypot(bx - ax, bz - az); if (len < 0.05) continue;
     let gmin = 1e9; for (let i = 0; i <= 8; i++) gmin = Math.min(gmin, gh(wx(ax + (bx - ax) * i / 8), wz(az + (bz - az) * i / 8)) - Y0);
     const yb = Math.min(gmin - 0.3, PT - 0.3), h = PT - 0.01 - yb, horiz = Math.abs(bz - az) < 1e-6;
-    const nx = horiz ? 0 : Math.sign(ax - (A[0] + A[1]) / 2) * 0.15, nz = horiz ? Math.sign(az - (A[2] + A[3]) / 2) * 0.15 : 0;   // 墙厚 0.3，外皮与基座边齐平
+    const nx = onx * 0.15, nz = onz * 0.15;   // 墙厚 0.3，外皮与基座边齐平
     box(K, horiz ? len + 0.3 : 0.3, h, horiz ? 0.3 : len + 0.3, T.stone, (ax + bx) / 2 - nx, yb + h / 2, (az + bz) / 2 - nz);
     box(K, horiz ? len + 0.34 : 0.34, 0.06, horiz ? 0.34 : len + 0.34, T.frame, (ax + bx) / 2 - nx, PT - 0.035, (az + bz) / 2 - nz);   // 深灰压顶线
     if (gmin < PT - 0.5) collS(wx(ax), wz(az), wx(bx), wz(bz), -1e9, Y0 + PT - 0.55);
@@ -276,6 +282,71 @@ function buildKitchen() {
     // 下到高尔夫球场（5 号洞发球台方向）的石阶
     const gy = Math.min(gh(wx(ST[0]), wz(Z1 + 3.8)), gh(wx(ST[1]), wz(Z1 + 3.8))) - Y0, len = Math.max(1.2, Math.round((DY - gy) / 0.17) * 0.3);
     stairs(K, toW, Y0, (ST[0] + ST[1]) / 2, Z1 + len, Z1, gy, DY, ST[1] - ST[0], { solid: true, mat: T.stone, railMat: T.frame });
+  }
+  // ---------------- 公共卫生间：厨房馆正北，背靠厨房北墙但两边不互通；男（西）女（东）分开，门都朝正北 ----------------
+  // 与别墅、厨房馆同一设计语言：暖白微水泥墙、平屋顶深挑檐（北挑 1 m 遮门口）、深灰金属封边、柚木竖格栅；洁具与别墅主卫同一套高端款式
+  { const BM = bathMats(), RZ0 = -HD - 0.125, RZ1 = -9.35, RX = 4.5, RH = 3.3, WN = RZ1 + 0.125;   // RZ0 厨房北墙外皮；WN 北墙中线
+    const seg = (ax, az, bx, bz, top = RH - 0.3) => collS(wx(ax), wz(az), wx(bx), wz(bz), Y0 - 0.3, Y0 + top);
+    // 楼板、岩板地面、吊顶灯带
+    box(K, RX * 2 - 0.02, 0.095, RZ0 - RZ1 - 0.01, M.concrete, 0, 0.0525, (RZ0 + RZ1 - 0.01) / 2 + 0.01);   // 楼板四边比外墙外皮缩进 1 cm（不共面）
+    for (const s of [-1, 1]) { kPanel(K, RX - 0.2, RZ0 - RZ1 - 0.25, BM.slab, s * RX / 2, FY, (RZ0 + WN) / 2 - 0.0625, -Math.PI / 2, 0, 1.2); walk(s < 0 ? -RX : 0.02, s < 0 ? -0.02 : RX, WN - 0.2, RZ0, FY);
+      kPanel(K, RX - 0.2, RH - 0.05, BM.slab, s * RX / 2, (RH - 0.05) / 2 + FY - 0.1, RZ0 - 0.005, 0, Math.PI, 1.2);                        // 背墙（厨房北墙）岩板饰面
+      kPanel(K, RX - 0.2, RZ0 - RZ1 - 0.25, M.ceiling, s * RX / 2, RH - 0.01, (RZ0 + WN) / 2 - 0.0625, Math.PI / 2, 0);
+      box(K, 2.2, 0.03, 0.12, BM.glow, s * RX / 2, RH - 0.03, -7.0); }
+    // 外墙：西、东实墙；北墙两扇 1.0 m 门（男 x -3.3～-2.3，女 x 2.3～3.3），门洞 2.4 m，门楣以上为墙
+    for (const s of [-1, 1]) { box(K, 0.25, RH, RZ0 - RZ1, T.wall, s * (RX - 0.125), RH / 2, (RZ0 + RZ1) / 2); seg(s * (RX - 0.125), RZ0, s * (RX - 0.125), RZ1); }
+    const doors = [[-3.3, -2.3], [2.3, 3.3]];
+    for (const [a0, a1] of [[-RX, -3.3], [-2.3, 2.3], [3.3, RX]]) { box(K, a1 - a0, RH, 0.25, T.wall, (a0 + a1) / 2, RH / 2, WN); seg(a0, WN, a1, WN); }
+    for (const [a0, a1] of doors) {
+      box(K, a1 - a0, RH - 2.4, 0.25, T.wall, (a0 + a1) / 2, 2.4 + (RH - 2.4) / 2, WN);
+      for (const e of [a0, a1]) box(K, 0.05, 2.4, 0.27, T.frame, e, 1.2, WN);
+      const hinge = a0 < 0 ? a0 : a1, sd = a0 < 0 ? 1 : -1;   // 柚木门扇向内开 90°，贴在门洞外侧的墙上
+      box(K, 0.04, 2.35, a1 - a0 - 0.05, T.teak, hinge + sd * 0.05, FY + 1.17, WN + 0.125 + (a1 - a0) / 2); box(K, 0.03, 0.35, 0.03, BM.gold, hinge + sd * 0.08, FY + 1.05, WN + 0.125 + (a1 - a0) - 0.12);
+      seg(hinge + sd * 0.05, WN + 0.125, hinge + sd * 0.05, WN + 0.125 + (a1 - a0));
+    }
+    // 中间隔墙（两边不互通）
+    box(K, 0.15, RH, RZ0 - WN - 0.125, T.wall, 0, RH / 2, (RZ0 + WN + 0.125) / 2); seg(0, RZ0, 0, WN + 0.125);
+    // 屋面：挑檐北 1 m、东西 0.3 m；深灰金属封边
+    const RZN = RZ1 - 1.0; box(K, RX * 2 + 0.6, 0.3, RZ0 - RZN, M.concrete, 0, RH + 0.15, (RZ0 + RZN) / 2);
+    box(K, RX * 2 + 0.66, 0.36, 0.03, T.frame, 0, RH + 0.15, RZN - 0.015); for (const s of [-1, 1]) box(K, 0.03, 0.36, RZ0 - RZN, T.frame, s * (RX + 0.315), RH + 0.15, (RZ0 + RZN) / 2);
+    box(K, RX * 2, 0.02, 1.0, M.ceiling, 0, RH - 0.01, RZ1 - 0.5);
+    // 北立面：两门之间柚木竖格栅、门旁金色男女标识牌与壁灯、挑檐下筒灯
+    for (let x = -2.1; x <= 2.1; x += 0.12) box(K, 0.04, RH - 0.3, 0.12, T.teak, x, (RH - 0.3) / 2 + 0.15, RZ1 - 0.08);
+    for (const [cx, woman] of [[-3.75, false], [3.75, true]]) {
+      box(K, 0.36, 0.5, 0.03, T.frame, cx, 1.7, RZ1 - 0.02);
+      cyl(K, 0.045, 0.045, 0.02, BM.gold, cx, 1.83, RZ1 - 0.04, 16, Math.PI / 2);
+      if (woman) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.09, 0.2, 3), BM.gold); d.position.set(cx, 1.66, RZ1 - 0.04); d.rotation.x = Math.PI / 2; d.rotation.y = Math.PI / 6; K.add(d); }   // 裙装
+      else box(K, 0.09, 0.2, 0.02, BM.gold, cx, 1.66, RZ1 - 0.04);
+      for (const s of [-1, 1]) box(K, 0.025, 0.12, 0.02, BM.gold, cx + s * 0.025, 1.51, RZ1 - 0.04);
+      box(K, 0.08, 0.35, 0.08, BM.glow, cx + (woman ? -0.45 : 0.45) * -1, 2.1, RZ1 - 0.05);
+    }
+    for (const x of [-2.8, 0, 2.8]) cyl(K, 0.08, 0.08, 0.02, BM.glow, x, RH - 0.03, RZ1 - 0.5, 16);
+    // 男卫：东墙（中间隔墙西侧）4 个小便斗、两个蹲便隔间（背靠厨房北墙）、西墙双盆洗手台
+    for (const z of [-8.6, -7.8, -7.0, -6.2]) { urinalF(K, -0.075, FY, z, -Math.PI / 2); rect(-0.55, -0.075, z - 0.25, z + 0.25); }
+    const stall = (x0, x1) => {   // 马桶隔间：深灰石材隔板 + 柚木门（向内开启）；马桶背靠厨房北墙
+      const zf = RZ0 - 1.7, BH = 2.1;
+      for (const x of [x0, x1]) { box(K, 0.04, BH, 1.7, BM.stoneDark, x, FY + 0.15 + BH / 2, RZ0 - 0.85); seg(x, RZ0, x, zf); }
+      box(K, 0.3, BH, 0.04, BM.stoneDark, x0 + 0.15, FY + 0.15 + BH / 2, zf); box(K, 0.3, BH, 0.04, BM.stoneDark, x1 - 0.15, FY + 0.15 + BH / 2, zf); seg(x0, zf, x0 + 0.3, zf); seg(x1 - 0.3, zf, x1, zf);
+      box(K, 0.04, BH - 0.05, x1 - x0 - 0.65, T.teak, x0 + 0.32, FY + 0.15 + BH / 2, zf + (x1 - x0 - 0.65) / 2); seg(x0 + 0.32, zf, x0 + 0.32, zf + (x1 - x0 - 0.65));   // 门扇向内开
+      squatF(K, (x0 + x1) / 2, FY, RZ0, Math.PI); walk((x0 + x1) / 2 - 0.45, (x0 + x1) / 2 + 0.45, RZ0 - 1.425, RZ0 - 0.175, FY + 0.15);   // 蹲便踏台高 0.15，登记为可行走面（可以踏上去）
+    };
+    stall(-4.2, -2.85); stall(-2.8, -1.4);   // 两隔间各用各的隔板（不与西墙、彼此共面）
+    vanityF(K, -RX + 0.125, FY, -7.5, Math.PI / 2, 1.5, 2); rect(-RX + 0.125, -RX + 0.7, -8.3, -6.7);
+    // 女卫：两个马桶隔间、东墙双盆洗手台、梳妆凳
+    stall(0.35, 1.85); stall(1.95, 3.45);
+    vanityF(K, RX - 0.125, FY, -7.5, -Math.PI / 2, 1.5, 2); rect(RX - 0.7, RX - 0.125, -8.3, -6.7);
+    cyl(K, 0.2, 0.2, 0.42, std(0xc9b89a, 0.95), 2.2, FY + 0.21, -8.2, 18);
+    // 挂墙擦手纸盒（金色）
+    for (const x of [-RX + 0.15, RX - 0.15]) box(K, 0.1, 0.32, 0.26, BM.gold, x, FY + 1.3, -8.55);
+  }
+  // ---------------- 小路：别墅与厨房之间的过道向北绕到卫生间门前；高尔夫球场沿厨房北侧也有小路（西端石阶下到球场） ----------------
+  { const pathM = std(0x8f8b83, 0.9), PY = PT + 0.012;
+    const strip = (x0, x1, z0, z1) => { box(K, x1 - x0, 0.024, z1 - z0, pathM, (x0 + x1) / 2, PY - 0.012 + 0.0005, (z0 + z1) / 2); };
+    for (let z = -2.08; z > -11.2; z -= 0.75) strip(6.45, 7.75, z - 0.6, z);                 // 过道北段：从连廊北沿沿厨房东侧向北（汀步；两块基座的接缝 z=-5 落在汀步间隙里）
+    for (let x = 7.75; x > -6.4; x -= 0.75) strip(x - 0.6, x, -11.35, -10.05);             // 卫生间门前东西向小路
+    const gy = gh(wx(-8.0), wz(-10.7)) - Y0, len = Math.max(0.9, Math.round((PT - gy) / 0.17) * 0.3);
+    const SG = new THREE.Group(); SG.position.set(-5.5, 0, -10.7); SG.rotation.y = Math.PI / 2; K.add(SG);
+    stairs(SG, (lx, lz) => [wx(-5.5 + lz), wz(-10.7 - lx)], Y0, 0, -len, 0, gy, PT, 1.4, { solid: true, mat: T.stone, railMat: T.frame });   // 西端石阶：下到高尔夫球场
   }
   KITCHEN.group = K;
   K.position.set(KX, Y0, KZ); return K;
