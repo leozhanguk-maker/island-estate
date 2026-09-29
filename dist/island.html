@@ -8835,7 +8835,8 @@ try {
   renderer.shadowMap.needsUpdate = true;
   // ---- 阴影：鸟瞰用全岛静态阴影；漫游时切换为跟随玩家的 ±70 米高精度阴影 ----
   const SH0 = { l: -430, r: 430, t: 330, b: -330, n: 600, f: 2300, nb: sun.shadow.normalBias, bias: sun.shadow.bias };
-  const shadowState = { mode: 'island', cx: 1e9, cz: 1e9, lastT: 0 };
+  const shadowState = { mode: 'island', cx: 1e9, cz: 1e9, lastT: 0, n: 0 };   // n：阴影贴图重绘次数（回归测试用）
+  if (DEBUG) window.__dbg.SHADOW = shadowState;
   const Lu = new THREE.Vector3().crossVectors(SUN_DIR, new THREE.Vector3(0, 1, 0)).normalize(), Lv = new THREE.Vector3().crossVectors(Lu, SUN_DIR).normalize();
   function shadowFollow(t) {
     const sc = sun.shadow.camera;
@@ -8857,6 +8858,9 @@ try {
       sun.shadow.normalBias = SH0.nb; sun.shadow.bias = SH0.bias;
       renderer.shadowMap.needsUpdate = true; shadowState.mode = 'island'; shadowState.cx = 1e9;
     }
+    // 驾驶中载具自身在动：阴影贴图每帧重绘（含自动巡航中站在船上；原先只在玩家移动超过 3 米时重绘，车影一顿一顿地跳；低档不跟随时车影干脆停在原地）
+    if (fp.on && (DRIVE.active || (fp._st.onBoat && BOAT.moved))) renderer.shadowMap.needsUpdate = true;
+    if (renderer.shadowMap.needsUpdate) shadowState.n++;
   }
   const needle = document.getElementById('needle');
   const clock = new THREE.Clock(); let frames = 0, slow = 0;
