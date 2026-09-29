@@ -3045,14 +3045,23 @@ vec4 chopSlope(vec2 xz) { vec4 r = vec4(0.0); ${[0, 1, 2].slice(0, nc).map(cas).
 }
 
 // ---------------------------------------------------------------- 甲板遮罩
-// deckDist(xz, k)：点到甲板范围的距离（范围内 ≤ 0）；k = 0 登岸浮台（轴对齐矩形），k = 1 游艇（船体局部坐标下的矩形，x -27.7～25、|z| ≤ 4.6）
+// deckDist(xz, k)：点到甲板范围的距离（范围内 ≤ 0）；k = 0 登岸浮台（轴对齐矩形），k = 1 游艇（船体水线轮廓 ∪ 船尾游泳平台，用于压低近船浪高）
+// hullDist(xz)：点到游艇水线轮廓的距离，只在船体内不画水面。原先按矩形（x -27.7～25、|z| ≤ 4.6）裁掉水面，
+// 船首收窄处、船尾游泳平台底下都没有水，露出白色船底，从上面看像海里铺了一块布（2026-09-29 你的反馈）
 const SEA_DECK_GLSL = `
 uniform vec4 uFloat, uBoat;
 #define SWASH_SLOPE 0.2
+vec2 boatLocal(vec2 xz) { vec2 r = xz - uBoat.xy; return vec2(r.x * uBoat.z - r.y * uBoat.w, r.x * uBoat.w + r.y * uBoat.z); }
+// 水线半宽：与 07_vehicles 船体放样的 hb(u) 相同（u 为船尾 0 → 船首 1），水线处约为甲板宽的 0.975
+float hullHalf(float u) { return u < 0.5 ? 4.6 * (0.93 + 0.07 * sin(u / 0.5 * 1.5707963)) : 4.6 * pow(max(0.0, 1.0 - pow((u - 0.5) / 0.5, 2.2)), 0.62) + 0.05; }
+float hullDist(vec2 xz) {
+  vec2 l = boatLocal(xz); float u = clamp((l.x + 24.9) / 49.8, 0.0, 1.0);
+  return max(abs(l.y) - hullHalf(u) * 0.975 + 0.05, abs(l.x - 0.1) - 25.0);
+}
 float deckDist(vec2 xz, int k) {
   if (k == 0) { vec2 d = abs(xz - uFloat.xy) - uFloat.zw; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
-  vec2 r = xz - uBoat.xy, l = vec2(r.x * uBoat.z - r.y * uBoat.w, r.x * uBoat.w + r.y * uBoat.z), d = abs(l - vec2(-1.35, 0.0)) - vec2(26.35, 4.6);
-  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+  vec2 d = abs(boatLocal(xz) - vec2(-26.0, 0.0)) - vec2(1.3, 4.2);        // 船尾游泳平台（x -27.2～-24.8、|z| ≤ 4.1）外扩 0.1 m
+  return min(hullDist(xz), length(max(d, 0.0)) + min(max(d.x, d.y), 0.0));
 }`;
 // ---------------------------------------------------------------- 海面材质
 const SEA_FOAM_GLSL = `
@@ -3120,7 +3129,7 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         vec4 chS = chopSlope(vXZ);
         vec3 dPx = dFdx(vW), dPy = dFdy(vW); float fp = max(max(length(dPx), length(dPy)), 1e-4);
         vec3 V = normalize(cameraPosition - vW); float dist = length(cameraPosition - vW);
-        if (deckDist(vXZ, 0) <= 0.0 || deckDist(vXZ, 1) <= 0.0) discard;   // 浮台、船体范围内不画水面（甲板底下不会透出水）
+        if (deckDist(vXZ, 0) <= 0.0 || hullDist(vXZ) <= 0.0) discard;   // 浮台、船体水线轮廓内不画水面（甲板底下不会透出水；游泳平台底下照常有水）
         if (!gl_FrontFacing && cameraPosition.y > vW.y + 0.05) discard;       // 相机在水面以上却看到背面：水面网格贴着陡坡翻折的假象（原先显示成一整片不透明的青绿色）
         if (!gl_FrontFacing) {                       // 水下仰视水面：与原海面相同（生态水域的雾色由 17e 写入 uUwC/uUwD/uUwE）
           float rip = vnoise(vW.xz * 0.6 + uTime * 0.4) * 0.6 + vnoise(vW.xz * 1.7 - uTime * 0.7) * 0.4;
@@ -5275,7 +5284,8 @@ function buildYacht() {
   extrudePlan(sunH, 1.5, M.yachtWhite, 7.65, Y); extrudePlan(offsetPlan(sunH, 0.04), 0.7, M.yachtGlass, 8.05, Y);
   YL.rects.push({ x: 0.5, z: 0, hw: 6.1, hd: 3.2, rot: 0, bottom: 7.3, top: 9 });
   box(Y, 12, 0.22, 7.8, M.yachtWhite, -2.5, 10.4, 0);
-  for (const z of [-3.4, 3.4]) for (const x of [-7.5, -2]) box(Y, 0.12, 1.3, 0.12, M.yachtWhite, x, 9.75, z);
+  // 顶棚支柱：x -2 一对立在日光甲板船室顶（9.15）上；x -7.5 一对在船室顶之外，下面是日光甲板（7.88），须一直落到甲板（原先都从 9.1 起，后一对悬空 1.2 m）
+  for (const z of [-3.4, 3.4]) { box(Y, 0.12, 1.3, 0.12, M.yachtWhite, -2, 9.75, z); box(Y, 0.12, 10.4 - 7.88, 0.12, M.yachtWhite, -7.5, (10.4 + 7.88) / 2, z); YL.rects.push({ x: -7.5, z, hw: 0.08, hd: 0.08, rot: 0, bottom: 7.6, top: 10.4 }); }
   box(Y, 1.2, 2.2, 0.35, M.yachtWhite, 1.5, 11.6, 0); box(Y, 0.3, 0.2, 3.2, M.metalDark, 1.5, 12.7, 0);
   cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, 0.9, 12); cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, -0.9, 12);
   // 日光甲板躺椅（后段遮阳顶上）
@@ -5311,7 +5321,7 @@ function buildYacht() {
   box(Y, 2.2, 0.95, 0.7, M.stone, 3.6, 2.95, -0.6); YL.rects.push({ x: 3.6, z: -0.6, hw: 1.1, hd: 0.35, rot: 0, bottom: 2, top: 4 });
   wallQuad(Y, [6.6, -3.7], [6.6, -0.6], 2.45, 5.1, M.wallLight); wallQuad(Y, [6.6, 0.6], [6.6, 2.2], 2.45, 5.1, M.wallLight); ySeg(6.6, -3.7, 6.6, -0.6, 2.2, 4.6); ySeg(6.6, 0.6, 6.6, 2.2, 2.2, 4.6);
   bedF(Y, 10.2, 2.45, 0, -Math.PI / 2, 1.9, 2.1); YL.rects.push({ x: 10.2, z: 0, hw: 1.15, hd: 1.2, rot: 0, bottom: 2, top: 4 }); ySeat(10.0, 2.45 + 0.62, 0, Math.PI / 2, 'lie');
-  for (const [x, z] of [[-15, 0], [-8, 0], [-2.5, 0], [3.5, 1.5], [10, 0]]) box(Y, 1.4, 0.03, 0.25, M.lamp, x, 5.08, z);
+  for (const [x, z] of [[-15, 0], [-8, 0], [-2.5, 0], [3.5, -0.9], [10, 0]]) box(Y, 1.4, 0.03, 0.25, M.lamp, x, 5.08, z);   // (3.5, -0.9) 原在 (3.5, 1.5)，正好悬在上层楼梯开口里，从上面看像一块白板躺在楼梯上
   // ---- 上层甲板室：天空酒廊 + 驾驶台（舵轮、操控台、屏幕、船长椅） ----
   sofaF(Y, -9, 5.15, 2.6, Math.PI, 3.6, 0x8f949a, [0xb54a3a, 0xe0d6c4]); tableF(Y, -9, 5.15, 1.3, 0, 1.2, 0.7, 0.4, M.woodDark, M.alu); YL.rects.push({ x: -9, z: 2.6, hw: 1.8, hd: 0.45, rot: 0, bottom: 4.8, top: 6.8 }, { x: -9, z: 1.3, hw: 0.6, hd: 0.35, rot: 0, bottom: 4.8, top: 6.8 });
   for (const x of [-10.2, -9, -7.8]) ySeat(x, 5.15 + 0.42, 2.45, 0);
@@ -7144,7 +7154,7 @@ function updateDrive(dt, keys, camera, fpApi) {
 }
 
 // ======================= 13b 载具喇叭：汽车、拖拉机、直升机、游艇各自的音色（WebAudio 现场合成，不引入音频文件） =======================
-// 驾驶任意载具时按 H 鸣笛；游艇另有驾驶台红色按钮，且在闸外鸣笛会召唤鲸群与鱼群（17f boatHorn）
+// 驾驶任意载具时按 H 鸣笛；游艇在闸外鸣笛会召唤鲸群与鱼群（17f boatHorn）
 const HORN = { ac: null, last: null, count: 0 };
 const HORN_KIND = {
   car: 'Cybertruck 电子双音喇叭',
@@ -7205,7 +7215,7 @@ function syncBoat(t) {
   DYN.rects = YL.rects.map(r => { const c = T([r.x, r.z]); return { x: c[0], z: c[1], hw: r.hw, hd: r.hd, rot: BOAT.yaw + (r.rot || 0), bottom: r.bottom + by, top: r.top + by }; });
   DYN.interact = [];
   { const c = T([5.2, -2.9]); DYN.interact.push({ x: c[0], z: c[1], r: 1.0, y: 2.45 + by, label: '下层船舱舱盖（船员通道，暂不开放）', fn: () => {} }); }
-  { const c = T([6.75, -0.55]); DYN.interact.push({ x: c[0], z: c[1], r: 0.9, y: 5.15 + by, label: '按喇叭（在闸外海域可召唤鲸群与鱼群）', fn: () => boatHorn() }); }
+  // 驾驶台红色喇叭按钮只是外观：鸣笛统一在驾驶时按 H（原先另登记了一个按 E 鸣笛的交互，站在舵位旁时提示在 E/H 之间跳，按 E 也会响）
   for (const sv of BOAT.seats) DYN.interact.push({ x: sv.x, z: sv.z, r: sv.type === 'lie' ? 1.8 : 1.3, y: sv.y - (sv.type === 'lie' ? 0.62 : 0.45), label: sv.type === 'lie' ? '躺下休息' : '坐下', fn: () => FP_API.sitDown(sv) });
   DYN.interact.push(...YL.interact.map(it => { const c = T([it.x, it.z]); return { x: c[0], z: c[1], r: it.r, y: it.y + by, label: () => BOAT.auto ? '接管手动驾驶（按 C 取消自动巡航）' : '手动驾驶游艇，按 C 自动巡航（开闸 → 绕岛一周 → 回港）', fn: () => { BOAT.auto = null; DRIVE.active = BOAT; BOAT.thr = 0; document.body.classList.add('driving'); }, cruise: startCruise }; }));
   const atHome = Math.hypot(BOAT.x - BOAT.home.x, BOAT.z - BOAT.home.z) < 0.6 && Math.abs(BOAT.yaw - BOAT.home.yaw) < 0.03; BOAT.atHome = atHome;
@@ -8735,7 +8745,7 @@ function ecoShowUpdate(dt) {
   if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; return; }
   ecoShowFollow(dt);
 }
-// 游艇喇叭：驾驶时按 H，或在驾驶台按操控台上的红色按钮
+// 游艇喇叭：驾驶时按 H（驾驶台红色按钮只是外观，不再登记按 E 的交互）
 function boatHorn() { ecoHornSound(); const msg = ecoOceanShow(BOAT.x, BOAT.z); ecoToast(msg); return msg; }
 
 // ======================= 18 小白鹭：偶尔飞到闸口沙滩西侧的水线觅食，人跑近会惊飞 =======================

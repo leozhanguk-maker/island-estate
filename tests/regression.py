@@ -8,6 +8,7 @@
 #   载具喇叭：驾驶汽车、拖拉机、直升机、游艇时按 H 各自鸣笛（音色不同），ESC 暂停面板列出 H 键
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   V-022 海面：外海满海面白色碎片（泡沫毯在无泡沫处仍出白斑）、登岸浮台旁水面网格贴着岩石翻折显示成一整片青绿色背面：固定时刻截图按像素统计
+#   V-025 游艇：顶层后两根支柱落到日光甲板；楼梯开口上方没有灯带；海面遮罩贴合船体水线，船首船尾周围不露出白色船底（开阔海面俯拍，与关掉遮罩的同时刻画面比对）
 #   （P-003～P-006 由 scene_audit --strict 守住；P-009 在 phys_test 的 g_openWalk 断言中）
 # 用法：python3 tests/regression.py
 import os, sys, subprocess
@@ -63,6 +64,8 @@ HORN_JS = r'''() => { const D = __dbg, fp = __fp, out = {}; fp._st.on = true;
   const car = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'car'), tr = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'tractor');
   for (const [name, v] of [['car', car], ['tractor', tr], ['heli', D.HELI], ['boat', D.BOAT]]) { D.HORN.last = null; D.DRIVE.active = v || null; press(); out[name] = D.HORN.last && D.HORN.last.kind; }
   D.DRIVE.active = null; D.HORN.last = null; press(); out.walk = D.HORN.last && D.HORN.last.kind;
+  // 游艇上不应有按 E 鸣笛的交互（旧版驾驶台按钮登记了 E 交互：提示在 E/H 间跳，按 E 也会响）
+  D.syncBoat(0); out.eHorn = D.DYN.interact.filter(it => /喇叭|鸣笛/.test(typeof it.label === 'function' ? it.label() : it.label)).length;
   out.esc = [...document.querySelectorAll('#fpgate dt')].some(dt => dt.textContent.trim() === 'H' && /鸣笛/.test(dt.nextElementSibling.textContent));
   return out; }'''
 SHADOW_JS = r'''() => { const D = __dbg, fp = __fp, R = __island.renderer, S = D.SHADOW, out = {}; fp._st.on = true;
@@ -120,8 +123,8 @@ def main():
     failed += 0 if ok else 1
     with Session('#fp,still,q=low') as s:
         r = s.js(HORN_JS)
-    ok = r['car'] == 'car' and r['tractor'] == 'tractor' and r['heli'] == 'heli' and r['boat'] == 'boat' and r['walk'] is None and r['esc']
-    print(f"  {'✓' if ok else '✗'} 载具喇叭：汽车 {r['car']}、拖拉机 {r['tractor']}、直升机 {r['heli']}、游艇 {r['boat']}，步行时按 H 不鸣笛（{r['walk']}），ESC 面板列出 H 键：{r['esc']}")
+    ok = r['car'] == 'car' and r['tractor'] == 'tractor' and r['heli'] == 'heli' and r['boat'] == 'boat' and r['walk'] is None and r['esc'] and r['eHorn'] == 0
+    print(f"  {'✓' if ok else '✗'} 载具喇叭：汽车 {r['car']}、拖拉机 {r['tractor']}、直升机 {r['heli']}、游艇 {r['boat']}，步行时按 H 不鸣笛（{r['walk']}），ESC 面板列出 H 键：{r['esc']}，游艇上按 E 鸣笛的交互 {r['eHorn']} 个（应为 0）")
     failed += 0 if ok else 1
     for q in ('high', 'low'):
         with Session(f'#fp,still,q={q}') as s:
@@ -149,6 +152,34 @@ def main():
     b = np.asarray(Image.open(os.path.join(out, 'v022_浮台.png')).convert('RGB')).astype(int); teal = ((b[..., 1] - b[..., 0] > 45) & (b[..., 2] - b[..., 0] > 45) & (b[..., 1] > 150)).mean() * 100
     ok = white < 0.5 and teal < 5
     print(f"  {'✓' if ok else '✗'} V-022 外海没有满海面白色碎片（近白像素 {white:.2f}%，< 0.5%）；登岸浮台旁没有翻折的青绿色水面背面（{teal:.2f}%，< 5%）")
+    failed += 0 if ok else 1
+    # V-025：游艇构件（船体局部坐标）与海面遮罩
+    YACHT_JS = r"""() => { const T = __statics.THREE, B = __dbg.BOAT, Y = B.g; Y.updateMatrixWorld(true); const inv = new T.Matrix4().copy(Y.matrixWorld).invert(), out = { posts: [], lamps: 0 };
+      const bb = (o) => { o.geometry.computeBoundingBox(); return o.geometry.boundingBox.clone().applyMatrix4(new T.Matrix4().multiplyMatrices(inv, o.matrixWorld)); };
+      const ramps = B.YL.walks.filter(w => w.kind === 'ramp');
+      Y.traverse(o => { if (!o.isMesh || o.geometry.type !== 'BoxGeometry') return; const b = bb(o), sx = b.max.x - b.min.x, sy = b.max.y - b.min.y, sz = b.max.z - b.min.z;
+        if (sx < 0.2 && sz < 0.2 && sy > 1 && Math.abs((b.min.x + b.max.x) / 2 + 7.5) < 0.1 && b.max.y > 10) out.posts.push(+b.min.y.toFixed(2));
+        if (Math.abs(sx - 1.4) < 0.01 && sy < 0.05 && Math.abs(sz - 0.25) < 0.01) for (const r of ramps) { const x0 = Math.min(r.x0, r.x1), x1 = Math.max(r.x0, r.x1);
+          if (b.max.x > x0 && b.min.x < x1 && b.max.z > r.z0 - r.hw && b.min.z < r.z0 + r.hw && b.min.y > Math.min(r.y0, r.y1) && b.min.y < Math.max(r.y0, r.y1) + 0.5) out.lamps++; } });
+      return out; }"""
+    MOVE_JS = r"""([x, z]) => { const B = __dbg.BOAT; B.x = x; B.z = z; B.g.position.set(x, B.y, z); B.g.updateMatrixWorld(true); }"""
+    TW = r"""(p) => { const Y = __dbg.BOAT.g; const v = Y.localToWorld(new __statics.THREE.Vector3(...p)); return [v.x, v.y, v.z]; }"""
+    with Session('#fp,still,q=high,clean', size=(960, 540)) as s:
+        s.js("() => { const u = document.getElementById('fpui'); if (u) u.style.display = 'none'; }")
+        y = s.js(YACHT_JS)
+        s.js(MOVE_JS, [0, 300])                                  # 峡谷出口外的开阔海面
+        hole = []
+        for nm, cam, tgt in (('船首', [14, 38, 0.5], [14, 0, 0]), ('船尾', [-18, 38, 0.5], [-18, 0, 0])):
+            a, b = s.js(TW, cam), s.js(TW, tgt)
+            s.js(rj, [*a, *b]); s.shot(os.path.join(out, f'v025_{nm}.png'))
+            s.js("() => { __dbg.BOAT.x = 1e5; }")              # 只把海面遮罩挪走（船体网格不动）
+            s.js(rj, [*a, *b]); s.shot(os.path.join(out, f'v025_{nm}_无遮罩.png')); s.js("() => { __dbg.BOAT.x = 0; }")
+            p1 = np.asarray(Image.open(os.path.join(out, f'v025_{nm}.png')).convert('RGB')).astype(int)
+            p2 = np.asarray(Image.open(os.path.join(out, f'v025_{nm}_无遮罩.png')).convert('RGB')).astype(int)
+            hole.append((np.abs(p1 - p2).max(axis=2) > 16).mean() * 100)
+    ok = len(y['posts']) == 2 and max(y['posts']) <= 7.9 and y['lamps'] == 0 and max(hole) < 0.3
+    print(f"  {'✓' if ok else '✗'} V-025 游艇：顶层后柱柱底 {y['posts']}（≤ 7.9，日光甲板 7.88）、楼梯开口上方灯带 {y['lamps']} 条（应为 0）、"
+          f"海面遮罩露出船底的像素 船首 {hole[0]:.2f}% / 船尾 {hole[1]:.2f}%（< 0.3%）")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)

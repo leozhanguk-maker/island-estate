@@ -312,14 +312,23 @@ vec4 chopSlope(vec2 xz) { vec4 r = vec4(0.0); ${[0, 1, 2].slice(0, nc).map(cas).
 }
 
 // ---------------------------------------------------------------- 甲板遮罩
-// deckDist(xz, k)：点到甲板范围的距离（范围内 ≤ 0）；k = 0 登岸浮台（轴对齐矩形），k = 1 游艇（船体局部坐标下的矩形，x -27.7～25、|z| ≤ 4.6）
+// deckDist(xz, k)：点到甲板范围的距离（范围内 ≤ 0）；k = 0 登岸浮台（轴对齐矩形），k = 1 游艇（船体水线轮廓 ∪ 船尾游泳平台，用于压低近船浪高）
+// hullDist(xz)：点到游艇水线轮廓的距离，只在船体内不画水面。原先按矩形（x -27.7～25、|z| ≤ 4.6）裁掉水面，
+// 船首收窄处、船尾游泳平台底下都没有水，露出白色船底，从上面看像海里铺了一块布（2026-09-29 你的反馈）
 const SEA_DECK_GLSL = `
 uniform vec4 uFloat, uBoat;
 #define SWASH_SLOPE 0.2
+vec2 boatLocal(vec2 xz) { vec2 r = xz - uBoat.xy; return vec2(r.x * uBoat.z - r.y * uBoat.w, r.x * uBoat.w + r.y * uBoat.z); }
+// 水线半宽：与 07_vehicles 船体放样的 hb(u) 相同（u 为船尾 0 → 船首 1），水线处约为甲板宽的 0.975
+float hullHalf(float u) { return u < 0.5 ? 4.6 * (0.93 + 0.07 * sin(u / 0.5 * 1.5707963)) : 4.6 * pow(max(0.0, 1.0 - pow((u - 0.5) / 0.5, 2.2)), 0.62) + 0.05; }
+float hullDist(vec2 xz) {
+  vec2 l = boatLocal(xz); float u = clamp((l.x + 24.9) / 49.8, 0.0, 1.0);
+  return max(abs(l.y) - hullHalf(u) * 0.975 + 0.05, abs(l.x - 0.1) - 25.0);
+}
 float deckDist(vec2 xz, int k) {
   if (k == 0) { vec2 d = abs(xz - uFloat.xy) - uFloat.zw; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
-  vec2 r = xz - uBoat.xy, l = vec2(r.x * uBoat.z - r.y * uBoat.w, r.x * uBoat.w + r.y * uBoat.z), d = abs(l - vec2(-1.35, 0.0)) - vec2(26.35, 4.6);
-  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+  vec2 d = abs(boatLocal(xz) - vec2(-26.0, 0.0)) - vec2(1.3, 4.2);        // 船尾游泳平台（x -27.2～-24.8、|z| ≤ 4.1）外扩 0.1 m
+  return min(hullDist(xz), length(max(d, 0.0)) + min(max(d.x, d.y), 0.0));
 }`;
 // ---------------------------------------------------------------- 海面材质
 const SEA_FOAM_GLSL = `
@@ -387,7 +396,7 @@ function makeSeaMaterial(dataTex, shoreTex, fft, opts) {
         vec4 chS = chopSlope(vXZ);
         vec3 dPx = dFdx(vW), dPy = dFdy(vW); float fp = max(max(length(dPx), length(dPy)), 1e-4);
         vec3 V = normalize(cameraPosition - vW); float dist = length(cameraPosition - vW);
-        if (deckDist(vXZ, 0) <= 0.0 || deckDist(vXZ, 1) <= 0.0) discard;   // 浮台、船体范围内不画水面（甲板底下不会透出水）
+        if (deckDist(vXZ, 0) <= 0.0 || hullDist(vXZ) <= 0.0) discard;   // 浮台、船体水线轮廓内不画水面（甲板底下不会透出水；游泳平台底下照常有水）
         if (!gl_FrontFacing && cameraPosition.y > vW.y + 0.05) discard;       // 相机在水面以上却看到背面：水面网格贴着陡坡翻折的假象（原先显示成一整片不透明的青绿色）
         if (!gl_FrontFacing) {                       // 水下仰视水面：与原海面相同（生态水域的雾色由 17e 写入 uUwC/uUwD/uUwE）
           float rip = vnoise(vW.xz * 0.6 + uTime * 0.4) * 0.6 + vnoise(vW.xz * 1.7 - uTime * 0.7) * 0.4;
