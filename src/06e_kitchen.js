@@ -321,16 +321,16 @@ function buildKitchen() {
       box(K, 0.08, 0.35, 0.08, BM.glow, cx + (woman ? -0.45 : 0.45) * -1, 2.1, RZ1 - 0.05);
     }
     for (const x of [-2.8, 0, 2.8]) cyl(K, 0.08, 0.08, 0.02, BM.glow, x, RH - 0.03, RZ1 - 0.5, 16);
-    // 男卫：两个小便斗（背靠厨房北墙）、一个马桶隔间、西墙双盆洗手台
-    for (const x of [-4.0, -3.2]) { urinalF(K, x, FY, RZ0, Math.PI); rect(x - 0.25, x + 0.25, RZ0 - 0.45, RZ0); }
+    // 男卫：东墙（中间隔墙西侧）4 个小便斗、两个蹲便隔间（背靠厨房北墙）、西墙双盆洗手台
+    for (const z of [-8.6, -7.8, -7.0, -6.2]) { urinalF(K, -0.075, FY, z, -Math.PI / 2); rect(-0.55, -0.075, z - 0.25, z + 0.25); }
     const stall = (x0, x1) => {   // 马桶隔间：深灰石材隔板 + 柚木门（向内开启）；马桶背靠厨房北墙
       const zf = RZ0 - 1.7, BH = 2.1;
       for (const x of [x0, x1]) { box(K, 0.04, BH, 1.7, BM.stoneDark, x, FY + 0.15 + BH / 2, RZ0 - 0.85); seg(x, RZ0, x, zf); }
       box(K, 0.3, BH, 0.04, BM.stoneDark, x0 + 0.15, FY + 0.15 + BH / 2, zf); box(K, 0.3, BH, 0.04, BM.stoneDark, x1 - 0.15, FY + 0.15 + BH / 2, zf); seg(x0, zf, x0 + 0.3, zf); seg(x1 - 0.3, zf, x1, zf);
       box(K, 0.04, BH - 0.05, x1 - x0 - 0.65, T.teak, x0 + 0.32, FY + 0.15 + BH / 2, zf + (x1 - x0 - 0.65) / 2); seg(x0 + 0.32, zf, x0 + 0.32, zf + (x1 - x0 - 0.65));   // 门扇向内开
-      wcF(K, (x0 + x1) / 2, FY, RZ0, Math.PI, 1); rect((x0 + x1) / 2 - 0.32, (x0 + x1) / 2 + 0.32, RZ0 - 0.72, RZ0);
+      squatF(K, (x0 + x1) / 2, FY, RZ0, Math.PI); walk((x0 + x1) / 2 - 0.45, (x0 + x1) / 2 + 0.45, RZ0 - 1.425, RZ0 - 0.175, FY + 0.15);   // 蹲便踏台高 0.15，登记为可行走面（可以踏上去）
     };
-    stall(-2.45, -0.95);
+    stall(-4.2, -2.85); stall(-2.8, -1.4);   // 两隔间各用各的隔板（不与西墙、彼此共面）
     vanityF(K, -RX + 0.125, FY, -7.5, Math.PI / 2, 1.5, 2); rect(-RX + 0.125, -RX + 0.7, -8.3, -6.7);
     // 女卫：两个马桶隔间、东墙双盆洗手台、梳妆凳
     stall(0.35, 1.85); stall(1.95, 3.45);

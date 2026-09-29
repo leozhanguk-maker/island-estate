@@ -185,7 +185,7 @@ JS = r'''() => {
       if (D.COLL.segs.some(s => vy >= s.bottom && vy <= s.top && cross(s, 170, -46, 164, -46))) fails.push('别墅西门—连廊—厨房东门一线被墙线段挡住');
       const pads = D.L.kitchen.pads, inPad = (x, z) => pads.some(([x0, z0, x1, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
       const pots = D.POTS.filter(p => inPad(p.x, p.z)).length; if (pots) fails.push(`厨房馆基座内有 ${pots} 盆栽`); } }
-  // ---- 2r. 别墅调整（2026-09-29）：南门雨篷两根柱落到地面；三部楼梯都在室内东侧（坡面中线 x > 186）；公共卫生间与厨房馆之间是实墙（不互通） ----
+  // ---- 2r. 别墅调整（2026-09-29）：南门雨篷两根柱落到地面；三部楼梯都在室内东侧（坡面中线 x > 186）；一楼北墙正中 200 寸电视、南墙东段组合柜；公共卫生间与厨房馆之间是实墙（不互通） ----
   { const TH2 = TH, cols = []; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || o.geometry.type !== 'CylinderGeometry') return; const bb = new TH2.Box3().setFromObject(o), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
       if (Math.abs(cz + 36.2) < 0.2 && (Math.abs(cx - 184.3) < 0.2 || Math.abs(cx - 179.7) < 0.2) && bb.max.y - bb.min.y > 2.5) cols.push(bb.min.y - D.gh(cx, cz)); }));
     if (cols.length !== 2 || cols.some(d => d > 0)) fails.push(`南门雨篷柱底离地 ${cols.map(r3)}（应为 2 根、柱底不高于地面）`);
@@ -193,6 +193,10 @@ JS = r'''() => {
     if (ramps.some(w => (w.x0 + w.x1) / 2 < 186)) fails.push(`别墅楼梯应都在室内东侧：坡面中线 x = ${ramps.map(w => r3((w.x0 + w.x1) / 2))}`);
     const K = D.KITCHEN, kz = K.z - 4.625;   // 厨房北墙外皮（卫生间背墙）
     if (!D.COLL.segs.some(s => Math.abs(s.az - s.bz) < 1e-6 && Math.abs(s.az - (K.z - 4.5)) < 0.01 && Math.min(s.ax, s.bx) <= K.x - 4.4 && Math.max(s.ax, s.bx) >= K.x + 4.4)) fails.push('公共卫生间与厨房馆之间的北墙没有整段墙线段（不应互通）');
+    let tv = null; __statics.groups.forEach(g => g.traverse(o => { if (!o.isMesh || tv) return; const bb = new TH2.Box3().setFromObject(o), sz = bb.getSize(new TH2.Vector3());
+      if (Math.abs(sz.x - 4.43) < 0.02 && Math.abs(sz.y - 2.49) < 0.02 && sz.z < 0.05) tv = bb; }));
+    if (!tv || Math.abs((tv.min.x + tv.max.x) / 2 - 181.5) > 0.1 || tv.max.z > -52.7) fails.push('一楼北墙正中没有 200 寸电视（4.43 × 2.49 m）');
+    if (!D.COLL.rects.some(r => Math.abs(r.x - (180 + 5.975)) < 0.05 && Math.abs(r.z - (-46 + 6.565)) < 0.05 && r.hw > 2.8)) fails.push('一楼南墙东段没有组合柜碰撞体');
     const doorsN = D.COLL.segs.filter(s => Math.abs(s.az - s.bz) < 1e-6 && Math.abs(s.az - (K.z - 9.225)) < 0.01).length; if (doorsN !== 3) fails.push(`公共卫生间北墙应为 3 段墙夹 2 扇门，实际 ${doorsN} 段`); }
   // ---- 3. 数量统计 ----
   let meshes = 0; __statics.groups.forEach(g => g.traverse(o => { if (o.isMesh) meshes++; }));

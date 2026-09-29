@@ -25,15 +25,21 @@ JS = r'''() => {
   walkTo(V(1.6, -3.9)); out.masterToGuest = walkTo(V(6.0, -3.9), 4);
   // 5. 客卫只能从东门进
   walkTo(V(1.6, -4.0)); walkTo(V(-0.4, -4.0)); walkTo(V(-1.6, -2.1)); walkTo(V(3.0, -2.1)); walkTo(V(6.95, -2.1)); walkTo(V(6.95, -4.15)); out.guest = walkTo(V(5.75, -4.15));
-  // 6. 衣帽间：从过道往南走被墙挡住；从东门进
+  // 6. 衣帽间：从过道往南走被墙挡住；从楼梯厅往西走被墙挡住（东侧没有门）；从主卧东墙南段的门进
   walkTo(V(6.95, -4.15)); walkTo(V(6.95, -2.1)); walkTo(V(3.0, -2.1)); out.closetWall = walkTo(V(3.0, 1.5), 4);
-  walkTo(V(3.0, -2.1)); walkTo(V(6.95, -2.1)); walkTo(V(6.95, 0.1)); out.closet = walkTo(V(4.6, 0.1));
+  walkTo(V(3.0, -2.1)); walkTo(V(6.95, -2.1)); walkTo(V(6.95, 0.1)); out.closetEast = walkTo(V(4.6, 0.1), 4);
+  walkTo(V(6.95, -2.1)); walkTo(V(3.0, -2.1)); walkTo(V(-1.6, -2.1)); walkTo(V(-1.2, 0.8)); out.closet = walkTo(V(2.2, 0.8));
+  // 6b. 主卧沙发西侧推拉门 → 阳台
+  walkTo(V(-1.2, 0.8)); walkTo(V(-7.3, -4.0)); out.bedBalcony = walkTo(V(-7.3, -8.6));
   // 7. 走廊 → S2 下端（南端）→ 三层
-  walkTo(V(6.95, 0.1)); walkTo(V(7.1, 4.3)); walkTo(V(8.45, 4.3)); out.s2 = walkTo(V(8.45, -3.3));
+  walkTo(V(-7.3, -4.0)); walkTo(V(-1.6, -2.1)); walkTo(V(3.0, -2.1)); walkTo(V(7.1, -2.1)); walkTo(V(7.1, 4.3)); walkTo(V(8.45, 4.3)); out.s2 = walkTo(V(8.45, -3.3));
   // 8. 三层：书房 → 北卧（门靠近中间墙）；南卧；洗浴室（门朝北）
   walkTo(V(6.3, -3.0)); walkTo(V(2.2, -1.2)); walkTo(V(2.1, -0.7)); out.northBed = walkTo(V(0.2, -0.7));
   walkTo(V(2.1, -0.7)); walkTo(V(2.1, 0.7)); out.southBed = walkTo(V(0.2, 0.7));
-  walkTo(V(2.1, 0.7)); walkTo(V(4.85, 0.75)); out.bath3 = walkTo(V(4.85, 2.6));
+  // 8b. 两间卧室西墙推拉门 → 西侧露台
+  walkTo(V(-1.0, 0.8)); walkTo(V(-5.9, 2.0)); out.southTerrace = walkTo(V(-7.6, 2.0)); walkTo(V(-5.9, 2.0)); walkTo(V(-1.0, 0.8)); walkTo(V(2.1, 0.7));
+  walkTo(V(2.1, -0.7)); walkTo(V(-1.0, -0.8)); walkTo(V(-5.9, -1.8)); out.northTerrace = walkTo(V(-7.6, -1.8)); walkTo(V(-5.9, -1.8)); walkTo(V(-1.0, -0.8)); walkTo(V(2.1, -0.7)); walkTo(V(2.1, 0.7));
+  walkTo(V(4.85, 0.75)); out.bath3 = walkTo(V(4.85, 2.6));
   // 9. 三层 → S3（由北向南上）→ 屋顶
   walkTo(V(4.85, 0.75)); walkTo(V(5.2, -3.2)); walkTo(V(7.25, -3.5)); out.roof = walkTo(V(7.25, 4.6));
   // 10. 公共卫生间：从门前小路进男卫、女卫；男卫往南走不进厨房；男卫往东走不进女卫
@@ -45,6 +51,7 @@ JS = r'''() => {
   out.golf = walkTo(Kw(-9.2, -10.7)); out.golfGround = +D.gh(st.pos.x, st.pos.z).toFixed(2);
   const inV = (q) => Math.abs(q.x - 180) < 11.5 && Math.abs(q.z + 46) < 8 && q.y < 21;
   out.seats = D.SEATS.filter(inV).length;
+  out.terraceNorthSeats = D.SEATS.filter(q => Math.abs(q.z - (-46 - 6.55)) < 0.1 && q.y > 18).length;
   return out;
 }'''
 

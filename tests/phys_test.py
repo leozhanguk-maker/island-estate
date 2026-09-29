@@ -61,7 +61,7 @@ JS = r'''
   setp(189.8, -39.4); run([], 0.1); out.v_gf = walkTo(189.8, -39.6);
   out.v_1f = walkTo(189.8, -48.4); out.v_1fdoorApproach = walkTo(188.1, -53.0); out.v_balcony = walkTo(188.1, -55.2);
   out.v_back = walkTo(188.1, -52.5); walkTo(187.1, -50.0); out.v_s2a = walkTo(187.1, -41.8); out.v_s2 = walkTo(188.45, -41.8); out.v_2f = walkTo(188.45, -49.3);
-  walkTo(186.3, -48.6); walkTo(182.25, -48.6); out.v_2fdoor = walkTo(182.25, -50.2); out.v_terrace = walkTo(182.25, -52.3); out.v_in2 = walkTo(182.25, -49.0);
+  walkTo(187.1, -49.6); out.v_2fdoor = walkTo(187.1, -50.6); out.v_terrace = walkTo(187.1, -52.3); out.v_in2 = walkTo(187.1, -49.6);   // 三层北门在书桌东侧、正对楼梯
   out.v_s3a = walkTo(187.25, -49.6); out.v_s3 = walkTo(187.25, -42.5); out.v_roof = walkTo(187.25, -41.0); out.v_roofMid = walkTo(182, -46);
   // ---- 塔：东峰塔沿折返楼梯登顶 ----
   { const rot = -0.38, cx = L.eastTower.x, cz = L.eastTower.z, toW = (lx, lz) => [cx + lx * Math.cos(rot) + lz * Math.sin(rot), cz - lx * Math.sin(rot) + lz * Math.cos(rot)];
