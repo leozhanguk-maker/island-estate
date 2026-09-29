@@ -61,5 +61,5 @@ function ecoShowUpdate(dt) {
   if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; return; }
   ecoShowFollow(dt);
 }
-// 游艇喇叭：驾驶时按 H，或在驾驶台按操控台上的红色按钮
+// 游艇喇叭：驾驶时按 H（驾驶台红色按钮只是外观，不再登记按 E 的交互）
 function boatHorn() { ecoHornSound(); const msg = ecoOceanShow(BOAT.x, BOAT.z); ecoToast(msg); return msg; }

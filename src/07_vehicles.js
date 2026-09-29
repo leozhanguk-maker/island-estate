@@ -92,7 +92,8 @@ function buildYacht() {
   extrudePlan(sunH, 1.5, M.yachtWhite, 7.65, Y); extrudePlan(offsetPlan(sunH, 0.04), 0.7, M.yachtGlass, 8.05, Y);
   YL.rects.push({ x: 0.5, z: 0, hw: 6.1, hd: 3.2, rot: 0, bottom: 7.3, top: 9 });
   box(Y, 12, 0.22, 7.8, M.yachtWhite, -2.5, 10.4, 0);
-  for (const z of [-3.4, 3.4]) for (const x of [-7.5, -2]) box(Y, 0.12, 1.3, 0.12, M.yachtWhite, x, 9.75, z);
+  // 顶棚支柱：x -2 一对立在日光甲板船室顶（9.15）上；x -7.5 一对在船室顶之外，下面是日光甲板（7.88），须一直落到甲板（原先都从 9.1 起，后一对悬空 1.2 m）
+  for (const z of [-3.4, 3.4]) { box(Y, 0.12, 1.3, 0.12, M.yachtWhite, -2, 9.75, z); box(Y, 0.12, 10.4 - 7.88, 0.12, M.yachtWhite, -7.5, (10.4 + 7.88) / 2, z); YL.rects.push({ x: -7.5, z, hw: 0.08, hd: 0.08, rot: 0, bottom: 7.6, top: 10.4 }); }
   box(Y, 1.2, 2.2, 0.35, M.yachtWhite, 1.5, 11.6, 0); box(Y, 0.3, 0.2, 3.2, M.metalDark, 1.5, 12.7, 0);
   cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, 0.9, 12); cyl(Y, 0.35, 0.35, 0.35, M.white, 1.2, 13.0, -0.9, 12);
   // 日光甲板躺椅（后段遮阳顶上）
@@ -128,7 +129,7 @@ function buildYacht() {
   box(Y, 2.2, 0.95, 0.7, M.stone, 3.6, 2.95, -0.6); YL.rects.push({ x: 3.6, z: -0.6, hw: 1.1, hd: 0.35, rot: 0, bottom: 2, top: 4 });
   wallQuad(Y, [6.6, -3.7], [6.6, -0.6], 2.45, 5.1, M.wallLight); wallQuad(Y, [6.6, 0.6], [6.6, 2.2], 2.45, 5.1, M.wallLight); ySeg(6.6, -3.7, 6.6, -0.6, 2.2, 4.6); ySeg(6.6, 0.6, 6.6, 2.2, 2.2, 4.6);
   bedF(Y, 10.2, 2.45, 0, -Math.PI / 2, 1.9, 2.1); YL.rects.push({ x: 10.2, z: 0, hw: 1.15, hd: 1.2, rot: 0, bottom: 2, top: 4 }); ySeat(10.0, 2.45 + 0.62, 0, Math.PI / 2, 'lie');
-  for (const [x, z] of [[-15, 0], [-8, 0], [-2.5, 0], [3.5, 1.5], [10, 0]]) box(Y, 1.4, 0.03, 0.25, M.lamp, x, 5.08, z);
+  for (const [x, z] of [[-15, 0], [-8, 0], [-2.5, 0], [3.5, -0.9], [10, 0]]) box(Y, 1.4, 0.03, 0.25, M.lamp, x, 5.08, z);   // (3.5, -0.9) 原在 (3.5, 1.5)，正好悬在上层楼梯开口里，从上面看像一块白板躺在楼梯上
   // ---- 上层甲板室：天空酒廊 + 驾驶台（舵轮、操控台、屏幕、船长椅） ----
   sofaF(Y, -9, 5.15, 2.6, Math.PI, 3.6, 0x8f949a, [0xb54a3a, 0xe0d6c4]); tableF(Y, -9, 5.15, 1.3, 0, 1.2, 0.7, 0.4, M.woodDark, M.alu); YL.rects.push({ x: -9, z: 2.6, hw: 1.8, hd: 0.45, rot: 0, bottom: 4.8, top: 6.8 }, { x: -9, z: 1.3, hw: 0.6, hd: 0.35, rot: 0, bottom: 4.8, top: 6.8 });
   for (const x of [-10.2, -9, -7.8]) ySeat(x, 5.15 + 0.42, 2.45, 0);
