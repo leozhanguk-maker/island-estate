@@ -103,6 +103,10 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
         stats.stopDrift = +Math.max(...M.map((m, i) => Math.hypot(D.ECO.zones[m[0]].center.x - c1[i].x, D.ECO.zones[m[0]].center.z - c1[i].z))).toFixed(2);
         if (!bad && stats.stopDrift > 0.01) bad = `游艇停下后召唤来的水域仍移动了 ${stats.stopDrift} m（船停应停）`; }
       if (!bad && Math.min(...stats.follow) < 60) bad = `鸣笛后游艇南行 90 m，召唤来的水域只跟了 ${stats.follow.join('、')} m（应追着船游）`;
+      // 一直跟到游艇回到水闸口：船在外海时推进 200 秒召唤不结束（原先 2 分钟就散）；船回到水闸口后 4 秒内各水域挪回原处
+      if (!bad) { for (let s = 0; s < 6000; s++) D.ecoShowUpdate(1 / 30); stats.showAfter200s = !!D.ECO_SHOW.moved; if (!stats.showAfter200s) bad = '鸣笛召唤在游艇仍在外海时 200 秒内就结束了（应一直跟到游艇回到水闸口）';
+        const B0 = { x: B.x, z: B.z }; B.x = 0; B.z = gz + 6; for (let s = 0; s < 120; s++) D.ecoShowUpdate(1 / 30); stats.showEndAtGate = !D.ECO_SHOW.moved; B.x = B0.x; B.z = B0.z;
+        if (!bad && !stats.showEndAtGate) bad = '游艇回到水闸口 4 秒后召唤来的水域仍未挪回原处'; }
       Object.assign(B, keep); }
     // 还原：召唤的水域挪回原处、鲸群回到测试前的状态（不影响后面的绘制调用测量）
     if (D.ECO_SHOW.moved) { D.ECO_SHOW.t = 0; D.ecoShowUpdate(0.01); }

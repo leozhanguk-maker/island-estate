@@ -58,7 +58,10 @@ function dolphinGeo() {
     for (let k = 0; k < RING; k++) {
       const a = k / RING * TAU, sa = Math.sin(a), ca = Math.cos(a), y = sa >= 0 ? top * sa : bot * sa, z = w * ca * (t > 0.7 ? 0.75 : 1);
       pos.push(x, y, z); bend.push(t);
-      const c = cTop.clone().lerp(cSide, clamp(1 - sa * 1.6, 0, 1)).lerp(cBelly, clamp(-sa * 1.5 - 0.1, 0, 1));
+      const cape = 0.55 - 0.35 * Math.exp(-Math.pow((s - 1.25) / 0.35, 2)) + (s < 0.35 ? 0.3 * (1 - s / 0.35) : 0);   // 深色披肩下沿（sin 值）：背鳍下方下探
+      const c = cTop.clone().lerp(cSide, clamp((cape - sa) * 4, 0, 1)).lerp(cBelly, clamp(-sa * 1.5 - 0.1, 0, 1));
+      if (s < 0.12 && sa < 0.3) c.lerp(cSide, 0.35);                                                          // 吻部略浅
+      if (s > 0.4 && s < 0.62 && Math.abs(sa - (0.05 - (s - 0.4) * 1.1)) < 0.03 && Math.abs(ca) > 0.5) c.lerp(cLine, 0.7);   // 眼到胸鳍的深色细纹
       if (mouthY !== null && Math.abs(y - mouthY) < 0.011 && Math.abs(ca) > 0.35) c.copy(cLine);
       if (s > 0.52 && s < 0.6 && sa > 0.93 && Math.abs(ca) < 0.3) c.copy(cLine);   // 呼吸孔（头顶新月形）
       col.push(c.r, c.g, c.b);
@@ -69,7 +72,19 @@ function dolphinGeo() {
   const sph = (cx, cy, cz, r, c, bnd) => { const b = pos.length / 3, NU = 8, NV = 6; for (let v = 0; v <= NV; v++) for (let u = 0; u <= NU; u++) { const th = v / NV * Math.PI, ph = u / NU * TAU; pos.push(cx + r * Math.sin(th) * Math.cos(ph), cy + r * Math.cos(th), cz + r * Math.sin(th) * Math.sin(ph)); col.push(c.r, c.g, c.b); bend.push(bnd); }
     for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) { const a = b + v * (NU + 1) + u, d = a + NU + 1; idx.push(a, d, a + 1, a + 1, d, d + 1); } };
   { const s = 0.37, [, , w] = prof(s); for (const sd of [-1, 1]) sph(L / 2 - s, 0.045, sd * (w * 0.93), 0.016, cEye, s / L); }
-  const fin = (pts, bnd, c = cTop) => { const b = pos.length / 3; for (const p of pts) { pos.push(...p); col.push(c.r, c.g, c.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
+  // 鳍：透镜形截面（中部向两面鼓起 th，边缘薄），近看有厚度（2026-09-29 细节化；原为单层平面）
+  const fin = (pts, bnd, c = cTop, th = 0.025) => {
+    const n = pts.length, ce = [0, 0, 0], N = [0, 0, 0]; for (const p of pts) for (let k = 0; k < 3; k++) ce[k] += p[k] / n;
+    for (let i = 0; i < n; i++) { const a = pts[i], q = pts[(i + 1) % n]; N[0] += (a[1] - q[1]) * (a[2] + q[2]); N[1] += (a[2] - q[2]) * (a[0] + q[0]); N[2] += (a[0] - q[0]) * (a[1] + q[1]); }
+    const nl = Math.hypot(...N) || 1; for (let k = 0; k < 3; k++) N[k] /= nl;
+    const b = pos.length / 3, put = (p) => { pos.push(...p); col.push(c.r, c.g, c.b); bend.push(bnd(p)); };
+    for (const p of pts) put(p);
+    for (const sg of [1, -1]) for (const p of pts) put([0, 1, 2].map(k => ce[k] + (p[k] - ce[k]) * 0.55 + N[k] * th * 0.8 * sg));
+    put([0, 1, 2].map(k => ce[k] + N[k] * th)); put([0, 1, 2].map(k => ce[k] - N[k] * th));
+    const T = b + 3 * n, B = T + 1;
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n, p0 = b + i, p1 = b + j, q0 = b + n + i, q1 = b + n + j, r0 = b + 2 * n + i, r1 = b + 2 * n + j;
+      idx.push(p0, p1, q1, p0, q1, q0, q0, q1, T, p1, p0, r0, p1, r0, r1, r1, r0, B); }
+  };
   const bx = (s) => L / 2 - s;
   // 镰刀形背鳍（后缘内凹）
   fin([[bx(1.02), 0.29, 0], [bx(1.1), 0.44, 0], [bx(1.26), 0.58, 0], [bx(1.44), 0.63, 0], [bx(1.4), 0.52, 0], [bx(1.42), 0.4, 0], [bx(1.52), 0.24, 0]], p => (L / 2 - p[0]) / L);

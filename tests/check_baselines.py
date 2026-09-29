@@ -1,6 +1,6 @@
 # 物理/载具基线断言：运行现有的 5 个浏览器测试，解析输出并对照基线数值（HANDOVER“当前测试基线”）
 # 这些脚本本身只打印数据，本文件负责判定通过/失败。
-# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm kitchen]
+# 用法：python3 tests/check_baselines.py [phys drive boat cruise heli dorm kitchen villa]
 import os, sys, ast, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -103,6 +103,25 @@ CHECKS = {
         ('基座外地面上的人被挡土墙挡住，不会钻进基座', lambda r: (r['podiumOut']['x'], r['podiumOut']['feet']), lambda v: v[0] < -6.3 and v[1] < 10.5),
         ('别墅西墙除西门外仍是实墙', lambda r: r['villaWallX'], lambda v: v > -11.0),
         ('厨房馆座位 20 个（4 高脚凳 + 6 餐椅 + 10 户外餐椅）', lambda r: r['seats'], lambda v: v == 20),
+    ],
+    'villa': [
+        ('正门进客厅，经东侧楼梯（扶手在西侧）上二层（15.25）', lambda r: (r['hall']['feet'], r['s1']['x'], r['s1']['feet']), lambda v: near(v[0], 11.48, 0.02) and v[1] > 9 and near(v[2], 15.25, 0.02)),
+        ('二层楼梯厅北门到阳台（15.43）', lambda r: (r['balcony']['z'], r['balcony']['feet']), lambda v: v[0] < -8 and near(v[1], 15.43, 0.03)),
+        ('宽过道经主卧门进主卧，主卧西门进主卫', lambda r: (r['corridor']['feet'], r['bedroom']['x'], r['masterBath']['x'], r['masterBath']['z']), lambda v: near(v[0], 15.25, 0.02) and v[1] < -1 and 0.8 < v[2] < 4.35 and v[3] < -3.4),
+        ('主卫（2/3）与客卫（1/3）之间是实墙（往东走被挡住）', lambda r: r['masterToGuest']['x'], lambda v: v < 4.35),
+        ('客卫从东门进入（x 4.5～6.33）', lambda r: (r['guest']['x'], r['guest']['z']), lambda v: 4.5 < v[0] < 6.35 and v[1] < -3.4),
+        ('衣帽间只能从主卧进入：过道、楼梯厅都进不去', lambda r: (r['closetWall']['z'], r['closetEast']['x'], r['closet']['x'], r['closet']['z']), lambda v: v[0] < -0.8 and v[1] > 6.3 and v[2] > 0.7 and v[3] > -0.7),
+        ('主卧沙发西侧推拉门通阳台（15.43）', lambda r: (r['bedBalcony']['z'], r['bedBalcony']['feet']), lambda v: v[0] < -8 and near(v[1], 15.43, 0.03)),
+        ('三层两间卧室西墙推拉门通西侧露台（18.8）', lambda r: (r['northTerrace']['x'], r['northTerrace']['feet'], r['southTerrace']['x'], r['southTerrace']['feet']), lambda v: v[0] < -6.5 and near(v[1], 18.8, 0.02) and v[2] < -6.5 and near(v[3], 18.8, 0.02)),
+        ('三层露台北侧椅子塞进桌下，不可坐', lambda r: r['terraceNorthSeats'], lambda v: v == 0),
+        ('走廊到 S2 南端上三层（18.8）', lambda r: (r['s2']['z'], r['s2']['feet']), lambda v: v[0] < -2.5 and near(v[1], 18.8, 0.02)),
+        ('三层北卧、南卧的门都靠近中间墙，可以进入', lambda r: (r['northBed']['x'], r['northBed']['z'], r['southBed']['x'], r['southBed']['z']), lambda v: v[0] < 1.3 and v[1] < 0 and v[2] < 1.3 and v[3] > 0.2),
+        ('三层洗浴室门朝北，可以进入', lambda r: r['bath3']['z'], lambda v: v > 1.4),
+        ('S3 由北向南上屋顶（22.45）', lambda r: r['roof']['feet'], lambda v: near(v, 22.45, 0.03)),
+        ('公共卫生间男卫、女卫都从北门进入（11.48）', lambda r: (r['men']['z'], r['men']['feet'], r['women']['z'], r['women']['feet']), lambda v: v[0] > -9.2 and near(v[1], 11.48, 0.02) and v[2] > -9.2 and near(v[3], 11.48, 0.02)),
+        ('男卫走不进厨房、也走不进女卫', lambda r: (r['menToKitchen']['z'], r['menToWomen']['x']), lambda v: v[0] < -4.7 and v[1] < -21.0),
+        ('连廊北沿沿厨房东侧的小路绕到卫生间门前；门前小路西端石阶下到高尔夫球场', lambda r: (r['pathFront']['x'], r['pathFront']['feet'], r['golf']['x'], r['golf']['feet'], r['golfGround']), lambda v: near(v[0], -23.8, 0.3) and near(v[1], 11.33, 0.02) and v[2] < -29 and near(v[3], v[4], 0.1)),
+        ('别墅座位 35 个（首层 U 形会客区 18 + 阅读角 2 + 换鞋凳 1；主卧床与沙发 4；三层露台南侧 3、两卧 6、书桌 1；二层阳台不在统计范围）', lambda r: r['seats'], lambda v: v == 35),
     ],
     'heli': [
         ('登机', lambda r: r['inHeli'], lambda v: v is True),
