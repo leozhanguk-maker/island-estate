@@ -1,15 +1,19 @@
 # 私人海岛庄园 three.js 场景
 
-东西约 700 米、南北约 400 米的末世自给自足型私人海岛庄园。场景全部程序化生成，没有外部模型或贴图文件，构建产物是一个单页 HTML。支持鸟瞰浏览和第一人称漫游。
+东西约 700 米、南北约 400 米的末世自给自足型私人海岛庄园。场景基本全部程序化生成（书桌与 Cybertruck 两个模型为外置资源），构建产物是一个单页 HTML 加外置资源目录。支持鸟瞰浏览和第一人称漫游。
 
 ## 快速开始
 
+技术栈：Bun 1.3 + TypeScript + three.js r160（详见 `CLAUDE.md`「技术栈与工程结构」）。
+
 ```bash
-npm install          # 只安装测试用的本地 three.js（页面本身从 CDN 加载 r160）
-npm run build        # 生成 dist/island.html
+bun install          # 安装依赖
+bun run dev          # 开发：http://localhost:5173/island.html#fp ，改代码自动重新构建并刷新
+bun run build        # 生成 dist/island.html（单个 HTML，含全部代码）与 dist/assets/（外置资源）
+bun run preview      # 本地打开构建产物：http://localhost:4173/island.html
 ```
 
-直接用浏览器打开 `dist/island.html` 即可。页面通过导入映射从 jsdelivr 加载 three.js r160，需要联网。
+交付物是 `dist/` 整个文件夹：`island.html` 加旁边的 `assets/`。模型等资源外置后，页面必须经 http 打开（浏览器禁止双击打开的本地页面读取旁边的文件），可用 `bun run preview`、任意静态服务器，或 GitHub Pages。页面不再依赖 CDN，离线可用（界面字体仍从 Google Fonts 加载，失败时自动用系统字体）。
 
 ## 操作
 
@@ -37,30 +41,22 @@ npm run build        # 生成 dist/island.html
 
 ```
 src/
-  head.html / tail.html   页面骨架、界面样式、导入映射
-  00_gen.js               画质分档检测；后台线程调度（失败时回退主线程）
-  01_util.js              随机数、噪声、样条、几何工具
-  02_layout.js            ★ 全岛布局常量与道路（定稿，修改需谨慎）
-  03_terrain.js           地形生成：海岸、盆地、崖壁（冲沟与岩架）、水道、湖泊、瀑布、场地、梯田、道路
-  04_ground.js            地表贴图（大尺度颜色）
-  04b_detail.js           可平铺细节纹理与材质权重图
-  05_scene.js             渲染器、天空与云、光照、地形着色器、水体、瀑布
-  06_struct_a.js          材质、批处理、碰撞登记；别墅（含室内）、住宅楼、网球场、停车场、牛棚、猪鸡圈、大棚
-  06_struct_b.js          瞭望塔及平台、水闸、机库（可进入）、风机、光伏、Powerwall、栈桥、小品
-  07_vehicles.js          Heesen 游艇、H125、Cybertruck、Solectrac e70N
-  08b_foliage.js          叶片贴图集、叶簇树冠、蕨叶、树干与树皮
-  08_vegetation.js        分层雨林、灌木、林下蕨类、崖脚碎石、作物
-  09_animals.js           牲畜与禽类
-  10_main.js              主流程、相机视角、阴影切换、水下状态、界面
-  11_fp.js                漫游：物理、碰撞、游泳潜水、交互、传送、小地图
-  12_grass.js             近景草叶
-  13_drive.js             地面车辆驾驶（Cybertruck、Solectrac e70N）
-  14_boat.js              游艇：移动平台、驾驶、自动巡航、船上座位
-  15_marine.js            鱼群（淡水/海水）与两只可互动的宽吻海豚
-  16_heli.js              H125 直升机：手动飞行、停机坪与别墅屋顶之间的超低空自动往返
-  worker_main.js          后台线程入口
-build.mjs                 拼接构建
-tests/                    回归测试
+  index.html              页面骨架与界面样式（构建时注入脚本）
+  main.ts                 入口：按顺序引入各模块，最后执行主流程
+  three.ts                three.js 统一入口（核心 + 附加模块）
+  core/                   画质分档与后台线程调度、工具函数、★全岛布局（layout.ts，定稿，修改需谨慎）、外置资源加载
+  terrain/                地形、海岸坐标场、地表贴图、细节纹理与材质权重图（后台线程执行）
+  worker/entry.ts         后台线程入口
+  render/                 渲染器、天空、光照、地形着色器、水体、瀑布；新海面
+  structures/             别墅、厨房馆与公共卫生间、卫浴洁具库、书房桌椅、宿舍楼、瞭望塔、水闸、机库等
+  vehicles/               游艇、H125、Cybertruck、拖拉机的模型、驾驶、喇叭、游艇与直升机的运动
+  nature/                 叶片贴图集与树木、植被、作物、牲畜禽类、近景草叶
+  eco/                    三水域生态、海豚、白鹭、鸣笛召唤鲸群
+  app/                    主流程（相机、阴影、主循环）与漫游（物理、碰撞、交互、小地图）
+public/assets/            外置资源（构建时原样复制到 dist/assets/）
+build.ts                  Bun 构建：打包、内联成单个 HTML、复制资源
+scripts/                  开发服务器（dev.ts）与预览服务器（serve.ts）
+tests/                    回归测试（bun test + Python/Playwright）
 ```
 
 ## 坐标与约定
@@ -68,7 +64,7 @@ tests/                    回归测试
 - 单位是米，x 向东，z 向南，y 向上；北方是 −z。
 - 旋转角遵循 three.js 的 `rotation.y` 约定，矩形有符号距离函数 `rectSD` 用的是同一约定。
 - 地形网格为 1 米分辨率，范围 x∈[−380, 380]、z∈[−230, 230]。
-- 布局只在 `02_layout.js` 中定义，其他模块都引用 `L.*` 常量。
+- 布局只在 `src/core/layout.ts` 中定义，其他模块都引用 `L.*` 常量。
 
 ## 画质分档
 
@@ -86,14 +82,14 @@ tests/                    回归测试
 
 ## 测试
 
-测试需要 Python 3、playwright 和 Chromium。页面中的 CDN 请求会被路由到本地 `node_modules/three`，所以离线也能运行。
+浏览器测试需要 Python 3、playwright 1.56.0 和 Chromium；测试框架会在进程内起静态服务，经 http 打开 `dist/island.html`。
 
 ```bash
-npm run test:terrain   # 关键点高程、道路坡度、崖顶起伏（纯 node，约 1 秒）
-npm run test:physics   # 漫游物理：碰撞、栈道、游泳潜水、进入建筑、登船登塔、防攀爬、重置
-npm run test:drive     # 车辆驾驶、游艇登船与航行、自动巡航全程
-npm run test:perf      # 三角面、绘制调用、分段加载耗时（高档与低档）
-python3 tests/shot.py "file://$PWD/dist/island.html" out.png 1920 1080 done 600 "still,clean"   # 鸟瞰截图
+bun run check          # 合并前门禁：构建、类型检查、lint 及全部测试
+bun run test:terrain   # 关键点高程、道路坡度、崖顶起伏（bun test，约 1 秒）
+bun run test:physics   # 漫游物理：碰撞、栈道、游泳潜水、进入建筑、登船登塔、防攀爬、重置
+bun run test:drive     # 车辆驾驶、游艇登船与航行、自动巡航全程
+bun run test:perf      # 三角面、绘制调用、分段加载耗时（高档与低档）
 ```
 
 地址栏的调试参数：
@@ -106,4 +102,4 @@ python3 tests/shot.py "file://$PWD/dist/island.html" out.png 1920 1080 done 600 
 
 - 没有做环境光遮蔽后处理：它会破坏多重采样抗锯齿，帧率约减半。地形已烘焙遮蔽，树冠也有顶点明暗，可以替代它的大部分效果。
 - 建筑上层不可进入，别墅二层只开放阳台。
-- 近景阴影每移动 3 米才重绘一次；附近有风机转动时每 0.5 秒重绘一次。
+- 步行时近景阴影每移动 3 米才重绘一次；附近有风机转动时每 0.5 秒重绘一次；驾驶载具或人在行驶的游艇上时每帧重绘。

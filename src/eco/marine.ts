@@ -1,0 +1,184 @@
+// ======================= 15 闸内港口海豚：两只可互动的宽吻海豚（鱼群见 17_eco） =======================
+// @ts-nocheck —— 由拼接式全局脚本机械转换而来，类型尚未补齐（逐文件移除此行并补类型）
+import { THREE } from '../three';
+import { SNoise, TAU, clamp, lerp, mulberry32, smoothstep } from '../core/util';
+import { TIME_U } from '../render/scene';
+import { INTERACT, gh } from '../structures/villa';
+import { L } from '../core/layout';
+import { G } from '../terrain/terrain';
+export const MARINE = { schools: [], dolphins: [], pet: null };
+// 鱼：沿 +x 的旋转体身体 + 尾鳍 + 背/臀鳍 + 胸鳍；顶点色做花纹；attribute bend=到头部的距离（用于摆尾）
+export function fishGeo(kind) {
+  const P = { sardine: { L: 1, H: 0.18, W: 0.1, c1: 0x3a5a78, c2: 0xdfe6ea, stripe: null }, damsel: { L: 1, H: 0.5, W: 0.16, c1: 0xe8d23a, c2: 0xf2f0d0, stripe: 0x1a1a1a },
+    parrot: { L: 1, H: 0.34, W: 0.2, c1: 0x2a9a8a, c2: 0x5fc0b0, stripe: 0xd46aa0 }, trevally: { L: 1, H: 0.36, W: 0.13, c1: 0x6f8a9a, c2: 0xe6ecee, stripe: null },
+    tilapia: { L: 1, H: 0.36, W: 0.14, c1: 0x6f7a4a, c2: 0xc9c7a0, stripe: 0x4a5436 }, carp: { L: 1, H: 0.3, W: 0.16, c1: 0xd87a2a, c2: 0xf2d8b0, stripe: 0xf4f0e8 } }[kind];
+  const pos = [], col = [], bend = [], idx = [], SEG = 12, RING = 8, C1 = new THREE.Color(P.c1), C2 = new THREE.Color(P.c2), CS = P.stripe ? new THREE.Color(P.stripe) : null;
+  const prof = (t) => Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.02)), 0.8) * (1 - 0.55 * t * t);
+  for (let i = 0; i <= SEG; i++) {
+    const t = i / SEG, x = 0.5 - t * 0.82, h = P.H / 2 * prof(t), w = P.W / 2 * prof(t);
+    for (let k = 0; k < RING; k++) {
+      const a = k / RING * TAU, y = Math.sin(a) * h, z = Math.cos(a) * w; pos.push(x, y, z); bend.push(t);
+      let c = C1.clone().lerp(C2, clamp(0.5 - Math.sin(a) * 0.8, 0, 1));
+      if (CS && kind === 'damsel' && Math.sin(t * 22) > 0.6 && Math.sin(a) > -0.3) c = CS.clone();
+      if (CS && kind === 'parrot' && Math.abs(Math.sin(t * 9 + a)) > 0.93) c = CS.clone();
+      if (CS && kind === 'carp' && SNoise(t * 5, a * 2) > 0.3) c = CS.clone();
+      if (CS && kind === 'tilapia' && Math.sin(t * 16) > 0.7) c.lerp(CS, 0.5);
+      if (t < 0.1 && Math.abs(Math.sin(a)) < 0.4 && Math.cos(a) > 0.3) c = new THREE.Color(0x111111);   // 眼
+      col.push(c.r, c.g, c.b);
+    }
+    if (i < SEG) for (let k = 0; k < RING; k++) { const a = i * RING + k, b = a + RING, a1 = i * RING + (k + 1) % RING, b1 = a1 + RING; idx.push(a, b, a1, a1, b, b1); }
+  }
+  const fin = (pts, c, bnd) => { const b = pos.length / 3, cc = new THREE.Color(c); for (const p of pts) { pos.push(...p); col.push(cc.r, cc.g, cc.b); bend.push(bnd(p)); } for (let i = 1; i < pts.length - 1; i++) idx.push(b, b + i, b + i + 1, b, b + i + 1, b + i); };
+  const tx = 0.5 - 0.82, fc = kind === 'carp' ? 0xe8904a : P.c1;
+  fin([[tx + 0.02, 0, 0], [tx - 0.2, P.H * 0.55, 0], [tx - 0.14, 0, 0], [tx - 0.2, -P.H * 0.55, 0]], fc, p => 1 + (tx - p[0]) * 2);
+  fin([[0.15, P.H * 0.45, 0], [-0.1, P.H * 0.72, 0], [-0.22, P.H * 0.3, 0]], fc, p => 0.5 - p[0]);
+  fin([[-0.05, -P.H * 0.42, 0], [-0.22, -P.H * 0.55, 0], [-0.25, -P.H * 0.25, 0]], fc, p => 0.5 - p[0]);
+  for (const s of [-1, 1]) fin([[0.28, -P.H * 0.1, s * P.W * 0.4], [0.12, -P.H * 0.25, s * P.W * 1.4], [0.18, -P.H * 0.05, s * P.W * 0.5]], fc, () => 0.25);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('bend', new THREE.Float32BufferAttribute(bend, 1)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+export function fishMaterial(freq) {
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.25, side: THREE.DoubleSide });
+  const uT = { value: 0 }; TIME_U.push(uT);
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = uT;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>\nattribute float bend; attribute float iPh; uniform float uTime;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n float sw = sin(uTime * ${freq.toFixed(1)} + iPh * 6.283 - bend * 3.2) * 0.16 * bend * bend; transformed.z += sw;`);
+  };
+  return m;
+}
+// 海豚：宽吻海豚（长约 2.6 米）。按真实外形分段放样：短而分明的喙（下颌略长）→ 喙基折线 → 圆隆的额隆 → 纺锤形躯干 → 侧扁的尾柄 → 中间带缺刻的水平尾叶；
+// 背部深灰、体侧浅灰、腹部近白；嘴角线向眼睛方向上扬（“微笑”），黑色眼睛与头顶新月形呼吸孔；镰刀形背鳍、胸鳍。头部放样截面加密，细节更清楚
+export function dolphinGeo() {
+  const pos = [], col = [], bend = [], idx = [], L = 2.6, SEG = 46, RING = 22;
+  const cTop = new THREE.Color(0x4c5862), cSide = new THREE.Color(0x87939b), cBelly = new THREE.Color(0xe4e9ea), cLine = new THREE.Color(0x262b30), cEye = new THREE.Color(0x0b0c0e);
+  // [距吻端 s, 背线高, 腹线深（取正值）, 半宽]
+  const K = [[0, 0.012, 0.018, 0.02], [0.05, 0.034, 0.046, 0.044], [0.12, 0.047, 0.064, 0.062], [0.18, 0.057, 0.078, 0.076], [0.22, 0.118, 0.098, 0.097],
+    [0.3, 0.188, 0.132, 0.14], [0.42, 0.236, 0.182, 0.19], [0.6, 0.272, 0.24, 0.238], [0.9, 0.3, 0.29, 0.268], [1.2, 0.282, 0.28, 0.25], [1.5, 0.222, 0.212, 0.18],
+    [1.8, 0.142, 0.132, 0.098], [2.1, 0.086, 0.076, 0.05], [2.35, 0.05, 0.045, 0.03], [2.45, 0.03, 0.03, 0.022], [2.6, 0.01, 0.01, 0.01]];
+  const prof = (s) => { let i = 0; while (i < K.length - 2 && K[i + 1][0] < s) i++; const a = K[i], b = K[i + 1], t = clamp((s - a[0]) / (b[0] - a[0]), 0, 1), u = t * t * (3 - 2 * t);
+    return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; };
+  for (let i = 0; i <= SEG; i++) {
+    const s = L * Math.pow(i / SEG, 1.55), x = L / 2 - s, [top, bot, w] = prof(s), t = s / L;
+    // 嘴角线：从吻端下方沿下颌向后、到眼前上扬
+    const mouthY = s < 0.34 ? -0.012 + 0.05 * smoothstep(0.12, 0.34, s) - 0.004 * (1 - s / 0.34) : null;
+    for (let k = 0; k < RING; k++) {
+      const a = k / RING * TAU, sa = Math.sin(a), ca = Math.cos(a), y = sa >= 0 ? top * sa : bot * sa, z = w * ca * (t > 0.7 ? 0.75 : 1);
+      pos.push(x, y, z); bend.push(t);
+      const cape = 0.55 - 0.35 * Math.exp(-Math.pow((s - 1.25) / 0.35, 2)) + (s < 0.35 ? 0.3 * (1 - s / 0.35) : 0);   // 深色披肩下沿（sin 值）：背鳍下方下探
+      const c = cTop.clone().lerp(cSide, clamp((cape - sa) * 4, 0, 1)).lerp(cBelly, clamp(-sa * 1.5 - 0.1, 0, 1));
+      if (s < 0.12 && sa < 0.3) c.lerp(cSide, 0.35);                                                          // 吻部略浅
+      if (s > 0.4 && s < 0.62 && Math.abs(sa - (0.05 - (s - 0.4) * 1.1)) < 0.03 && Math.abs(ca) > 0.5) c.lerp(cLine, 0.7);   // 眼到胸鳍的深色细纹
+      if (mouthY !== null && Math.abs(y - mouthY) < 0.011 && Math.abs(ca) > 0.35) c.copy(cLine);
+      if (s > 0.52 && s < 0.6 && sa > 0.93 && Math.abs(ca) < 0.3) c.copy(cLine);   // 呼吸孔（头顶新月形）
+      col.push(c.r, c.g, c.b);
+    }
+    if (i < SEG) for (let k = 0; k < RING; k++) { const a = i * RING + k, b = a + RING, a1 = i * RING + (k + 1) % RING, b1 = a1 + RING; idx.push(a, b, a1, a1, b, b1); }
+  }
+  // 眼睛：嘴角线末端上方，略凸出体表的小黑球
+  const sph = (cx, cy, cz, r, c, bnd) => { const b = pos.length / 3, NU = 8, NV = 6; for (let v = 0; v <= NV; v++) for (let u = 0; u <= NU; u++) { const th = v / NV * Math.PI, ph = u / NU * TAU; pos.push(cx + r * Math.sin(th) * Math.cos(ph), cy + r * Math.cos(th), cz + r * Math.sin(th) * Math.sin(ph)); col.push(c.r, c.g, c.b); bend.push(bnd); }
+    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) { const a = b + v * (NU + 1) + u, d = a + NU + 1; idx.push(a, d, a + 1, a + 1, d, d + 1); } };
+  { const s = 0.37, [, , w] = prof(s); for (const sd of [-1, 1]) sph(L / 2 - s, 0.045, sd * (w * 0.93), 0.016, cEye, s / L); }
+  // 鳍：透镜形截面（中部向两面鼓起 th，边缘薄），近看有厚度（2026-09-29 细节化；原为单层平面）
+  const fin = (pts, bnd, c = cTop, th = 0.025) => {
+    const n = pts.length, ce = [0, 0, 0], N = [0, 0, 0]; for (const p of pts) for (let k = 0; k < 3; k++) ce[k] += p[k] / n;
+    for (let i = 0; i < n; i++) { const a = pts[i], q = pts[(i + 1) % n]; N[0] += (a[1] - q[1]) * (a[2] + q[2]); N[1] += (a[2] - q[2]) * (a[0] + q[0]); N[2] += (a[0] - q[0]) * (a[1] + q[1]); }
+    const nl = Math.hypot(...N) || 1; for (let k = 0; k < 3; k++) N[k] /= nl;
+    const b = pos.length / 3, put = (p) => { pos.push(...p); col.push(c.r, c.g, c.b); bend.push(bnd(p)); };
+    for (const p of pts) put(p);
+    for (const sg of [1, -1]) for (const p of pts) put([0, 1, 2].map(k => ce[k] + (p[k] - ce[k]) * 0.55 + N[k] * th * 0.8 * sg));
+    put([0, 1, 2].map(k => ce[k] + N[k] * th)); put([0, 1, 2].map(k => ce[k] - N[k] * th));
+    const T = b + 3 * n, B = T + 1;
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n, p0 = b + i, p1 = b + j, q0 = b + n + i, q1 = b + n + j, r0 = b + 2 * n + i, r1 = b + 2 * n + j;
+      idx.push(p0, p1, q1, p0, q1, q0, q0, q1, T, p1, p0, r0, p1, r0, r1, r1, r0, B); }
+  };
+  const bx = (s) => L / 2 - s;
+  // 镰刀形背鳍（后缘内凹）
+  fin([[bx(1.02), 0.29, 0], [bx(1.1), 0.44, 0], [bx(1.26), 0.58, 0], [bx(1.44), 0.63, 0], [bx(1.4), 0.52, 0], [bx(1.42), 0.4, 0], [bx(1.52), 0.24, 0]], p => (L / 2 - p[0]) / L);
+  // 胸鳍：体侧下方向后下方伸出
+  for (const s of [-1, 1]) fin([[bx(0.58), -0.1, s * 0.2], [bx(0.72), -0.22, s * 0.42], [bx(0.9), -0.3, s * 0.52], [bx(0.86), -0.24, s * 0.44], [bx(0.76), -0.12, s * 0.22]], () => 0.3, cSide);
+  // 水平尾叶：左右两叶，后缘中间有缺刻
+  fin([[bx(2.36), 0, 0], [bx(2.5), 0, 0.2], [bx(2.66), 0, 0.42], [bx(2.72), 0, 0.4], [bx(2.62), 0, 0.14], [bx(2.6), 0, 0], [bx(2.62), 0, -0.14], [bx(2.72), 0, -0.4], [bx(2.66), 0, -0.42], [bx(2.5), 0, -0.2]], p => 1 + Math.max(0, (L / 2 - p[0]) - L) / L);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('bend', new THREE.Float32BufferAttribute(bend, 1)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+export function dolphinMaterial() {
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.1, side: THREE.DoubleSide });
+  const uT = { value: 0 }; TIME_U.push(uT);
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = uT;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>\nattribute float bend; attribute float iPh; uniform float uTime;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n float sw = sin(uTime * 3.2 + iPh * 6.283 - bend * 2.6) * 0.22 * bend * bend; transformed.y += sw;`);
+  };
+  return m;
+}
+// ---------------- 行为：鱼群（群中心漫游 + 个体跟随/分离） ----------------
+export function marineRegionLagoon(x, z, y) { const h = gh(x, z); return h < y - 0.5 && z < L.gateZ - 3 && X_SD_W(x, z) > 2; }
+export let X_SD_W = () => 0;
+export function buildMarine(scene, X) {
+  X_SD_W = (x, z) => { const k = Math.round(clamp(z - G.z0, 0, G.nz - 1)) * G.nx + Math.round(clamp(x - G.x0, 0, G.nx - 1)); return X.sdW[k]; };
+  const R = mulberry32(8080);
+  // 鱼群已迁到 17_eco（三个水域分开、物种符合各自水体：湖里鲫鱼与罗非鱼，闸内港口为礁鱼，沙丁鱼与鲹鱼移到外海），这里只保留海豚
+  const SPEC = [];
+  for (const [kind, n, size, ok, level, speed, tight] of SPEC) {
+    const geo = fishGeo(kind), ph = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('iPh', ph);
+    const im = new THREE.InstancedMesh(geo, fishMaterial(kind === 'sardine' ? 14 : 9), n); im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.castShadow = false; scene.add(im);
+    let cx = 0, cz = 0, cy = 0; for (let k = 0; k < 500; k++) { const x = level ? L.lake.x + (R() - 0.5) * 24 : (R() - 0.5) * 90, z = level ? L.lake.z + (R() - 0.5) * 16 : 55 + R() * 60, y = level - 0.8; if (ok(x, z, y)) { cx = x; cz = z; cy = y; break; } }
+    const fish = []; for (let i = 0; i < n; i++) { fish.push({ x: cx + (R() - 0.5) * 3, y: cy - R() * 0.5, z: cz + (R() - 0.5) * 3, vx: 0, vy: 0, vz: 0 }); ph.setX(i, R()); }
+    MARINE.schools.push({ kind, im, fish, size, ok, level, speed, tight, c: { x: cx, y: cy, z: cz }, tgt: { x: cx, y: cy, z: cz }, t: 0 });
+  }
+  // 海豚两只
+  const dg = dolphinGeo(), dph = new THREE.InstancedBufferAttribute(new Float32Array([0.1, 0.6]), 1); dg.setAttribute('iPh', dph);
+  const dm = new THREE.InstancedMesh(dg, dolphinMaterial(), 2); dm.instanceMatrix.setUsage(THREE.DynamicDrawUsage); dm.frustumCulled = false; dm.castShadow = true; scene.add(dm);
+  for (let i = 0; i < 2; i++) MARINE.dolphins.push({ im: dm, i, x: -30 + i * 8, y: -1.2, z: 62 + i * 3, yaw: 0, v: 3, dir: i ? -1 : 1, jump: 0, jt: 6 + i * 5, mode: 'patrol', t: 0 });
+  // 抚摸海豚交互（靠近时出现）
+  INTERACT.push({ get x() { const d = MARINE.near; return d ? d.x : 1e9; }, get z() { const d = MARINE.near; return d ? d.z : 1e9; }, r: 4.5, get y() { return MARINE.near ? MARINE.near.y + 0.3 : -99; }, label: '抚摸海豚', fn: () => { const d = MARINE.near; if (d) { d.jump = 0.001; d.mode = 'escort'; d.t = 25; } } });
+  updateMarine(0, 0, null);
+}
+export function updateMarine(dt, t, player) {
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(), e = new THREE.Euler(0, 0, 0, 'YZX');
+  for (const S of MARINE.schools) {
+    S.t -= dt;
+    const dc = Math.hypot(S.tgt.x - S.c.x, S.tgt.z - S.c.z);
+    if (S.t <= 0 || dc < 1.5) { for (let k = 0; k < 60; k++) { const rr = S.level ? 9 : 26, x = S.c.x + (Math.random() - 0.5) * rr * 2, z = S.c.z + (Math.random() - 0.5) * rr * 2, bot = gh(x, z), y = S.level - 0.5 - Math.random() * Math.max(0.3, (S.level - bot) - 1.2); if (S.ok(x, z, y)) { S.tgt = { x, y, z }; break; } } S.t = 6 + Math.random() * 8; }
+    // 玩家潜到附近时鱼群回避
+    let fx = 0, fz = 0; if (player && player.under && Math.hypot(player.x - S.c.x, player.z - S.c.z) < 5) { fx = S.c.x - player.x; fz = S.c.z - player.z; }
+    const dx = S.tgt.x - S.c.x + fx * 2, dz = S.tgt.z - S.c.z + fz * 2, dy = S.tgt.y - S.c.y, dl = Math.hypot(dx, dz) || 1;
+    const nx = S.c.x + dx / dl * S.speed * dt, nz = S.c.z + dz / dl * S.speed * dt, ny = S.c.y + clamp(dy, -0.5, 0.5) * dt;
+    if (S.ok(nx, nz, ny)) { S.c.x = nx; S.c.z = nz; S.c.y = ny; } else S.t = 0;
+    const F = S.fish, n = F.length;
+    for (let i = 0; i < n; i++) {
+      const f = F[i]; let ax = (S.c.x - f.x) * 0.6 / S.tight, ay = (S.c.y - f.y) * 0.8, az = (S.c.z - f.z) * 0.6 / S.tight;
+      for (let j = Math.max(0, i - 4); j < Math.min(n, i + 5); j++) if (j !== i) { const g = F[j], ex = f.x - g.x, ey = f.y - g.y, ez = f.z - g.z, d2 = ex * ex + ey * ey + ez * ez; if (d2 < S.size * S.size * 4 && d2 > 1e-6) { ax += ex / d2 * 0.04; ay += ey / d2 * 0.02; az += ez / d2 * 0.04; } }
+      ax += dx / dl * S.speed * 0.5; az += dz / dl * S.speed * 0.5;
+      f.vx = lerp(f.vx, ax, dt * 2); f.vy = lerp(f.vy, ay, dt * 2); f.vz = lerp(f.vz, az, dt * 2);
+      const sp = Math.hypot(f.vx, f.vz); if (sp > S.speed * 1.6) { f.vx *= S.speed * 1.6 / sp; f.vz *= S.speed * 1.6 / sp; }
+      const px = f.x + f.vx * dt, pz = f.z + f.vz * dt, py = clamp(f.y + f.vy * dt, gh(px, pz) + 0.25, S.level - 0.3);
+      if (S.ok(px, pz, py + 0.2) || !S.ok(f.x, f.z, f.y + 0.2)) { f.x = px; f.z = pz; } f.y = py;
+      e.set(0, Math.atan2(-f.vz, f.vx), clamp(f.vy * 0.5, -0.4, 0.4)); q.setFromEuler(e); m4.compose(v.set(f.x, f.y, f.z), q, sc.set(S.size, S.size, S.size)); S.im.setMatrixAt(i, m4);
+    }
+    S.im.instanceMatrix.needsUpdate = true;
+  }
+  // 海豚：沙滩前来回巡游；不时跃出水面；玩家下水靠近时伴游/绕游
+  MARINE.near = null; let best = 1e9;
+  for (const D of MARINE.dolphins) {
+    D.t -= dt; D.jt -= dt;
+    let tx, tz;
+    const pn = player && player.inWater && player.lagoon ? Math.hypot(player.x - D.x, player.z - D.z) : 1e9;
+    if (pn < 14 && D.mode !== 'escort') { D.mode = 'visit'; D.t = 12; }
+    if ((D.mode === 'visit' || D.mode === 'escort') && player && player.inWater) {
+      const a = t * 0.6 + D.i * Math.PI; tx = player.x + Math.cos(a) * (D.mode === 'escort' ? 3 : 4.5); tz = player.z + Math.sin(a) * (D.mode === 'escort' ? 3 : 4.5);
+      if (D.t <= 0) D.mode = 'patrol';
+    } else { if (D.mode !== 'patrol') D.mode = 'patrol'; tx = D.dir > 0 ? 42 : -42; tz = 60 + D.i * 5 + Math.sin(t * 0.2 + D.i) * 4; if ((D.dir > 0 && D.x > 38) || (D.dir < 0 && D.x < -38)) D.dir = -D.dir; }
+    const want = Math.atan2(-(tz - D.z), tx - D.x); let da = ((want - D.yaw + Math.PI * 3) % TAU) - Math.PI; D.yaw += clamp(da, -1.4 * dt, 1.4 * dt);
+    const sp = D.mode === 'patrol' ? 3.2 : 2.4, nx = D.x + Math.cos(D.yaw) * sp * dt, nz = D.z - Math.sin(D.yaw) * sp * dt;
+    if (gh(nx, nz) < -1.6 && nz < L.gateZ - 4) { D.x = nx; D.z = nz; } else D.yaw += 1.2 * dt;
+    let y = -1.3 + Math.sin(t * 0.5 + D.i * 2) * 0.35, pitch = 0;
+    if (D.jt <= 0 && D.jump === 0 && gh(D.x, D.z) < -3) D.jump = 0.001;
+    if (D.jump > 0) { D.jump += dt / 1.6; const k = D.jump; y = -1.3 + Math.sin(Math.PI * k) * 3.6; pitch = Math.cos(Math.PI * k) * 0.9; if (k >= 1) { D.jump = 0; D.jt = 8 + Math.random() * 10; } }
+    D.y = y;
+    e.set(0, D.yaw, pitch); q.setFromEuler(e); m4.compose(v.set(D.x, y, D.z), q, sc.set(1, 1, 1)); D.im.setMatrixAt(D.i, m4);
+    if (player) { const dd = Math.hypot(player.x - D.x, player.z - D.z); if (dd < best && dd < 4.5 && player.inWater) { best = dd; MARINE.near = D; } }
+  }
+  if (MARINE.dolphins.length) MARINE.dolphins[0].im.instanceMatrix.needsUpdate = true;
+}

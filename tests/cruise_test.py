@@ -2,7 +2,7 @@ import os, json
 from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NM = os.path.join(ROOT, 'node_modules', 'three')
-PAGE = 'file://' + os.path.join(ROOT, 'dist', 'island.html')
+import sys as _s; _s.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); from harness import PAGE   # 经本地 http 服务打开（资源外置后 file:// 读不到 assets/）
 def handle(route):
     u = route.request.url
     if 'cdn.jsdelivr.net/npm/three@0.160.0/' in u: route.fulfill(path=os.path.join(NM, u.split('three@0.160.0/')[1]), content_type='application/javascript')
