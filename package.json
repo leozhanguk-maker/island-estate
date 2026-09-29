@@ -3,28 +3,38 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "私人海岛庄园 three.js 场景：程序化地形、写实植被、第一人称漫游",
+  "description": "私人海岛庄园 three.js 场景：程序化地形、写实植被、第一人称漫游（Bun + TypeScript，构建为单 HTML + 外置资源）",
   "scripts": {
-    "build": "node build.mjs",
-    "test:terrain": "node tests/terrain_test.mjs",
-    "test:shore": "node tests/shore_test.mjs",
+    "dev": "bun run scripts/dev.ts",
+    "build": "bun run build.ts",
+    "preview": "bun run scripts/serve.ts",
+    "typecheck": "tsc -p .",
+    "lint": "biome lint",
+    "test:terrain": "bun test tests/terrain.test.ts",
+    "test:shore": "bun test tests/shore.test.ts",
     "test:invariants": "python3 tests/invariants.py",
     "test:baselines": "python3 tests/check_baselines.py",
+    "test:regression": "python3 tests/regression.py",
+    "test:ecology": "python3 tests/ecology_test.py",
     "test:visual": "python3 tests/visual_regression.py",
     "patrol": "python3 tests/patrol.py",
     "patrol:quick": "python3 tests/patrol.py --quick --seed=1 --strict",
     "audit:scene": "python3 tests/scene_audit.py",
     "shots": "python3 tests/shot_patrol.py",
-    "check": "npm run build && npm run test:terrain && npm run test:shore && npm run test:invariants && npm run test:baselines && npm run test:regression && npm run test:ecology && npm run test:visual && npm run patrol:quick && python3 tests/scene_audit.py --strict",
+    "check": "bun run build && bun run typecheck && bun run lint && bun run test:terrain && bun run test:shore && bun run test:invariants && bun run test:baselines && bun run test:regression && bun run test:ecology && bun run test:visual && bun run patrol:quick && python3 tests/scene_audit.py --strict",
+    "test": "bun run check",
     "test:physics": "python3 tests/phys_test.py",
     "test:drive": "python3 tests/drive_test.py && python3 tests/boat_test.py && python3 tests/cruise_test.py && python3 tests/heli_test.py",
     "test:perf": "python3 tests/audit.py q=high && python3 tests/audit.py q=low",
-    "shot": "python3 tests/shot.py",
-    "test": "npm run check",
-    "test:regression": "python3 tests/regression.py",
-    "test:ecology": "python3 tests/ecology_test.py"
+    "shot": "python3 tests/shot.py"
+  },
+  "dependencies": {
+    "three": "0.160.0"
   },
   "devDependencies": {
-    "three": "0.160.0"
+    "@biomejs/biome": "1.9.4",
+    "@types/bun": "1.3.11",
+    "@types/three": "0.160.0",
+    "typescript": "5.6.3"
   }
 }

@@ -64,7 +64,11 @@ JS = r'''() => { const D = __dbg, E = D.ECO, I = __island, cam = I.camera, fails
     if (!(U.fishLen && Math.abs(U.fishLen[0] - 0.085) < 0.005 && Math.abs(U.fishLen[1] - 0.11) < 0.005 && Math.abs(U.prawnLen - 0.085) < 0.005 && Math.abs(U.crayLen - 0.055) < 0.005)) fails.push(`小水池鱼虾体长应为淡水湖同种的一半：${JSON.stringify(U)}`); }
   for (const [k, lim] of [['lake', 0.08], ['lagoon', 0.04], ['ocean', 0.035]]) { const d = D.ECO_LOOK && D.ECO_LOOK[k].dens; if (!(d <= lim)) fails.push(`${k} 水下雾密度 ${d}，应 ≤ ${lim}（能见度高、清澈）`); }
   // P-016：三个水域的随机数各自独立（每个水域建造前重置种子），改动一个水域的内容不会让另外两个水域整体错位
-  { const src = String(window.__dbg.buildEcology || ''); if (!/ecoSeed\(\d+\);\s*buildEcoLagoon/.test(src) || !/ecoSeed\(\d+\);\s*buildEcoOcean/.test(src)) fails.push('闸内港口、外海建造前没有各自重置生态随机数种子（P-016）'); }
+  // 按运行时建造日志检查（ecoSeed 与各水域建造函数写入 ECO.buildLog）：每个水域开始建造的前一条必须是一次种子重置，且各水域种子互不相同。
+  // 原先匹配 buildEcology 的源代码文本，打包压缩改名后无法匹配，改为运行时检查
+  { const log = (D.ECO.buildLog || []), seeds = [];
+    for (const z of ['lake', 'lagoon', 'ocean', 'upper']) { const i = log.findIndex(e => e[0] === 'build' && e[1] === z); if (i < 1 || log[i - 1][0] !== 'seed') fails.push(`${z} 水域建造前没有重置生态随机数种子（P-016）`); else seeds.push(log[i - 1][1]); }
+    if (new Set(seeds).size !== seeds.length) fails.push(`各水域生态随机数种子有重复：${seeds.join('、')}（P-016）`); }
   // 鲸群不会游上岸：把每个鲸群领头的航点设在岛中央陆地上推进 20 秒，所有个体始终在深水里（曾因编队位置跨过海岸被抬到地面以上 16 m）
   for (const w of E.whales || []) { w.wp = { x: 0, z: 0 }; w.wt = 999; let bad = null;
     for (let s = 0; s < 600 && !bad; s++) { w.update(1 / 30, s / 30); for (const a of w.a) if (a.y > 6 || D.gh(a.x, a.z) > -w.minFloor * 0.5) { bad = `(${a.x.toFixed(1)}, ${a.y.toFixed(1)}, ${a.z.toFixed(1)}) 水深 ${(-D.gh(a.x, a.z)).toFixed(1)} m`; break; } }

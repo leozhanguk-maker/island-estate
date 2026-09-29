@@ -1,10 +1,27 @@
-# 共享测试框架：启动无头浏览器、把 CDN 请求路由到本地 three、收集报错、注入模拟库 sim.js
-import os, sys, json, time
+# 共享测试框架：本地 http 服务提供 dist/、启动无头浏览器、收集报错、注入模拟库 sim.js
+# 资源外置后页面必须经 http 打开（file:// 下浏览器禁止读取旁边的 assets/），这里在进程内起一个只读静态服务
+import os, sys, json, time, threading, functools
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 NM = os.path.join(ROOT, 'node_modules', 'three')
-PAGE = 'file://' + os.path.join(ROOT, 'dist', 'island.html')
+DIST = os.path.join(ROOT, 'dist')
+
+
+class _Quiet(SimpleHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+
+def serve(directory):
+    """在随机端口起静态服务（守护线程，随进程退出），返回根地址"""
+    srv = ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(_Quiet, directory=directory))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return f'http://127.0.0.1:{srv.server_address[1]}/'
+
+
+PAGE = serve(DIST) + 'island.html'
 REPORTS = os.path.join(ROOT, 'reports')
 ARGS = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
 SIM_JS = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sim.js'), encoding='utf8').read()
@@ -15,7 +32,7 @@ IGNORED_CONSOLE = ['GPU stall due to ReadPixels', 'Automatic fallback to softwar
 
 def _route(route):
     u = route.request.url
-    if 'cdn.jsdelivr.net/npm/three@0.160.0/' in u:
+    if 'cdn.jsdelivr.net/npm/three@0.160.0/' in u:   # 旧版单文件页面（对比截图用）仍从 CDN 加载 three
         route.fulfill(path=os.path.join(NM, u.split('three@0.160.0/')[1]), content_type='application/javascript')
     elif 'fonts.g' in u:
         route.fulfill(body='', content_type='text/css')
