@@ -4,6 +4,7 @@
 #   P-007 离开舵位后船继续开/打转：页面内脚本，全速左满舵时按 E 离开舵位
 #   传送点：漫游传送菜单的每个按钮都落在可站立的地面上，朝向与小地图下方坐标栏一致；宿舍楼传送点按用户指定位置 (14.7, 13.91, -132.0) 朝向 180°
 #   P-014 植被随机数按位置独立：把一小块林地挖成海，只有附近的树和灌木变化，12 m 以外的撒点完全不变
+#   P-018 驾驶时车影一顿一顿：驾驶中每帧都重绘阴影贴图，步行静止时不重绘（高档、低档各测一次）
 #   载具喇叭：驾驶汽车、拖拉机、直升机、游艇时按 H 各自鸣笛（音色不同），ESC 暂停面板列出 H 键
 #   P-012 后台线程不可用（Claude 网页预览）时漫游报错、主循环停止：强制主线程生成，高档画质下传送到沙滩草地并持续运行
 #   V-022 海面：外海满海面白色碎片（泡沫毯在无泡沫处仍出白斑）、登岸浮台旁水面网格贴着岩石翻折显示成一整片青绿色背面：固定时刻截图按像素统计
@@ -67,6 +68,13 @@ HORN_JS = r'''() => { const D = __dbg, fp = __fp, out = {}; fp._st.on = true;
   D.syncBoat(0); out.eHorn = D.DYN.interact.filter(it => /喇叭|鸣笛/.test(typeof it.label === 'function' ? it.label() : it.label)).length;
   out.esc = [...document.querySelectorAll('#fpgate dt')].some(dt => dt.textContent.trim() === 'H' && /鸣笛/.test(dt.nextElementSibling.textContent));
   return out; }'''
+SHADOW_JS = r'''() => { const D = __dbg, fp = __fp, R = __island.renderer, S = D.SHADOW, out = {}; fp._st.on = true;
+  const step = (n) => { const n0 = S.n; for (let i = 0; i < n; i++) { R.shadowMap.needsUpdate = false; __island.shadowFollow(i / 60); } return S.n - n0; };
+  const car = D.DRIVE.cars.find(c => c.sp && c.sp.horn === 'car');
+  fp.teleport(car.x + 4, car.z, 0); step(3); out.walk = step(60);            // 步行静止：不应重绘
+  D.DRIVE.active = car; fp._st.pos.set(car.x, car.y + 1.5, car.z); step(3);
+  let n0 = S.n; for (let i = 0; i < 60; i++) { car.x += 0.02; fp._st.pos.x = car.x; R.shadowMap.needsUpdate = false; __island.shadowFollow(i / 60); } out.drive = S.n - n0;
+  car.x -= 1.2; D.DRIVE.active = null; return out; }'''
 READY = "document.getElementById('loading').classList.contains('done')"
 FALLBACK_JS = r'''async () => { const fp = __fp, I = __island; fp.enter(false); fp.teleport(0, 20, Math.PI); fp._st.on = true;
   // 直接触发近景草叶在沙滩草地处取色（旧代码在这里读 canvas 得到 NaN 下标并抛错）
@@ -118,6 +126,12 @@ def main():
     ok = r['car'] == 'car' and r['tractor'] == 'tractor' and r['heli'] == 'heli' and r['boat'] == 'boat' and r['walk'] is None and r['esc'] and r['eHorn'] == 0
     print(f"  {'✓' if ok else '✗'} 载具喇叭：汽车 {r['car']}、拖拉机 {r['tractor']}、直升机 {r['heli']}、游艇 {r['boat']}，步行时按 H 不鸣笛（{r['walk']}），ESC 面板列出 H 键：{r['esc']}，游艇上按 E 鸣笛的交互 {r['eHorn']} 个（应为 0）")
     failed += 0 if ok else 1
+    for q in ('high', 'low'):
+        with Session(f'#fp,still,q={q}') as s:
+            r = s.js(SHADOW_JS)
+        ok = r['drive'] == 60 and r['walk'] == 0
+        print(f"  {'✓' if ok else '✗'} P-018 驾驶时阴影每帧重绘（{q} 档）：驾驶 60 帧重绘 {r['drive']} 次（应为 60），步行静止 60 帧重绘 {r['walk']} 次（应为 0）")
+        failed += 0 if ok else 1
     with Session('#q=high,debug,noworker', size=(640, 360), ready=READY) as s:
         r = s.js(FALLBACK_JS)
         errs = list(s.errors) + ([r['err']] if r['err'] else [])
