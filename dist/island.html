@@ -3939,8 +3939,9 @@ async function loadDeskModel(scene) {
 }
 // 加载失败（浏览器不支持 WebP 等）时退回原先的程序化书桌、iMac 与办公椅，保证书房不空
 function deskFallback(scene) {
-  const g = new THREE.Group(); g.position.set(180, 11.35, -46); scene.add(g);
-  tableF(g, 2.5, 7.45, -3.6, 0, 1.6, 0.8, 0.75, M.woodDark, M.metalDark); imacF(g, 2.5, 7.45 + 0.75, -3.72, 0); officeChairF(g, 2.5, 7.45, -2.85, Math.PI);
+  // 位置跟随 DESK.at（书桌移位后备用书桌原先还留在旧位置）
+  const g = new THREE.Group(); g.position.set(DESK.at.x, DESK.at.y, DESK.at.z); scene.add(g);
+  tableF(g, 0, 0, 0, 0, 1.6, 0.8, 0.75, M.woodDark, M.metalDark); imacF(g, 0, 0.75, -0.12, 0); officeChairF(g, 0, 0, 0.75, Math.PI);
   return g;
 }
 
