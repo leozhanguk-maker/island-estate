@@ -1,6 +1,6 @@
-// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边，并在 2 分钟内跟着船游 =======================
+// ======================= 17f 海洋表演：游艇鸣笛，召唤虎鲸、座头鲸、鲸鲨与鱼群游到船边，并一直跟着船游，直到游艇回到水闸口 =======================
 // 在闸外海域鸣笛：把外海四个水域的鲸群与鱼群整体挪到船体周围 40～70 m 的深水里（相机看不到的距离外出现），各自快速游近；
-// 召唤期间各水域随船移动（ecoShowFollow）；2 分钟后整体挪回原水域。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
+// 召唤期间各水域随船移动（ecoShowFollow）；游艇回到水闸口（进入水闸口/峡谷范围或离开外海）3 秒后整体挪回原水域（原为 2 分钟后，2026-09-29 按你的要求改为一直跟到闸口）。闸内港口与淡水湖只提示，不召唤（海水与淡水、闸内港口与外海物种不混用）
 const ECO_SHOW = { t: 0, moved: null, ac: null };
 // 游艇汽笛音色统一在 13b_horn.js
 function ecoHornSound() { hornSound('boat'); }
@@ -23,7 +23,7 @@ function ecoClearOfGate(x, z, r) { if (ecoGateArea(x, z)) return false; for (con
 function ecoOceanShow(x, z) {
   if (!ECO.built) return '生态尚未就绪';
   if (ecoZone(x, z) !== 'ocean') return '鸣笛：鲸群和鱼群只在闸外海域出现，开出水闸再试';
-  if (ECO_SHOW.moved) { ECO_SHOW.t = 120; return '鸣笛：鲸群和鱼群就在附近'; }
+  if (ECO_SHOW.moved) return '鸣笛：鲸群和鱼群就在附近';
   const names = ['oceanSE', 'oceanSW', 'oceanS', 'oceanN'].filter(n => ECO.zones[n]), moved = [];
   // 在船周围 40～70 m 找鲸群可去的深水点（水深足够、属于外海、离岸 ≥ 10 m、不在水闸口/峡谷，P-017），每个水域一个，彼此错开方向
   const spots = [];
@@ -35,7 +35,7 @@ function ecoOceanShow(x, z) {
   names.forEach((n, i) => { const Z = ECO.zones[n], s = spots[i % spots.length], dx = s.x - Z.center.x, dz = s.z - Z.center.z; ecoShiftZone(Z, dx, dz); moved.push([n, dx, dz, s.x - x, s.z - z]); Z.on = undefined;
     // 鲸群按编队位置在出现点重新集结（整体平移会把离队较远的个体带到岸边或峡谷里；编队最远约 23 m（幼鲸跟在母鲸旁），出现点离岸 ≥ 35 m、离水闸口/峡谷 ≥ 36 m）
     for (const w of Z.whales || []) for (const a of w.a) { const f = a.follow, sl = a.slot || [0, 0]; a.x = (f ? f.x : s.x) + sl[0]; a.z = (f ? f.z : s.z) + sl[1]; } });
-  ECO_SHOW.moved = moved; ECO_SHOW.t = 120;
+  ECO_SHOW.moved = moved; ECO_SHOW.t = 3;
   return '鸣笛：虎鲸、座头鲸和鱼群正在游向游艇';
 }
 // 跟船：召唤期间，各水域保持召唤时相对游艇的方位，追着船游：船开多快就跟多快（船速的 1.15 倍，落后时能追上），船停下（航速 < 0.3 m/s）鲸群鱼群也停下；
@@ -57,7 +57,9 @@ function ecoShowFollow(dt) {
 }
 function ecoShowUpdate(dt) {
   if (!ECO_SHOW.moved) return;
+  // t：离结束的秒数。游艇在外海（不在水闸口/峡谷范围）时保持 ≥ 3 秒，即一直跟船；回到水闸口后不再续期，3 秒后挪回原水域
   ECO_SHOW.t -= dt;
+  if (ECO_SHOW.t > 0 && typeof BOAT !== 'undefined' && BOAT.g && ecoZone(BOAT.x, BOAT.z) === 'ocean' && !ecoGateArea(BOAT.x, BOAT.z)) ECO_SHOW.t = Math.max(ECO_SHOW.t, 3);
   if (ECO_SHOW.t <= 0) { for (const [n, dx, dz] of ECO_SHOW.moved) { ecoShiftZone(ECO.zones[n], -dx, -dz); ECO.zones[n].on = undefined; } ECO_SHOW.moved = null; return; }
   ecoShowFollow(dt);
 }
