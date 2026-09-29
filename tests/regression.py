@@ -137,7 +137,8 @@ def main():
     ok = white < 0.5 and teal < 5
     print(f"  {'✓' if ok else '✗'} V-022 外海没有满海面白色碎片（近白像素 {white:.2f}%，< 0.5%）；登岸浮台旁没有翻折的青绿色水面背面（{teal:.2f}%，< 5%）")
     failed += 0 if ok else 1
-    # V-024：固定海面时刻 23 秒，南岸崖脚俯看、近景两个机位下部海面里“孤立白色小碎块”像素（近白且 7×7 邻域近白比例 < 35%）须 < 0.5%（修复前 4.25%、2.15%）
+    # V-024：固定海面时刻 23 秒，南岸崖脚俯看、近景两个机位下部海面里“孤立白色小碎块”像素（近白且 7×7 邻域近白比例 < 35%）须 < 0.5%（修复前 4.25%、2.15%），
+    # 近白像素须 < 0.5%（按用户要求海面泡沫全部取消）
     def flakes(p):
         a = np.asarray(Image.open(p).convert('RGB')).astype(int)[200:]
         w = (a.min(axis=2) > 200).astype(float); k = 7
@@ -149,8 +150,9 @@ def main():
         s.js(rj, [150, 14, 206, 152, 0, 193]); s.shot(os.path.join(out, 'v024_崖脚俯看.png'))
         s.js(rj, [140, 6, 212, 150, 1, 190]); s.shot(os.path.join(out, 'v024_崖脚近景.png'))
     f1, f2 = flakes(os.path.join(out, 'v024_崖脚俯看.png')), flakes(os.path.join(out, 'v024_崖脚近景.png'))
-    ok = f1 < 0.5 and f2 < 0.5
-    print(f"  {'✓' if ok else '✗'} V-024 岩岸边没有碎片状白色漂浮物（孤立白色小碎块 俯看 {f1:.2f}%、近景 {f2:.2f}%，均 < 0.5%）")
+    w1, w2 = [(np.asarray(Image.open(os.path.join(out, n)).convert('RGB')).astype(int)[200:].min(axis=2) > 200).mean() * 100 for n in ('v024_崖脚俯看.png', 'v024_崖脚近景.png')]
+    ok = f1 < 0.5 and f2 < 0.5 and w1 < 0.5 and w2 < 0.5
+    print(f"  {'✓' if ok else '✗'} V-024 岩岸边没有碎片状白色漂浮物、海面不再画泡沫（孤立白块 {f1:.2f}% / {f2:.2f}%，近白像素 {w1:.2f}% / {w2:.2f}%，均 < 0.5%）")
     failed += 0 if ok else 1
     print('\n回归测试全部通过' if not failed else f'\n{failed} 项回归测试失败')
     sys.exit(1 if failed else 0)
