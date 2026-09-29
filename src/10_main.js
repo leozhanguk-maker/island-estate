@@ -146,7 +146,7 @@ try {
       renderer.shadowMap.needsUpdate = true; shadowState.mode = 'island'; shadowState.cx = 1e9;
     }
     // 驾驶中载具自身在动：阴影贴图每帧重绘（含自动巡航中站在船上；原先只在玩家移动超过 3 米时重绘，车影一顿一顿地跳；低档不跟随时车影干脆停在原地）
-    if (fp.on && (DRIVE.active || BOAT.moved)) renderer.shadowMap.needsUpdate = true;
+    if (fp.on && (DRIVE.active || (fp._st.onBoat && BOAT.moved))) renderer.shadowMap.needsUpdate = true;
     if (renderer.shadowMap.needsUpdate) shadowState.n++;
   }
   const needle = document.getElementById('needle');
